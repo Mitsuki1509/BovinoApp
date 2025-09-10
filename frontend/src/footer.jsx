@@ -5,7 +5,6 @@ function footer(){
   const [count, setCount] = useState(0)
  return(
     <>< footer className='footer'>
- nubuoy
         </footer></>
  )
 }
