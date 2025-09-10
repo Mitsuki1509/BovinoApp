@@ -5,12 +5,9 @@ function footer(){
   const [count, setCount] = useState(0)
  return(
     <>< footer className='footer'>
-        
-        <ul>
-            <li>1</li>
-            <li>2</li>
-        </ul>
+ nubuoy
         </footer></>
  )
 }
+
 export default footer
