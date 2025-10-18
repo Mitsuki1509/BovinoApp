@@ -24,26 +24,28 @@ model finca {
 }
 
 model usuarios {
-  usuario_id          Int                   @id @default(autoincrement())
-  finca_id            Int?
-  rol_id              Int?
-  nombre              String                @db.VarChar(255)
-  correo              String                @unique @db.VarChar(255)
-  contraseña         String?               @db.VarChar(255)
-  deleted_at          DateTime?             @db.Timestamp(6)
-  alimentaciones      alimentacion[]
-  compras             compras[]
-  diagnosticos        diagnostico_preñez[]
-  montas_supervisadas evento_monta[]
-  partos_operador     evento_parto[]        @relation("PartoOperador")
-  partos_veterinario  evento_parto[]        @relation("PartoVeterinario")
-  eventos_operador    evento_sanitario[]    @relation("EventoSanitarioOperador")
-  eventos_veterinario evento_sanitario[]    @relation("EventoSanitarioVeterinario")
-  pesajes_realizados  pesajes[]
-  producciones_carne  produccion_carne[]
-  producciones_leche  produccion_lechera[]
-  finca               finca?                @relation(fields: [finca_id], references: [finca_id], onDelete: NoAction, onUpdate: NoAction)
-  rol                 roles?                @relation(fields: [rol_id], references: [rol_id], onDelete: NoAction, onUpdate: NoAction)
+  usuario_id                     Int                   @id @default(autoincrement())
+  finca_id                       Int?
+  rol_id                         Int?
+  nombre                         String                @db.VarChar(255)
+  correo                         String                @unique @db.VarChar(255)
+  contraseña                    String?               @db.VarChar(255)
+  verificado                     Boolean?              @default(false)
+  google_oauth                   Boolean?              @default(false)
+  deleted_at                     DateTime?             @db.Timestamp(6)
+  alimentaciones                 alimentacion[]
+  compras_contables              compras[]             @relation("ComprasContable")
+  diagnosticos_preñez           diagnostico_preñez[]
+  montas_supervisadas            evento_monta[]
+  partos_operador                evento_parto[]        @relation("PartoOperador")
+  partos_veterinario             evento_parto[]        @relation("PartoVeterinario")
+  eventos_sanitarios_operador    evento_sanitario[]    @relation("EventoSanitarioOperador")
+  eventos_sanitarios_veterinario evento_sanitario[]    @relation("EventoSanitarioVeterinario")
+  pesajes_realizados             pesajes[]
+  producciones_carne             produccion_carne[]
+  producciones_leche             produccion_lechera[]
+  finca                          finca?                @relation(fields: [finca_id], references: [finca_id], onDelete: NoAction, onUpdate: NoAction)
+  rol                            roles?                @relation(fields: [rol_id], references: [rol_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model unidades {
@@ -157,7 +159,7 @@ model compras {
   proveedor_id        Int?
   fecha               DateTime          @db.Date
   deleted_at          DateTime?         @db.Timestamp(6)
-  usuarios            usuarios?         @relation(fields: [id_usuario_contable], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
+  usuario_contable    usuarios?         @relation("ComprasContable", fields: [id_usuario_contable], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
   proveedor           proveedores?      @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction)
   detalle_compras     detalle_compras[]
 }

@@ -21,6 +21,8 @@ CREATE TABLE usuarios (
     nombre VARCHAR(255) NOT NULL,
     correo VARCHAR(255) UNIQUE NOT NULL,
     contraseña VARCHAR(255),
+    verificado BOOLEAN DEFAULT FALSE,
+    google_oauth BOOLEAN DEFAULT FALSE,
     deleted_at TIMESTAMP NULL
 );
 
@@ -206,3 +208,21 @@ CREATE TABLE evento_parto (
     deleted_at TIMESTAMP NULL
 );
 
+-- Usuario con contraseña para login normal
+INSERT INTO public.usuarios(
+    finca_id, 
+    rol_id, 
+    nombre, 
+    correo, 
+    contraseña, 
+    verificado, 
+    google_oauth
+) VALUES (
+    1, 
+    1, 
+    'usuario', 
+    'tucorreo@gmail.com', 
+    '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',--hash de 'password'
+    true, 
+    true  -- habilitado para Google
+);

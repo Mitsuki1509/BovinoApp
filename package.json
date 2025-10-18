@@ -1,0 +1,23 @@
+{
+  "name": "bovinoapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mitsuki1509/BovinoApp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mitsuki1509/BovinoApp/issues"
+  },
+  "homepage": "https://github.com/Mitsuki1509/BovinoApp#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
