@@ -1,4 +1,3 @@
-// store/authStore.js
 import { create } from 'zustand';
 
 export const useAuthStore = create((set, get) => ({
@@ -8,6 +7,7 @@ export const useAuthStore = create((set, get) => ({
   },
   loading: false,
   user: null,
+  authLoading: false,
 
   setFormData: (name, value) => {
     set(state => ({
@@ -38,15 +38,18 @@ export const useAuthStore = create((set, get) => ({
       const result = await response.json();
       
       if (result.ok) {
-        set({ user: result.data });
-        localStorage.setItem('userInfo', JSON.stringify(result.data));
+        const userData = result.data;
+        set({ user: userData });
+        localStorage.setItem('userInfo', JSON.stringify(userData));
+        
+        set({ formData: { email: '', password: '' } });
+        
         return true;
       } else {
-        alert(result.msg);
+        alert(result.msg || 'Error en el login');
         return false;
       }
     } catch (error) {
-      console.error('Error en login:', error);
       alert('Error al conectar con el servidor');
       return false;
     } finally {
@@ -57,21 +60,30 @@ export const useAuthStore = create((set, get) => ({
   oauth: () => {
     window.location.href = "http://localhost:3000/api/users/auth/google";
   },
-
+  
   checkAuth: async () => {
+    set({ authLoading: true });
     try {
       const response = await fetch('http://localhost:3000/api/users/is_auth', {
         credentials: 'include'
       });
       const result = await response.json();
       
-      if (result.ok) {
-        set({ user: result.data });
+      if (result.ok && result.data) {
+        const userData = result.data;
+        set({ user: userData, authLoading: false });
+        
+        localStorage.setItem('userInfo', JSON.stringify(userData));
+        
         return true;
+      } else {
+        set({ user: null, authLoading: false });
+        localStorage.removeItem('userInfo');
+        return false;
       }
-      return false;
     } catch (error) {
-      console.error('Error verificando autenticación:', error);
+      set({ user: null, authLoading: false });
+      localStorage.removeItem('userInfo');
       return false;
     }
   },
@@ -85,9 +97,21 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.error('Error cerrando sesión:', error);
     } finally {
-      set({ user: null });
+      set({ user: null, formData: { email: '', password: '' } });
       localStorage.removeItem('userInfo');
       window.location.href = '/login';
+    }
+  },
+
+  loadUserFromStorage: () => {
+    const storedUser = localStorage.getItem('userInfo');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        set({ user: userData });
+      } catch (error) {
+        localStorage.removeItem('userInfo');
+      }
     }
   }
 }));
