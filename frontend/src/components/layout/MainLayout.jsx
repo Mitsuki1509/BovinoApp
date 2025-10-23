@@ -10,6 +10,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -28,22 +31,68 @@ import {
   Users,
   BarChart3,
   Package,
+  Boxes,
+  PackageOpen,
+  ShoppingCart,
   LogOut,
   Stethoscope,
   User,
   Heart,
-  ChevronDown
+  ChevronDown,
+  HelpCircle, 
+  MessageSquare, 
+  LifeBuoy,
+  Scale,
+  Utensils,
+  Calendar,
+  Tag,
+  MapPin,
+  Syringe,
+  Weight
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: Home },
-  { title: "Bovinos", href: "/cattle", icon: Heart },
   { title: "Usuarios", href: "/users", icon: Users },
-  { title: "Inventario", href: "/inventory", icon: Package },
-  { title: "Salud", href: "/health", icon: Stethoscope },
-  { title: "Reportes", href: "/reports", icon: BarChart3 },
-  { title: "Configuración", href: "/settings", icon: Settings },
+  { title: "Tipos de eventos", href: "/tipos_evento", icon: Calendar },
+  { title: "Alimentación", href: "/control_alimentacion", icon: Utensils },
+  { title: "Pesajes", href: "/pesajes", icon: Scale },
+];
+
+// Constantes para el grupo Help
+const inventario = [
+  { title: "Insumos", href: "/insumos", icon: Package },
+  { title: "Compras", href: "/compras", icon: ShoppingCart },
+  { title: "Proveedores", href: "/proveedores", icon: Users },
+];
+
+const ganado = [
+  { title: "Animales", href: "/animales", icon: Heart },
+  { title: "Razas", href: "/razas", icon: Tag },
+  { title: "Lotes", href: "/lotes", icon: Boxes },
+  { title: "Potreros", href: "/potreros", icon: MapPin },
+];
+
+const sanidad = [
+  { title: "Eventos Sanitarios", href: "/eventos_sanitarios", icon: Stethoscope },
+  { title: "Uso de Insumos", href: "/uso_insumos", icon: Syringe },
+];
+
+const pesaje = [
+  { title: "Registro de Pesajes", href: "/pesajes", icon: Weight },
+];
+
+const produccion = [
+  { title: "Producción Lechera", href: "/produccion_lechera", icon: HelpCircle },
+  { title: "Producción Cárnica", href: "/produccion_carnica", icon: Package },
+];
+
+const reproduccion = [
+  { title: "Montas", href: "/montas", icon: Heart },
+  { title: "Diagnóstico de Preñez", href: "/diagnostico_preñez", icon: Stethoscope },
+  { title: "Partos", href: "/partos", icon: HelpCircle },
 ];
 
 export function MainLayout({ children }) {
@@ -82,7 +131,20 @@ export function MainLayout({ children }) {
 
   const getPageTitle = () => {
     const currentItem = navItems.find((item) => item.href === location.pathname);
-    return currentItem ? currentItem.title : "Dashboard";
+    const inventarioItem = inventario.find((item) => item.href === location.pathname);
+    const ganadoItem = ganado.find((item) => item.href === location.pathname);
+    const sanidadItem = sanidad.find((item) => item.href === location.pathname);
+    const pesajeItem = pesaje.find((item) => item.href === location.pathname);
+    const produccionItem = produccion.find((item) => item.href === location.pathname);
+    const reproduccionItem = reproduccion.find((item) => item.href === location.pathname);
+
+    return currentItem ? currentItem.title : 
+           inventarioItem ? inventarioItem.title :
+           ganadoItem ? ganadoItem.title : 
+           sanidadItem ? sanidadItem.title :
+           pesajeItem ? pesajeItem.title : 
+           produccionItem ? produccionItem.title :
+           reproduccionItem ? reproduccionItem.title : "Dashboard";
   };
 
   const getUserDisplayName = () => {
@@ -170,7 +232,7 @@ export function MainLayout({ children }) {
                 Navegación Principal
               </div>
               <SidebarMenu>
-                {navItems.slice(0, 4).map((item) => {
+                {navItems.slice(0, 5).map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.href;
 
@@ -189,26 +251,184 @@ export function MainLayout({ children }) {
             </div>
 
             <div className="p-2">
-              <div className="px-2 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Análisis y Reportes
-              </div>
-              <SidebarMenu>
-                {navItems.slice(4).map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.href;
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup>
+                  <SidebarGroupLabel asChild>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Inventario
+                      </span>
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                  </SidebarGroupLabel>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {inventario.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.href;
+                          
+                          return (
+                            <SidebarMenuItem key={item.href}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <Link to={item.href}>
+                                  <Icon className="h-4 w-4" />
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            </div>
 
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={isActive}>
-                        <Link to={item.href}>
-                          <Icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
+            <div className="p-2">
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup>
+                  <SidebarGroupLabel asChild>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Ganado
+                      </span>
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                  </SidebarGroupLabel>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {ganado.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.href;
+                          
+                          return (
+                            <SidebarMenuItem key={item.href}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <Link to={item.href}>
+                                  <Icon className="h-4 w-4" />
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            </div>
+
+            <div className="p-2">
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup>
+                  <SidebarGroupLabel asChild>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Sanidad
+                      </span>
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                  </SidebarGroupLabel>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {sanidad.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.href;
+                          
+                          return (
+                            <SidebarMenuItem key={item.href}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <Link to={item.href}>
+                                  <Icon className="h-4 w-4" />
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            </div>
+
+            <div className="p-2">
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup>
+                  <SidebarGroupLabel asChild>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Producción
+                      </span>
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                  </SidebarGroupLabel>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {produccion.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.href;
+                          
+                          return (
+                            <SidebarMenuItem key={item.href}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <Link to={item.href}>
+                                  <Icon className="h-4 w-4" />
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
+            </div>
+
+            {/* Grupo Reproducción Colapsable */}
+            <div className="p-2">
+              <Collapsible defaultOpen className="group/collapsible">
+                <SidebarGroup>
+                  <SidebarGroupLabel asChild>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Reproducción
+                      </span>
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                  </SidebarGroupLabel>
+                  <CollapsibleContent>
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {reproduccion.map((item) => {
+                          const Icon = item.icon;
+                          const isActive = location.pathname === item.href;
+                          
+                          return (
+                            <SidebarMenuItem key={item.href}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <Link to={item.href}>
+                                  <Icon className="h-4 w-4" />
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </SidebarGroup>
+              </Collapsible>
             </div>
           </SidebarContent>
 
@@ -235,14 +455,12 @@ export function MainLayout({ children }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-
                   <DropdownMenuSeparator />
                   <div className="px-2 py-1.5 text-sm">
                     <div className="font-medium">{getUserDisplayName()}</div>
                     <div className="text-muted-foreground truncate">
                       {user.correo || "Correo no disponible"}
                     </div>
-                  
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
@@ -275,11 +493,10 @@ export function MainLayout({ children }) {
             <div className="flex-1">
               <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
             </div>
-           
           </header>
           <div className="flex-1 p-6">{children}</div>
         </main>
       </div>
     </SidebarProvider>
   );
-} 
+}
