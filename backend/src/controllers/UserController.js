@@ -124,7 +124,7 @@ export default class UserController {
       });
 
       const payload = ticket.getPayload();
-      const { email, name, picture } = payload;
+      const { email } = payload;
 
       const usuario = await prisma.usuarios.findUnique({
         where: { 
@@ -274,6 +274,312 @@ export default class UserController {
 
     } catch (error) {
       console.error("Error obteniendo perfil:", error);
+      return res.status(500).json({
+        ok: false,
+        msg: "Error interno del servidor"
+      });
+    }
+  }
+
+  static async getUsers(req, res) {
+    try {
+      if (req.usuario.rol !== 'admin') {
+        return res.status(403).json({
+          ok: false,
+          msg: "No tienes permisos para acceder a esta información"
+        });
+      }
+
+      const usuarios = await prisma.usuarios.findMany({
+        where: { 
+          deleted_at: null 
+        },
+        include: {
+          rol: true,
+          finca: true
+        },
+        orderBy: {
+          nombre: 'asc'
+        }
+      });
+
+      return res.json({
+        ok: true,
+        data: usuarios.map(usuario => ({
+          usuario_id: usuario.usuario_id,
+          nombre: usuario.nombre,
+          correo: usuario.correo,
+          verificado: usuario.verificado,
+          google_oauth: usuario.google_oauth,
+          rol_id: usuario.rol_id,
+          finca_id: usuario.finca_id,
+          rol: usuario.rol,
+          finca: usuario.finca
+        }))
+      });
+
+    } catch (error) {
+      console.error("Error obteniendo usuarios:", error);
+      return res.status(500).json({
+        ok: false,
+        msg: "Error interno del servidor"
+      });
+    }
+  }
+
+  static async createUser(req, res) {
+    try {
+      if (req.usuario.rol !== 'admin') {
+        return res.status(403).json({
+          ok: false,
+          msg: "No tienes permisos para crear usuarios"
+        });
+      }
+
+      const { nombre, correo, password, rol_id, finca_id } = req.body;
+
+      const usuarioExistente = await prisma.usuarios.findUnique({
+        where: { 
+          correo: correo,
+          deleted_at: null 
+        }
+      });
+
+      if (usuarioExistente) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El correo electrónico ya está registrado"
+        });
+      }
+
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      const nuevoUsuario = await prisma.usuarios.create({
+        data: {
+          nombre,
+          correo,
+          contraseña: hashedPassword,
+          rol_id: parseInt(rol_id),
+          finca_id: parseInt(finca_id),
+          verificado: true,
+          google_oauth: true
+        },
+        include: {
+          rol: true,
+          finca: true
+        }
+      });
+
+      return res.status(201).json({
+        ok: true,
+        msg: "Usuario creado exitosamente",
+        data: {
+          usuario_id: nuevoUsuario.usuario_id,
+          nombre: nuevoUsuario.nombre,
+          correo: nuevoUsuario.correo,
+          rol_id: nuevoUsuario.rol_id,
+          finca_id: nuevoUsuario.finca_id,
+          rol: nuevoUsuario.rol,
+          finca: nuevoUsuario.finca,
+          verificado: nuevoUsuario.verificado,
+          google_oauth: nuevoUsuario.google_oauth
+        }
+      });
+
+    } catch (error) {
+      console.error("Error creando usuario:", error);
+      return res.status(500).json({
+        ok: false,
+        msg: "Error interno del servidor"
+      });
+    }
+  }
+
+  static async updateUser(req, res) {
+    try {
+      const { id } = req.params;
+      const { nombre, rol_id, finca_id, verificado } = req.body;
+
+      const usuarioId = req.usuario.rol === 'admin' ? parseInt(id) : req.usuario.usuarioId;
+
+      const usuario = await prisma.usuarios.findUnique({
+        where: { 
+          usuario_id: usuarioId,
+          deleted_at: null 
+        }
+      });
+
+      if (!usuario) {
+        return res.status(404).json({
+          ok: false,
+          msg: "Usuario no encontrado"
+        });
+      }
+
+      const updateData = { nombre };
+      if (req.usuario.rol === 'admin') {
+        if (rol_id) updateData.rol_id = parseInt(rol_id);
+        if (finca_id) updateData.finca_id = parseInt(finca_id);
+        if (verificado !== undefined) updateData.verificado = verificado;
+      }
+
+      const usuarioActualizado = await prisma.usuarios.update({
+        where: { usuario_id: usuarioId },
+        data: updateData,
+        include: {
+          rol: true,
+          finca: true
+        }
+      });
+
+      return res.json({
+        ok: true,
+        msg: "Usuario actualizado exitosamente",
+        data: {
+          usuario_id: usuarioActualizado.usuario_id,
+          nombre: usuarioActualizado.nombre,
+          correo: usuarioActualizado.correo,
+          rol_id: usuarioActualizado.rol_id,
+          finca_id: usuarioActualizado.finca_id,
+          rol: usuarioActualizado.rol,
+          finca: usuarioActualizado.finca,
+          verificado: usuarioActualizado.verificado
+        }
+      });
+
+    } catch (error) {
+      console.error("Error actualizando usuario:", error);
+      return res.status(500).json({
+        ok: false,
+        msg: "Error interno del servidor"
+      });
+    }
+  }
+
+  static async deleteUser(req, res) {
+    try {
+      if (req.usuario.rol !== 'admin') {
+        return res.status(403).json({
+          ok: false,
+          msg: "No tienes permisos para eliminar usuarios"
+        });
+      }
+
+      const { id } = req.params;
+
+      const usuario = await prisma.usuarios.findUnique({
+        where: { 
+          usuario_id: parseInt(id),
+          deleted_at: null 
+        }
+      });
+
+      if (!usuario) {
+        return res.status(404).json({
+          ok: false,
+          msg: "Usuario no encontrado"
+        });
+      }
+
+      if (parseInt(id) === req.usuario.usuarioId) {
+        return res.status(400).json({
+          ok: false,
+          msg: "No puedes eliminar tu propio usuario"
+        });
+      }
+
+      await prisma.usuarios.update({
+        where: { usuario_id: parseInt(id) },
+        data: { 
+          deleted_at: new Date() 
+        }
+      });
+
+      return res.json({
+        ok: true,
+        msg: "Usuario eliminado exitosamente"
+      });
+
+    } catch (error) {
+      console.error("Error eliminando usuario:", error);
+      return res.status(500).json({
+        ok: false,
+        msg: "Error interno del servidor"
+      });
+    }
+  }
+
+  static async getRoles(req, res) {
+    try {
+      if (req.usuario.rol !== 'admin') {
+        return res.status(403).json({
+          ok: false,
+          msg: "No tienes permisos para acceder a esta información"
+        });
+      }
+
+      const roles = await prisma.roles.findMany({
+        where: { 
+          deleted_at: null 
+        },
+        orderBy: {
+          nombre: 'asc'
+        }
+      });
+
+      return res.json({
+        ok: true,
+        data: roles
+      });
+
+    } catch (error) {
+      console.error("Error obteniendo roles:", error);
+      return res.status(500).json({
+        ok: false,
+        msg: "Error interno del servidor"
+      });
+    }
+  }
+
+  static async resetPassword(req, res) {
+    try {
+      const { id } = req.params;
+      const { nueva_password } = req.body;
+
+      const usuarioId = req.usuario.rol === 'admin' ? parseInt(id) : req.usuario.usuarioId;
+
+      const usuario = await prisma.usuarios.findUnique({
+        where: { 
+          usuario_id: usuarioId,
+          deleted_at: null 
+        }
+      });
+
+      if (!usuario) {
+        return res.status(404).json({
+          ok: false,
+          msg: "Usuario no encontrado"
+        });
+      }
+
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(nueva_password, saltRounds);
+
+      await prisma.usuarios.update({
+        where: { usuario_id: usuarioId },
+        data: { 
+          contraseña: hashedPassword 
+        }
+      });
+
+      return res.json({
+        ok: true,
+        msg: "Contraseña actualizada exitosamente"
+      });
+
+    } catch (error) {
+      console.error("Error actualizando contraseña:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error interno del servidor"

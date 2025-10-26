@@ -226,3 +226,9 @@ INSERT INTO public.usuarios(
     true, 
     true  -- habilitado para Google
 );
+INSERT INTO public.roles (nombre) VALUES 
+('admin'),
+('veterinario'),
+('operario'),
+('contable'),
+('ordeño');
