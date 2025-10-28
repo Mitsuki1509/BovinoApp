@@ -236,7 +236,7 @@ const TypesPage = () => {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => handleEdit(typeItem)}>
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Editar tipo
+                                  Editar evento
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => handleDelete(typeItem.tipo_evento_id)}
@@ -244,7 +244,7 @@ const TypesPage = () => {
                                   className="text-red-600 focus:text-red-600"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  {hasSubTypes ? 'No se puede eliminar (tiene sub-tipos)' : 'Eliminar tipo'}
+                                  {hasSubTypes ? 'No se puede eliminar (tiene sub-eventos)' : 'Eliminar evento'}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
