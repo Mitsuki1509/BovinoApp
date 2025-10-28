@@ -76,7 +76,6 @@ const UserForm = ({
         userData.password = data.password;
       }
 
-      console.log('Enviando datos:', userData);
 
       let result;
       if (isEditing) {
@@ -85,7 +84,6 @@ const UserForm = ({
         result = await createUser(userData);
       }
 
-      console.log('Respuesta del servidor:', result);
 
       if (result?.success) {
         form.reset();
@@ -114,7 +112,6 @@ const UserForm = ({
         }
       }
     } catch (error) {
-      console.error('Error en el formulario:', error);
       setFormError('Error de conexión. Por favor, intente nuevamente.');
     }
   }

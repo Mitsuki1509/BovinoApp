@@ -16,11 +16,11 @@ export const useUserAdminStore = create((set, get) => ({
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
       
       if (result.ok) {
         set({ users: result.data || [], loading: false });
@@ -28,7 +28,6 @@ export const useUserAdminStore = create((set, get) => ({
         set({ error: result.msg || 'Error desconocido', loading: false });
       }
     } catch (error) {
-      console.error('Error en fetchUsers:', error);
       set({ 
         error: error.message || 'Error al cargar usuarios', 
         loading: false 
@@ -45,11 +44,11 @@ export const useUserAdminStore = create((set, get) => ({
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
       
       if (result.ok) {
         set({ roles: result.data || [] });
@@ -71,11 +70,11 @@ export const useUserAdminStore = create((set, get) => ({
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
       
       if (result.ok) {
         set({ loading: false });
@@ -85,7 +84,6 @@ export const useUserAdminStore = create((set, get) => ({
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      console.error('Error en createUser:', error);
       set({ error: error.message || 'Error al crear usuario', loading: false });
       return { success: false, error: error.message };
     }
@@ -103,11 +101,11 @@ export const useUserAdminStore = create((set, get) => ({
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
       
       if (result.ok) {
         set({ loading: false });
@@ -117,7 +115,6 @@ export const useUserAdminStore = create((set, get) => ({
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      console.error('Error en updateUser:', error);
       set({ error: error.message || 'Error al actualizar usuario', loading: false });
       return { success: false, error: error.message };
     }
@@ -130,11 +127,11 @@ export const useUserAdminStore = create((set, get) => ({
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
       const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
       
       if (result.ok) {
         return { success: true };
@@ -142,7 +139,6 @@ export const useUserAdminStore = create((set, get) => ({
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      console.error('Error en deleteUser:', error);
       return { success: false, error: error.message };
     }
   },

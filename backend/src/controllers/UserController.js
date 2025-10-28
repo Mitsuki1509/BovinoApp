@@ -2,8 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import prisma from "../database.js";
 import JWT from "jsonwebtoken";
 import bcrypt from "bcrypt";
-
-const { AuthorizationCode } = await import("simple-oauth2");
+import { AuthorizationCode } from "simple-oauth2";
 
 const client = new AuthorizationCode({
   client: {
@@ -86,10 +85,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error en login:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al procesar la autenticación"
       });
     }
   }
@@ -170,7 +168,6 @@ export default class UserController {
       res.redirect("http://localhost:5173/dashboard");
 
     } catch (error) {
-      console.error("Error en OAuth Google:", error);
       res.redirect("http://localhost:5173/login?error=auth_failed");
     }
   }
@@ -215,10 +212,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error en verificación de auth:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al procesar la autenticación"
       });
     }
   }
@@ -231,7 +227,6 @@ export default class UserController {
         msg: "Sesión cerrada exitosamente"
       });
     } catch (error) {
-      console.error("Error en logout:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al cerrar sesión"
@@ -273,10 +268,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error obteniendo perfil:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al procesar la autenticación"
       });
     }
   }
@@ -319,10 +313,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error obteniendo usuarios:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al gestionar usuarios"
       });
     }
   }
@@ -352,8 +345,7 @@ export default class UserController {
         });
       }
 
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       const nuevoUsuario = await prisma.usuarios.create({
         data: {
@@ -388,10 +380,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error creando usuario:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al gestionar usuarios"
       });
     }
   }
@@ -402,20 +393,6 @@ export default class UserController {
       const { nombre, rol_id, finca_id, verificado } = req.body;
 
       const usuarioId = req.usuario.rol === 'admin' ? parseInt(id) : req.usuario.usuarioId;
-
-      const usuario = await prisma.usuarios.findUnique({
-        where: { 
-          usuario_id: usuarioId,
-          deleted_at: null 
-        }
-      });
-
-      if (!usuario) {
-        return res.status(404).json({
-          ok: false,
-          msg: "Usuario no encontrado"
-        });
-      }
 
       const updateData = { nombre };
       if (req.usuario.rol === 'admin') {
@@ -449,10 +426,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error actualizando usuario:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al actualizar información del usuario"
       });
     }
   }
@@ -502,10 +478,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error eliminando usuario:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al actualizar información del usuario"
       });
     }
   }
@@ -534,10 +509,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error obteniendo roles:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al gestionar usuarios"
       });
     }
   }
@@ -549,22 +523,7 @@ export default class UserController {
 
       const usuarioId = req.usuario.rol === 'admin' ? parseInt(id) : req.usuario.usuarioId;
 
-      const usuario = await prisma.usuarios.findUnique({
-        where: { 
-          usuario_id: usuarioId,
-          deleted_at: null 
-        }
-      });
-
-      if (!usuario) {
-        return res.status(404).json({
-          ok: false,
-          msg: "Usuario no encontrado"
-        });
-      }
-
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(nueva_password, saltRounds);
+      const hashedPassword = await bcrypt.hash(nueva_password, 10);
 
       await prisma.usuarios.update({
         where: { usuario_id: usuarioId },
@@ -579,10 +538,9 @@ export default class UserController {
       });
 
     } catch (error) {
-      console.error("Error actualizando contraseña:", error);
       return res.status(500).json({
         ok: false,
-        msg: "Error interno del servidor"
+        msg: "Error al actualizar información del usuario"
       });
     }
   }
