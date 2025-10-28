@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { useUserAdminStore } from '../store/userAdminStore';
+import { useTypeStore } from '../store/typeStore';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,18 +20,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Edit, Trash2, Shield, MoreHorizontal, Search } from 'lucide-react';
-import UserForm from '@/components/users/UserForm';
+import { Loader2, Plus, Edit, Trash2, Shield, MoreHorizontal, Search, FolderTree } from 'lucide-react';
+import TypeForm from '@/components/types/TypeForm';
 
-const UsersPage = () => {
+const TypesPage = () => {
   const navigate = useNavigate();
   const { checkAuth, user } = useAuthStore();
-  const { users, fetchUsers, deleteUser, loading, roles, fetchRoles } = useUserAdminStore(); // 🔥 Agregar fetchRoles aquí
+  const { eventTypes, fetchEventTypes, deleteEventType, loading, fetchParentEventTypes } = useTypeStore();
   const [authStatus, setAuthStatus] = useState('checking');
   const [showForm, setShowForm] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
+  const [editingType, setEditingType] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [hasFetchedUsers, setHasFetchedUsers] = useState(false);
+  const [hasFetchedTypes, setHasFetchedTypes] = useState(false);
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -53,80 +53,85 @@ const UsersPage = () => {
   }, [checkAuth, navigate]);
 
   useEffect(() => {
-    if (authStatus === 'authenticated' && user?.rol === 'admin' && !hasFetchedUsers) {
-      console.log('Cargando usuarios y roles...');
-      fetchUsers();
-      fetchRoles(); 
-      setHasFetchedUsers(true);
+    if (authStatus === 'authenticated' && (user?.rol === 'admin' || user?.rol === 'veterinario') && !hasFetchedTypes) {
+      console.log('Cargando tipos de evento...');
+      fetchEventTypes();
+      fetchParentEventTypes();
+      setHasFetchedTypes(true);
     }
-  }, [authStatus, user, fetchUsers, fetchRoles, hasFetchedUsers]); // 🔥 Agregar fetchRoles aquí
+  }, [authStatus, user, fetchEventTypes, fetchParentEventTypes, hasFetchedTypes]);
 
   const handleCreate = useCallback((e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    setEditingUser(null);
+    setEditingType(null);
     setShowForm(true);
   }, []);
 
-  const handleEdit = useCallback((userData) => {
-    setEditingUser(userData);
+  const handleEdit = useCallback((typeData) => {
+    setEditingType(typeData);
     setShowForm(true);
   }, []);
 
-  const handleDelete = useCallback(async (userId) => {
-    if (window.confirm('¿Está seguro de que desea eliminar este usuario?')) {
-      const result = await deleteUser(userId);
+  const handleDelete = useCallback(async (typeId) => {
+    if (window.confirm('¿Está seguro de que desea eliminar este tipo de evento?')) {
+      const result = await deleteEventType(typeId);
       if (result.success) {
-        await fetchUsers();
+        await fetchEventTypes();
+        await fetchParentEventTypes();
       } else {
-        console.error('Error al eliminar usuario:', result.error);
-        alert('Error al eliminar usuario: ' + result.error);
+        console.error('Error al eliminar tipo de evento:', result.error);
+        alert('Error al eliminar tipo de evento: ' + result.error);
       }
     }
-  }, [deleteUser, fetchUsers]);
+  }, [deleteEventType, fetchEventTypes, fetchParentEventTypes]);
 
   const handleFormSuccess = useCallback(() => {
     setShowForm(false);
-    setEditingUser(null);
-    fetchUsers();
-  }, [fetchUsers]);
+    setEditingType(null);
+    fetchEventTypes();
+    fetchParentEventTypes();
+  }, [fetchEventTypes, fetchParentEventTypes]);
 
   const handleFormCancel = useCallback(() => {
     setShowForm(false);
-    setEditingUser(null);
+    setEditingType(null);
   }, []);
 
-  const getRolNombre = useCallback((userItem) => {
-    if (userItem.rol && userItem.rol.nombre) {
-      return userItem.rol.nombre;
+  const getParentName = useCallback((typeItem) => {
+    if (typeItem.padre && typeItem.padre.nombre) {
+      return typeItem.padre.nombre;
     }
     
-    if (userItem.rol_id && roles && roles.length > 0) {
-      const rolEncontrado = roles.find(rol => rol.rol_id === userItem.rol_id);
-      return rolEncontrado?.nombre || 'Sin rol';
+    if (typeItem.padre_id) {
+      const parentType = eventTypes.find(t => t.tipo_evento_id === typeItem.padre_id);
+      return parentType?.nombre || 'Tipo padre no encontrado';
     }
     
-    return 'Sin rol';
-  }, [roles]);
+    return 'Categoría Principal';
+  }, [eventTypes]);
 
-  const filteredUsers = users.filter(userItem => {
+  const hasChildren = useCallback((typeItem) => {
+    return typeItem.hijos && typeItem.hijos.length > 0;
+  }, []);
+
+  const filteredTypes = eventTypes.filter(typeItem => {
     if (!searchTerm.trim()) return true;
     
     const searchLower = searchTerm.toLowerCase().trim();
-    const rolNombre = getRolNombre(userItem).toLowerCase();
+    const parentName = getParentName(typeItem).toLowerCase();
     
     return (
-      userItem.nombre?.toLowerCase().includes(searchLower) ||
-      userItem.correo?.toLowerCase().includes(searchLower) ||
-      rolNombre.includes(searchLower)
+      typeItem.nombre?.toLowerCase().includes(searchLower) ||
+      parentName.includes(searchLower)
     );
   });
 
+ 
 
-
-  if (user.rol !== 'admin') {
+  if (user.rol !== 'admin' && user.rol !== 'veterinario') {
     return (
       <MainLayout>
         <div className="container mx-auto p-6">
@@ -136,7 +141,7 @@ const UsersPage = () => {
                 <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold">Acceso Restringido</h3>
                 <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de usuarios.
+                  No tienes permisos para acceder a la gestión de tipos de evento.
                 </p>
               </div>
             </CardContent>
@@ -151,8 +156,8 @@ const UsersPage = () => {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
-            <p className="text-gray-600">Administra los usuarios del sistema</p>
+            <h1 className="text-3xl font-bold">Gestión de Tipos de Evento</h1>
+            <p className="text-gray-600">Administra los tipos y categorías de eventos del sistema</p>
           </div>
           <Button 
             onClick={handleCreate} 
@@ -160,14 +165,14 @@ const UsersPage = () => {
             type="button"
           >
             <Plus className="h-4 w-4" />
-            Crear Usuario
+            Crear Tipo
           </Button>
         </div>
 
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder="Buscar usuarios por nombre, correo o rol..."
+            placeholder="Buscar tipos por nombre o categoría padre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -176,9 +181,9 @@ const UsersPage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Usuarios</CardTitle>
+            <CardTitle>Lista de Tipos de Evento</CardTitle>
             <CardDescription>
-              {filteredUsers.length} de {users.length} usuario(s) encontrado(s)
+              {filteredTypes.length} de {eventTypes.length} tipo(s) encontrado(s)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -188,24 +193,34 @@ const UsersPage = () => {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-3 font-medium">Nombre</th>
-                      <th className="text-left py-3 font-medium">Correo</th>
-                      <th className="text-left py-3 font-medium">Rol</th>
-                    
+                      <th className="text-left py-3 font-medium">Tipo Evento</th>
+                      <th className="text-left py-3 font-medium">Sub-eventos</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((userItem) => {
-                      const rolNombre = getRolNombre(userItem);
+                    {filteredTypes.map((typeItem) => {
+                      const parentName = getParentName(typeItem);
+                      const hasSubTypes = hasChildren(typeItem);
+                      
                       return (
-                        <tr key={userItem.usuario_id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 font-medium">{userItem.nombre}</td>
-                          <td className="py-3">{userItem.correo}</td>
+                        <tr key={typeItem.tipo_evento_id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 font-medium">{typeItem.nombre}</td>
                           <td className="py-3">
-                            <Badge variant={rolNombre === 'admin' ? 'default' : 'secondary'}>
-                              {rolNombre}
+                            <Badge variant={parentName === 'Categoría Principal' ? 'default' : 'secondary'}>
+                              {parentName}
                             </Badge>
                           </td>
-                         
+                          <td className="py-3">
+                            {hasSubTypes ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600 font-medium">
+                                  {typeItem.hijos.length} sub-evento(s)
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">Sin sub-eventos</span>
+                            )}
+                          </td>
                           <td className="py-3">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -219,17 +234,17 @@ const UsersPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(userItem)}>
+                                <DropdownMenuItem onClick={() => handleEdit(typeItem)}>
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Editar usuario
+                                  Editar tipo
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDelete(userItem.usuario_id)}
-                                  disabled={userItem.usuario_id === user?.usuario_id}
+                                  onClick={() => handleDelete(typeItem.tipo_evento_id)}
+                                  disabled={hasSubTypes}
                                   className="text-red-600 focus:text-red-600"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  Eliminar usuario
+                                  {hasSubTypes ? 'No se puede eliminar (tiene sub-tipos)' : 'Eliminar tipo'}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -242,9 +257,9 @@ const UsersPage = () => {
               </div>
             )}
 
-            {filteredUsers.length === 0 && !loading && (
+            {filteredTypes.length === 0 && !loading && (
               <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'No se encontraron usuarios que coincidan con la búsqueda' : 'No hay usuarios registrados'}
+                {searchTerm ? 'No se encontraron tipos que coincidan con la búsqueda' : 'No hay tipos de evento registrados'}
               </div>
             )}
           </CardContent>
@@ -254,17 +269,17 @@ const UsersPage = () => {
           <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingUser ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+                {editingType ? 'Editar Tipo de Evento' : 'Crear Nuevo Tipo de Evento'}
               </DialogTitle>
               <DialogDescription>
-                {editingUser 
-                  ? 'Actualiza la información del usuario' 
-                  : 'Complete la información para crear un nuevo usuario'
+                {editingType 
+                  ? 'Actualiza la información del tipo de evento' 
+                  : 'Complete la información para crear un nuevo tipo de evento'
                 }
               </DialogDescription>
             </DialogHeader>
-            <UserForm
-              user={editingUser}
+            <TypeForm
+              type={editingType}
               onSuccess={handleFormSuccess}
               onCancel={handleFormCancel}
             />
@@ -275,4 +290,4 @@ const UsersPage = () => {
   );
 };
 
-export default UsersPage;
+export default TypesPage;

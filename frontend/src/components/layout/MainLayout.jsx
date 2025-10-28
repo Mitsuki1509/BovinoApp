@@ -51,12 +51,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/r
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: Home },
   { title: "Usuarios", href: "/users", icon: Users },
-  { title: "Tipos de eventos", href: "/tipos_evento", icon: Calendar },
+  { title: "Tipos de eventos", href: "/types", icon: Calendar },
   { title: "Alimentación", href: "/control_alimentacion", icon: Utensils },
   { title: "Pesajes", href: "/pesajes", icon: Scale },
 ];
 
-// Constantes para el grupo Help
 const inventario = [
   { title: "Insumos", href: "/insumos", icon: Package },
   { title: "Compras", href: "/compras", icon: ShoppingCart },
@@ -167,7 +166,8 @@ export function MainLayout({ children }) {
     return "U";
   };
 
-  if (isCheckingAuth) {
+ 
+ if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -177,7 +177,6 @@ export function MainLayout({ children }) {
       </div>
     );
   }
-
   if (!user) {
     return null;
   }

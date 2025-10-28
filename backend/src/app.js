@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import userRouter from "./routes/userRoutes.js";
-
+import typeRouter from "./routes/typeRoutes.js"; 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -40,12 +40,14 @@ app.get("/", (_req, res) => {
     version: "1.0.0",
     endpoints: {
       users: "/api/users",
+      types: "/api/types", 
       health: "/health",
     },
   });
 });
 
 app.use("/api/users", userRouter);
+app.use("/api/types", typeRouter); 
 
 app.use((req, res) => {
   res.status(404).json({
