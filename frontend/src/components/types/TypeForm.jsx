@@ -18,7 +18,6 @@ import {
 const TypeForm = ({ 
   type = null, 
   onSuccess,
-  onCancel 
 }) => {
   const { createEventType, updateEventType, parentEventTypes, fetchParentEventTypes, loading } = useTypeStore()
   const [isEditing, setIsEditing] = useState(false)

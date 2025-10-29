@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Edit, Trash2, Shield, MoreHorizontal, Search, FolderTree } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search} from 'lucide-react';
 import TypeForm from '@/components/types/TypeForm';
 
 const TypesPage = () => {
