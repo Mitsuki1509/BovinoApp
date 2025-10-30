@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import userRouter from "./routes/userRoutes.js";
 import typeRouter from "./routes/typeRoutes.js"; 
 import potreroRouter from "./routes/potreroRouter.js";
+import loteRouter from "./routes/loteRouter.js";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,6 +44,7 @@ app.get("/", (_req, res) => {
       users: "/api/users",
       types: "/api/types", 
       potreros: "/api/potreros",
+      lotes: "/api/lotes",
       health: "/health",
     },
   });
@@ -51,6 +53,8 @@ app.get("/", (_req, res) => {
 app.use("/api/users", userRouter);
 app.use("/api/types", typeRouter); 
 app.use("/api/potreros", potreroRouter)
+app.use("/api/lotes", loteRouter)
+
 
 app.use((req, res) => {
   res.status(404).json({

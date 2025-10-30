@@ -20,8 +20,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search} from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
+  XCircle, AlertCircle
+ } from 'lucide-react';
 import TypeForm from '@/components/types/TypeForm';
+import Modal from '@/components/ui/modal';
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 const TypesPage = () => {
   const navigate = useNavigate();
@@ -32,6 +37,12 @@ const TypesPage = () => {
   const [editingType, setEditingType] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [hasFetchedTypes, setHasFetchedTypes] = useState(false);
+
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const { toast } = useToast();
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -75,25 +86,105 @@ const TypesPage = () => {
     setShowForm(true);
   }, []);
 
-  const handleDelete = useCallback(async (typeId) => {
-    if (window.confirm('¿Está seguro de que desea eliminar este tipo de evento?')) {
-      const result = await deleteEventType(typeId);
+  const handleDeleteClick = useCallback((typeItem) => {
+    setItemToDelete(typeItem);
+    setShowConfirm(true);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    setDeleteLoading(true);
+    try {
+      const result = await deleteEventType(itemToDelete.tipo_evento_id);
+      
       if (result.success) {
         await fetchEventTypes();
         await fetchParentEventTypes();
+        
+        toast({
+          title: 
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <span>Eliminado correctamente</span>
+          </div>,
+          description: "El tipo de evento se eliminó exitosamente.",
+          duration: 3000,
+        });
       } else {
-        console.error('Error al eliminar tipo de evento:', result.error);
-        alert('Error al eliminar tipo de evento: ' + result.error);
+        
+        if (result.error?.includes('referencia') || result.error?.includes('foreign key')) {
+          toast({
+            title:  (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600" />
+                <span>Error al eliminar</span>
+              </div>
+            ),
+            description: "No se puede eliminar porque este tipo está siendo usado por eventos existentes.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        } else {
+          toast({
+            title:(
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600" />
+                <span>Error al eliminar</span>
+              </div>
+            ),
+            description: result.error || "Error desconocido al eliminar el tipo de evento.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
       }
+    } catch (error) {
+      toast({
+        title: (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600" />
+                <span>Error de conexión</span>
+              </div>
+            ),
+        description: "Por favor, intente nuevamente.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setDeleteLoading(false);
+      setShowConfirm(false);
+      setItemToDelete(null);
     }
-  }, [deleteEventType, fetchEventTypes, fetchParentEventTypes]);
+  };
 
   const handleFormSuccess = useCallback(() => {
     setShowForm(false);
     setEditingType(null);
     fetchEventTypes();
     fetchParentEventTypes();
-  }, [fetchEventTypes, fetchParentEventTypes]);
+    
+    toast({
+      title: editingType ?
+        (
+        <div className="flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <span>Actualizado correctamente</span>
+        </div>
+      )
+       : 
+        (
+        <div className="flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-green-600" />
+          <span>Creado correctamente</span>
+        </div>
+      ),
+      description: editingType 
+        ? "El tipo de evento se actualizó exitosamente." 
+        : "El tipo de evento se creó exitosamente.",
+      duration: 3000,
+    });
+  }, [fetchEventTypes, fetchParentEventTypes, editingType, toast]);
 
   const handleFormCancel = useCallback(() => {
     setShowForm(false);
@@ -129,12 +220,16 @@ const TypesPage = () => {
     );
   });
 
- 
+  const getItemName = () => {
+    if (!itemToDelete) return '';
+    return itemToDelete.nombre || 'Tipo de evento';
+  };
+
 
   if (user.rol !== 'admin' && user.rol !== 'veterinario') {
     return (
       <MainLayout>
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto p-4 sm:p-6">
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
@@ -153,15 +248,15 @@ const TypesPage = () => {
 
   return (
     <MainLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Gestión de Tipos de Evento</h1>
-            <p className="text-gray-600">Administra los tipos y categorías de eventos del sistema</p>
+      <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Tipos de Evento</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Administra los tipos y categorías de eventos del sistema</p>
           </div>
           <Button 
             onClick={handleCreate} 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
           >
             <Plus className="h-4 w-4" />
@@ -175,7 +270,7 @@ const TypesPage = () => {
             placeholder="Buscar tipos por nombre o categoría padre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 w-full"
           />
         </div>
 
@@ -187,41 +282,107 @@ const TypesPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 font-medium">Nombre</th>
-                      <th className="text-left py-3 font-medium">Tipo Evento</th>
-                      <th className="text-left py-3 font-medium">Sub-eventos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTypes.map((typeItem) => {
-                      const parentName = getParentName(typeItem);
-                      const hasSubTypes = hasChildren(typeItem);
-                      
-                      return (
-                        <tr key={typeItem.tipo_evento_id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 font-medium">{typeItem.nombre}</td>
-                          <td className="py-3">
-                            <Badge variant={parentName === 'Categoría Principal' ? 'default' : 'secondary'}>
-                              {parentName}
-                            </Badge>
-                          </td>
-                          <td className="py-3">
-                            {hasSubTypes ? (
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600 font-medium">
-                                  {typeItem.hijos.length} sub-evento(s)
-                                </span>
+                <div className="hidden sm:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 font-medium">Nombre</th>
+                        <th className="text-left py-3 font-medium">Tipo Evento</th>
+                        <th className="text-left py-3 font-medium">Sub-eventos</th>
+                        <th className="text-left py-3 font-medium">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredTypes.map((typeItem) => {
+                        const parentName = getParentName(typeItem);
+                        const hasSubTypes = hasChildren(typeItem);
+                        
+                        return (
+                          <tr key={typeItem.tipo_evento_id} className="border-b hover:bg-gray-50">
+                            <td className="py-3 font-medium">{typeItem.nombre}</td>
+                            <td className="py-3">
+                              <Badge variant={parentName === 'Categoría Principal' ? 'default' : 'secondary'}>
+                                {parentName}
+                              </Badge>
+                            </td>
+                            <td className="py-3">
+                              {hasSubTypes ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-green-600 font-medium">
+                                    {typeItem.hijos.length} sub-evento(s)
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">Sin sub-eventos</span>
+                              )}
+                            </td>
+                            <td className="py-3">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    className="h-8 w-8 p-0"
+                                    type="button"
+                                  >
+                                    <span className="sr-only">Abrir menú</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleEdit(typeItem)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar evento
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDeleteClick(typeItem)}
+                                    disabled={hasSubTypes}
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    {hasSubTypes ? 'No se puede eliminar (tiene sub-eventos)' : 'Eliminar evento'}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="sm:hidden space-y-4">
+                  {filteredTypes.map((typeItem) => {
+                    const parentName = getParentName(typeItem);
+                    const hasSubTypes = hasChildren(typeItem);
+                    
+                    return (
+                      <Card key={typeItem.tipo_evento_id} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-lg">{typeItem.nombre}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={parentName === 'Categoría Principal' ? 'default' : 'secondary'}>
+                                  {parentName}
+                                </Badge>
                               </div>
-                            ) : (
-                              <span className="text-gray-400">Sin sub-eventos</span>
-                            )}
-                          </td>
-                          <td className="py-3">
+                              <div className="mt-2">
+                                {hasSubTypes ? (
+                                  <span className="text-green-600 font-medium text-sm">
+                                    {typeItem.hijos.length} sub-evento(s)
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">Sin sub-eventos</span>
+                                )}
+                              </div>
+                            </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button 
@@ -239,7 +400,7 @@ const TypesPage = () => {
                                   Editar evento
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDelete(typeItem.tipo_evento_id)}
+                                  onClick={() => handleDeleteClick(typeItem)}
                                   disabled={hasSubTypes}
                                   className="text-red-600 focus:text-red-600"
                                 >
@@ -248,12 +409,12 @@ const TypesPage = () => {
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -266,12 +427,12 @@ const TypesPage = () => {
         </Card>
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">
                 {editingType ? 'Editar Tipo de Evento' : 'Crear Nuevo Tipo de Evento'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-sm sm:text-base">
                 {editingType 
                   ? 'Actualiza la información del tipo de evento' 
                   : 'Complete la información para crear un nuevo tipo de evento'
@@ -285,6 +446,19 @@ const TypesPage = () => {
             />
           </DialogContent>
         </Dialog>
+
+        <Modal
+          open={showConfirm}
+          onOpenChange={setShowConfirm}
+          title="Eliminar Tipo de Evento"
+          description={`¿Está seguro de eliminar el tipo de evento "${getItemName()}"? Esta acción no se puede deshacer.`}
+          variant="destructive"
+          confirmText="Eliminar"
+          loading={deleteLoading}
+          onConfirm={handleConfirmDelete}
+        />
+
+        <Toaster />
       </div>
     </MainLayout>
   );

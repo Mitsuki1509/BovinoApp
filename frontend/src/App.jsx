@@ -3,7 +3,8 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage'
 import TypesPage from './pages/TypesPage';
-import PotrerosPage from './pages/PotrerosPage';
+
+import GestionAreasPage from './pages/GestionAreasPage';
 function App() {
   return (
     <Router>
@@ -13,7 +14,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/users" element={<UsersPage/>}/>
         <Route path="/types" element={<TypesPage/>}></Route>
-        <Route path="/potreros" element={<PotrerosPage />} />
+
+        <Route path="/gestion-areas" element={<GestionAreasPage/>}></Route>
       </Routes>
     </Router>
   );

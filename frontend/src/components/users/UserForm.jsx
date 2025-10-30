@@ -76,14 +76,12 @@ const UserForm = ({
         userData.password = data.password;
       }
 
-
       let result;
       if (isEditing) {
         result = await updateUser(user.usuario_id, userData);
       } else {
         result = await createUser(userData);
       }
-
 
       if (result?.success) {
         form.reset();
@@ -122,33 +120,33 @@ const UserForm = ({
   }))
 
   return (
-    <Card className="w-full max-w-md mx-auto border-0 shadow-none">
+    <Card className="w-full border-0 shadow-none">
       <CardContent className="p-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             {formError && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {formError}
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <FormField
                 control={form.control}
                 name="nombre"
                 rules={{ required: "El nombre es requerido" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">Nombre Completo</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Ingrese el nombre completo" 
                         {...field} 
                         disabled={loading}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                       />
                     </FormControl>
-                    <FormMessage>
+                    <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.nombre || form.formState.errors.nombre?.message}
                     </FormMessage>
                   </FormItem>
@@ -167,17 +165,17 @@ const UserForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">Correo Electrónico</FormLabel>
                     <FormControl>
                       <Input 
                         type="email"
                         placeholder="usuario@ejemplo.com" 
                         {...field}
                         disabled={isEditing || loading}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                       />
                     </FormControl>
-                    <FormMessage>
+                    <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.correo || form.formState.errors.correo?.message}
                     </FormMessage>
                   </FormItem>
@@ -201,7 +199,7 @@ const UserForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
+                    <FormLabel className="text-sm sm:text-base">
                       {isEditing ? 'Nueva Contraseña (opcional)' : 'Contraseña'}
                     </FormLabel>
                     <FormControl>
@@ -210,10 +208,10 @@ const UserForm = ({
                         placeholder={isEditing ? "Dejar vacío para mantener actual" : "Mínimo 6 caracteres"} 
                         {...field}
                         disabled={loading}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                       />
                     </FormControl>
-                    <FormMessage>
+                    <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.password || form.formState.errors.password?.message}
                     </FormMessage>
                   </FormItem>
@@ -226,7 +224,7 @@ const UserForm = ({
                 rules={{ required: "El rol es requerido" }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Rol</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">Rol</FormLabel>
                     <FormControl>
                       <Combobox
                         options={roleOptions}
@@ -234,10 +232,10 @@ const UserForm = ({
                         onValueChange={field.onChange}
                         placeholder="Seleccionar rol"
                         disabled={loading || roleOptions.length === 0}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                       />
                     </FormControl>
-                    <FormMessage>
+                    <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.rol_id || form.formState.errors.rol_id?.message}
                     </FormMessage>
                   </FormItem>
@@ -253,11 +251,11 @@ const UserForm = ({
               />
             </div>
 
-            <div className="pt-4">
+            <div className="pt-2 sm:pt-4">
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full"
+                className="w-full text-sm sm:text-base"
                 size="lg"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

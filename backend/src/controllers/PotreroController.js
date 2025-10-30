@@ -51,7 +51,6 @@ export default class PotreroController {
       });
 
     } catch (error) {
-      console.error("Error obteniendo potrero:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al obtener el potrero"
@@ -104,7 +103,6 @@ export default class PotreroController {
       });
 
     } catch (error) {
-      console.error("Error creando potrero:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al crear el potrero"
@@ -171,7 +169,6 @@ export default class PotreroController {
       });
 
     } catch (error) {
-      console.error("Error actualizando potrero:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al actualizar el potrero"
@@ -227,7 +224,6 @@ export default class PotreroController {
       });
 
     } catch (error) {
-      console.error("Error eliminando potrero:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al eliminar el potrero"
@@ -273,7 +269,6 @@ export default class PotreroController {
       });
 
     } catch (error) {
-      console.error("Error buscando potreros:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al buscar potreros"

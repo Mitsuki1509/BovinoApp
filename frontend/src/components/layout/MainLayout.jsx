@@ -65,8 +65,7 @@ const inventario = [
 const ganado = [
   { title: "Animales", href: "/animales", icon: Heart },
   { title: "Razas", href: "/razas", icon: Tag },
-  { title: "Lotes", href: "/lotes", icon: Boxes },
-  { title: "Potreros", href: "/potreros", icon: MapPin },
+  { title: "Gestión de Áreas", href: "/gestion-areas", icon: MapPin },
 ];
 
 const sanidad = [

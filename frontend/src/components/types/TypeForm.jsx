@@ -69,7 +69,6 @@ const TypeForm = ({
         typeData.padre_id = null;
       }
 
-
       let result;
       if (isEditing) {
         result = await updateEventType(type.tipo_evento_id, typeData);
@@ -113,17 +112,17 @@ const TypeForm = ({
   ]
 
   return (
-    <Card className="w-full max-w-md mx-auto border-0 shadow-none">
+    <Card className="w-full border-0 shadow-none">
       <CardContent className="p-0">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
             {formError && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {formError}
               </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <FormField
                 control={form.control}
                 name="nombre"
@@ -140,16 +139,16 @@ const TypeForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre del Evento</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">Nombre del Evento</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Ingrese el nombre del tipo de evento" 
                         {...field} 
                         disabled={loading}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                       />
                     </FormControl>
-                    <FormMessage>
+                    <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.nombre || form.formState.errors.nombre?.message}
                     </FormMessage>
                   </FormItem>
@@ -161,7 +160,7 @@ const TypeForm = ({
                 name="padre_id"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Tipo asociado (Opcional)</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">Tipo asociado (Opcional)</FormLabel>
                     <FormControl>
                       <Combobox
                         options={allParentOptions}
@@ -169,10 +168,10 @@ const TypeForm = ({
                         onValueChange={field.onChange}
                         placeholder="Seleccionar evento asociado"
                         disabled={loading}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                       />
                     </FormControl>
-                    <FormMessage>
+                    <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.padre_id || form.formState.errors.padre_id?.message}
                     </FormMessage>
                   </FormItem>
@@ -180,11 +179,11 @@ const TypeForm = ({
               />
             </div>
 
-            <div className="flex  pt-4">
+            <div className="pt-2 sm:pt-4">
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="flex-1"
+                className="w-full text-sm sm:text-base"
                 size="lg"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
