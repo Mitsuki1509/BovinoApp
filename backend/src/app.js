@@ -9,6 +9,8 @@ import userRouter from "./routes/userRoutes.js";
 import typeRouter from "./routes/typeRoutes.js"; 
 import potreroRouter from "./routes/potreroRouter.js";
 import loteRouter from "./routes/loteRouter.js";
+import razaRouter from "./routes/razaRoutes.js";
+import animalRouter from "./routes/animalRoutes.js";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,6 +47,8 @@ app.get("/", (_req, res) => {
       types: "/api/types", 
       potreros: "/api/potreros",
       lotes: "/api/lotes",
+      razas: "/api/razas",
+      animal: "/api/animales",
       health: "/health",
     },
   });
@@ -52,9 +56,10 @@ app.get("/", (_req, res) => {
 
 app.use("/api/users", userRouter);
 app.use("/api/types", typeRouter); 
-app.use("/api/potreros", potreroRouter)
-app.use("/api/lotes", loteRouter)
-
+app.use("/api/potreros", potreroRouter);
+app.use("/api/lotes", loteRouter);
+app.use("/api/razas", razaRouter);
+app.use("/api/animales", animalRouter);
 
 app.use((req, res) => {
   res.status(404).json({

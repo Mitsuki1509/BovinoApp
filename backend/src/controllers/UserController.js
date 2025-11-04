@@ -321,41 +321,41 @@ export default class UserController {
   }
 
   static async createUser(req, res) {
-    try {
-      if (req.usuario.rol !== 'admin') {
-        return res.status(403).json({
-          ok: false,
-          msg: "No tienes permisos para crear usuarios"
-        });
-      }
-
-      const { nombre, correo, password, rol_id, finca_id } = req.body;
-
-      const usuarioExistente = await prisma.usuarios.findUnique({
-        where: { 
-          correo: correo,
-          deleted_at: null 
-        }
+  try {
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({
+        ok: false,
+        msg: "No tienes permisos para crear usuarios"
       });
+    }
 
-      if (usuarioExistente) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El correo electrónico ya está registrado"
-        });
+    const { nombre, correo, password, rol_id, finca_id } = req.body;
+
+    // Primero buscar si existe el usuario (incluyendo eliminados)
+    const usuarioExistente = await prisma.usuarios.findFirst({
+      where: { 
+        correo: correo
+      },
+      include: {
+        rol: true,
+        finca: true
       }
+    });
 
+    // Si existe y está eliminado, reactivarlo
+    if (usuarioExistente && usuarioExistente.deleted_at) {
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const nuevoUsuario = await prisma.usuarios.create({
+      const usuarioReactivado = await prisma.usuarios.update({
+        where: { usuario_id: usuarioExistente.usuario_id },
         data: {
           nombre,
-          correo,
           contraseña: hashedPassword,
           rol_id: parseInt(rol_id),
           finca_id: parseInt(finca_id),
           verificado: true,
-          google_oauth: true
+          google_oauth: false,
+          deleted_at: null // Reactivar el usuario
         },
         include: {
           rol: true,
@@ -363,29 +363,74 @@ export default class UserController {
         }
       });
 
-      return res.status(201).json({
+      return res.status(200).json({
         ok: true,
-        msg: "Usuario creado exitosamente",
+        msg: "Usuario reactivado exitosamente",
         data: {
-          usuario_id: nuevoUsuario.usuario_id,
-          nombre: nuevoUsuario.nombre,
-          correo: nuevoUsuario.correo,
-          rol_id: nuevoUsuario.rol_id,
-          finca_id: nuevoUsuario.finca_id,
-          rol: nuevoUsuario.rol,
-          finca: nuevoUsuario.finca,
-          verificado: nuevoUsuario.verificado,
-          google_oauth: nuevoUsuario.google_oauth
+          usuario_id: usuarioReactivado.usuario_id,
+          nombre: usuarioReactivado.nombre,
+          correo: usuarioReactivado.correo,
+          rol_id: usuarioReactivado.rol_id,
+          finca_id: usuarioReactivado.finca_id,
+          rol: usuarioReactivado.rol,
+          finca: usuarioReactivado.finca,
+          verificado: usuarioReactivado.verificado,
+          google_oauth: usuarioReactivado.google_oauth
         }
       });
+    }
 
-    } catch (error) {
-      return res.status(500).json({
+    // Si existe y NO está eliminado, entonces sí es un error
+    if (usuarioExistente && !usuarioExistente.deleted_at) {
+      return res.status(400).json({
         ok: false,
-        msg: "Error al gestionar usuarios"
+        msg: "El correo electrónico ya está registrado"
       });
     }
+
+    // Si no existe, crear nuevo usuario
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const nuevoUsuario = await prisma.usuarios.create({
+      data: {
+        nombre,
+        correo,
+        contraseña: hashedPassword,
+        rol_id: parseInt(rol_id),
+        finca_id: parseInt(finca_id),
+        verificado: true,
+        google_oauth: false
+      },
+      include: {
+        rol: true,
+        finca: true
+      }
+    });
+
+    return res.status(201).json({
+      ok: true,
+      msg: "Usuario creado exitosamente",
+      data: {
+        usuario_id: nuevoUsuario.usuario_id,
+        nombre: nuevoUsuario.nombre,
+        correo: nuevoUsuario.correo,
+        rol_id: nuevoUsuario.rol_id,
+        finca_id: nuevoUsuario.finca_id,
+        rol: nuevoUsuario.rol,
+        finca: nuevoUsuario.finca,
+        verificado: nuevoUsuario.verificado,
+        google_oauth: nuevoUsuario.google_oauth
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en createUser:', error);
+    return res.status(500).json({
+      ok: false,
+      msg: "Error al gestionar usuarios"
+    });
   }
+}
 
   static async updateUser(req, res) {
     try {

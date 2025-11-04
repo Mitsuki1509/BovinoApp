@@ -21,8 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, AlertCircle
- } from 'lucide-react';
+  XCircle} from 'lucide-react';
 import TypeForm from '@/components/types/TypeForm';
 import Modal from '@/components/ui/modal';
 import { useToast } from "@/hooks/use-toast";
@@ -65,7 +64,6 @@ const TypesPage = () => {
 
   useEffect(() => {
     if (authStatus === 'authenticated' && (user?.rol === 'admin' || user?.rol === 'veterinario') && !hasFetchedTypes) {
-      console.log('Cargando tipos de evento...');
       fetchEventTypes();
       fetchParentEventTypes();
       setHasFetchedTypes(true);
@@ -73,10 +71,7 @@ const TypesPage = () => {
   }, [authStatus, user, fetchEventTypes, fetchParentEventTypes, hasFetchedTypes]);
 
   const handleCreate = useCallback((e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    
     setEditingType(null);
     setShowForm(true);
   }, []);
