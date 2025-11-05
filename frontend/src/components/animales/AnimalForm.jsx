@@ -15,6 +15,7 @@ import { useAnimalStore } from '@/store/animalStore';
 import { useLoteStore } from '@/store/loteStore';
 import { useRazaStore } from '@/store/razaStore';
 import { Combobox } from '@/components/ui/combobox';
+import { FaCow } from 'react-icons/fa6';
 
 const AnimalForm = ({ 
   animal = null, 
@@ -400,7 +401,7 @@ const AnimalForm = ({
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4 text-purple-600" />
+              <FaCow className="h-4 w-4 text-purple-600" />
               Parentesco
             </CardTitle>
             <CardDescription className="text-xs">

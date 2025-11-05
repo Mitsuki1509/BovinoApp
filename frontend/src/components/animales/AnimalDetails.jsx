@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Users, Calendar, Tag, Edit, Trash2, User, Clock } from 'lucide-react';
+import { MapPin,  Calendar, Tag, Edit, Trash2, Clock } from 'lucide-react';
+import { FaCow } from 'react-icons/fa6';
 
 const FALLBACK_IMG = "/placeholder-animal.jpg";
 
@@ -109,7 +110,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
 
             {animal.fecha_destete && (
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <Users className="h-4 w-4 text-purple-600" />
+                <FaCow className="h-4 w-4 text-purple-600" />
                 <div>
                   <p className="text-xs text-gray-600">Destete</p>
                   <p className="font-medium text-sm">
@@ -126,7 +127,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4" />
+              <FaCow className="h-4 w-4" />
               Parentesco
             </CardTitle>
             <CardDescription className="text-xs">Progenitores del animal</CardDescription>
@@ -137,7 +138,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
               <div className="p-2 bg-gray-50 rounded text-sm mt-1">
                 {animal.madre ? (
                   <div className="flex items-center gap-1">
-                    <User className="h-3 w-3 text-pink-600" />
+                    <FaCow className="h-3 w-3 text-pink-600" />
                     <span>{animal.madre.arete}</span>
                   </div>
                 ) : (
@@ -151,7 +152,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
               <div className="p-2 bg-gray-50 rounded text-sm mt-1">
                 {animal.padre ? (
                   <div className="flex items-center gap-1">
-                    <User className="h-3 w-3 text-blue-600" />
+                    <FaCow className="h-3 w-3 text-blue-600" />
                     <span>{animal.padre.arete}</span>
                   </div>
                 ) : (
