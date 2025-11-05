@@ -45,6 +45,7 @@ import {
   Syringe,
   Weight
 } from "lucide-react";
+import { FaCow } from 'react-icons/fa6';
 import { useAuthStore } from "@/store/authStore";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 
@@ -63,7 +64,7 @@ const inventario = [
 ];
 
 const ganado = [
-  { title: "Animales", href: "/animales", icon: Heart },
+  { title: "Animales", href: "/animales", icon: FaCow },
   { title: "Razas", href: "/razas", icon: Tag },
   { title: "Gestión de Áreas", href: "/gestion-areas", icon: MapPin },
 ];
@@ -72,7 +73,6 @@ const sanidad = [
   { title: "Eventos Sanitarios", href: "/eventos_sanitarios", icon: Stethoscope },
   { title: "Uso de Insumos", href: "/uso_insumos", icon: Syringe },
 ];
-
 const pesaje = [
   { title: "Registro de Pesajes", href: "/pesajes", icon: Weight },
 ];
@@ -165,17 +165,6 @@ export function MainLayout({ children }) {
     return "U";
   };
 
- 
- if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mx-auto"></div>
-          <p className="mt-4 text-gray-700 font-medium">Verificando acceso...</p>
-        </div>
-      </div>
-    );
-  }
   if (!user) {
     return null;
   }

@@ -65,7 +65,6 @@ const UsersPage = () => {
 
   useEffect(() => {
     if (authStatus === 'authenticated' && user?.rol === 'admin' && !hasFetchedUsers) {
-      console.log('Cargando usuarios y roles...');
       fetchUsers();
       fetchRoles();
       setHasFetchedUsers(true);

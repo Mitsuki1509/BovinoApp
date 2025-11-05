@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useAnimalStore } from '../store/animalStore';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { Card, CardContent} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,18 +16,18 @@ import {
 import AnimalCard from '@/components/animales/AnimalCard';
 import AnimalDetails from '@/components/animales/AnimalDetails';
 import AnimalForm from '@/components/animales/AnimalForm';
-import Modal from '@/components/ui/modal'; // Importar el modal personalizado
+import Modal from '@/components/ui/modal'; 
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { Search, Plus, Users, User } from 'lucide-react';
-
+import { Search, Plus, Loader2 } from 'lucide-react';
+import { FaCow } from 'react-icons/fa6';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const AnimalesPage = () => {
   const navigate = useNavigate();
   const { checkAuth, user } = useAuthStore();
-  const { animales, fetchAnimales, deleteAnimal, loading } = useAnimalStore(); // Asegúrate de tener deleteAnimal en tu store
+  const { animales, fetchAnimales, deleteAnimal, loading } = useAnimalStore(); 
   const [authStatus, setAuthStatus] = useState('checking');
   const [busqueda, setBusqueda] = useState('');
   const [filtroSexo, setFiltroSexo] = useState('todos');
@@ -168,66 +168,68 @@ const AnimalesPage = () => {
 
   return (
     <MainLayout>
-      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">Gestión de Animales</h1>
-              <p className="text-gray-600">Administra el inventario de animales del sistema</p>
-            </div>
-
-            {canManage && (
-              <Button 
-                onClick={handleCreate} 
-                className="flex items-center gap-2 w-full sm:w-auto"
-                type="button"
-              >
-                <Plus className="h-4 w-4" />
-                Crear Animal
-              </Button>
-            )}
+      <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Animales</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Administra el inventario de animales del sistema</p>
           </div>
+          {canManage && (
+            <Button 
+              onClick={handleCreate} 
+              className="flex items-center gap-2 w-full sm:w-auto"
+              type="button"
+            >
+              <Plus className="h-4 w-4" />
+              Crear Animal
+            </Button>
+          )}
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Animales</p>
-                    <p className="text-2xl font-bold text-gray-900">{totalAnimales}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-600" />
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Animales</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalAnimales}</p>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Machos</p>
-                    <p className="text-2xl font-bold text-gray-900">{totalMachos}</p>
-                  </div>
-                  <User className="h-8 w-8 text-green-600" />
+                <FaCow className="h-8 w-8 text-blue-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Machos</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalMachos}</p>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Hembras</p>
-                    <p className="text-2xl font-bold text-gray-900">{totalHembras}</p>
-                  </div>
-                  <User className="h-8 w-8 text-pink-600" />
+                <FaCow className="h-8 w-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Hembras</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalHembras}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                <FaCow className="h-8 w-8 text-pink-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+        {/* Filtros y Búsqueda */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex-1">
                 <Label htmlFor="busqueda" className="block text-sm mb-1">
                   Buscar animal
@@ -261,79 +263,91 @@ const AnimalesPage = () => {
                 </Select>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {loading ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center text-gray-600">
-              Cargando animales...
-            </div>
-          ) : animalesFiltrados.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                {animalesActuales.map(animal => (
-                  <AnimalCard
-                    key={animal.animal_id}
-                    animal={animal}
-                    onVerDetalles={verDetalles}
-                    onEditar={handleEdit}
-                    onEliminar={handleDeleteClick}
-                    canManage={canManage}
-                  />
-                ))}
+        {/* Lista de Animales */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Animales</CardTitle>
+            <CardDescription>
+              {animalesFiltrados.length} de {animales.length} animal(es) encontrado(s)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
               </div>
-
-              {totalPaginas > 1 && (
-                <div className="flex justify-center items-center space-x-2 mb-8">
-                  <button
-                    onClick={() => cambiarPagina(paginaActual - 1)}
-                    disabled={paginaActual === 1}
-                    className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  >
-                    Anterior
-                  </button>
-
-                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(numero => (
-                    <button
-                      key={numero}
-                      onClick={() => cambiarPagina(numero)}
-                      className={`px-3 py-1 rounded-lg ${paginaActual === numero ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
-                    >
-                      {numero}
-                    </button>
+            ) : animalesFiltrados.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                  {animalesActuales.map(animal => (
+                    <AnimalCard
+                      key={animal.animal_id}
+                      animal={animal}
+                      onVerDetalles={verDetalles}
+                      onEditar={handleEdit}
+                      onEliminar={handleDeleteClick}
+                      canManage={canManage}
+                    />
                   ))}
-
-                  <button
-                    onClick={() => cambiarPagina(paginaActual + 1)}
-                    disabled={paginaActual === totalPaginas}
-                    className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
-                  >
-                    Siguiente
-                  </button>
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {busqueda ? 'No se encontraron animales' : 'No hay animales registrados'}
-              </h3>
-              <p className="text-gray-500">
-                {busqueda 
-                  ? 'Intenta con otros términos de búsqueda' 
-                  : 'Comienza agregando el primer animal al sistema'
-                }
-              </p>
-              {canManage && !busqueda && (
-                <Button onClick={handleCreate} className="mt-4">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear Primer Animal
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
 
+                {totalPaginas > 1 && (
+                  <div className="flex justify-center items-center space-x-2">
+                    <button
+                      onClick={() => cambiarPagina(paginaActual - 1)}
+                      disabled={paginaActual === 1}
+                      className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    >
+                      Anterior
+                    </button>
+
+                    {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(numero => (
+                      <button
+                        key={numero}
+                        onClick={() => cambiarPagina(numero)}
+                        className={`px-3 py-1 rounded-lg ${paginaActual === numero ? 'bg-blue-600 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-100'}`}
+                      >
+                        {numero}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => cambiarPagina(paginaActual + 1)}
+                      disabled={paginaActual === totalPaginas}
+                      className="px-3 py-1 rounded-lg border border-gray-300 text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <FaCow className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {busqueda ? 'No se encontraron animales' : 'No hay animales registrados'}
+                </h3>
+                <p className="text-gray-500">
+                  {busqueda 
+                    ? 'Intenta con otros términos de búsqueda' 
+                    : 'Comienza agregando el primer animal al sistema'
+                  }
+                </p>
+                {canManage && !busqueda && (
+                  <Button onClick={handleCreate} className="mt-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Crear Primer Animal
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Diálogos y Modales */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
             <DialogHeader>

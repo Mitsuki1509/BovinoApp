@@ -200,7 +200,6 @@ export default class TypeController {
       });
 
     } catch (error) {
-      console.error("Error creando tipo de evento:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al crear el tipo de evento"

@@ -8,18 +8,26 @@ export const useAuthStore = create((set, get) => ({
   loading: false,
   user: null,
   authLoading: false,
+  error: null,
+  fieldErrors: {},
 
   setFormData: (name, value) => {
     set(state => ({
       formData: {
         ...state.formData,
         [name]: value
-      }
+      },
+      error: null,
+      fieldErrors: {}
     }));
   },
 
+  clearErrors: () => {
+    set({ error: null, fieldErrors: {} });
+  },
+
   login: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null, fieldErrors: {} });
     try {
       const { formData } = get();
       
@@ -46,11 +54,22 @@ export const useAuthStore = create((set, get) => ({
         
         return true;
       } else {
-        alert(result.msg || 'Error en el login');
+        // Usar directamente el mensaje del controller
+        if (result.msg === "Contraseña incorrecta") {
+          set({ 
+            fieldErrors: { password: result.msg }
+          });
+        } else if (result.msg === "Usuario no encontrado") {
+          set({ 
+            fieldErrors: { email: result.msg }
+          });
+        } else {
+          set({ error: result.msg });
+        }
         return false;
       }
     } catch (error) {
-      alert('Error al conectar con el servidor');
+      set({ error: 'Error al conectar con el servidor' });
       return false;
     } finally {
       set({ loading: false });
@@ -97,7 +116,12 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.error('Error cerrando sesión:', error);
     } finally {
-      set({ user: null, formData: { email: '', password: '' } });
+      set({ 
+        user: null, 
+        formData: { email: '', password: '' },
+        error: null,
+        fieldErrors: {}
+      });
       localStorage.removeItem('userInfo');
       window.location.href = '/login';
     }

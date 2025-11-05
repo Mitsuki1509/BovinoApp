@@ -32,20 +32,6 @@ export default class UserController {
         }
       });
 
-      if (!usuario) {
-        return res.status(401).json({
-          ok: false,
-          msg: "Usuario no encontrado"
-        });
-      }
-
-      if (!usuario.verificado) {
-        return res.status(401).json({
-          ok: false,
-          msg: "Usuario no verificado. Por favor verifica tu correo electrónico."
-        });
-      }
-
       const isMatch = await bcrypt.compare(password, usuario.contraseña);
 
       if (!isMatch) {
@@ -62,13 +48,12 @@ export default class UserController {
           nombre: usuario.nombre
         },
         process.env.JWT_SECRET_KEY,
-        { expiresIn: '7d' }
+        { expiresIn: '1d' }
       );
 
       res.cookie('token', jwtToken, { 
         httpOnly: true, 
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        secure: process.env.NODE_ENV === 'production'
       });
 
       return res.json({
@@ -156,13 +141,12 @@ export default class UserController {
           nombre: usuario.nombre
         },
         process.env.JWT_SECRET_KEY,
-        { expiresIn: '7d' }
+        { expiresIn: '1d' }
       );
 
       res.cookie('token', jwtToken, { 
         httpOnly: true, 
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        secure: process.env.NODE_ENV === 'production'      
       });
       
       res.redirect("http://localhost:5173/dashboard");
@@ -380,7 +364,6 @@ export default class UserController {
       });
     }
 
-    // Si existe y NO está eliminado, entonces sí es un error
     if (usuarioExistente && !usuarioExistente.deleted_at) {
       return res.status(400).json({
         ok: false,
@@ -388,7 +371,6 @@ export default class UserController {
       });
     }
 
-    // Si no existe, crear nuevo usuario
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const nuevoUsuario = await prisma.usuarios.create({

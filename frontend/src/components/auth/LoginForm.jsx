@@ -1,13 +1,36 @@
 import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
 const LoginForm = () => {
-  const { formData, setFormData, loading, login, oauth } = useAuthStore();
+  const { 
+    formData,
+    setFormData,
+    loading, 
+    login, 
+    oauth, 
+    fieldErrors,
+    clearErrors
+  } = useAuthStore();
+
+  const form = useForm({
+    defaultValues: {
+      email: formData.email,
+      password: formData.password
+    }
+  });
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -15,33 +38,38 @@ const LoginForm = () => {
     const email = urlParams.get('email');
 
     if (error === 'user_not_found' && email) {
-      alert(`El correo ${email} no está registrado en el sistema. Contacta al administrador para crear una cuenta.`);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      form.setValue('email', email);
+      setFormData('email', email);
     }
     
-    if (error === 'auth_failed') {
-      alert('Error en la autenticación con Google. Por favor, intenta nuevamente.');
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }, [form, setFormData]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    form.setValue('email', formData.email);
+    form.setValue('password', formData.password);
+  }, [form, formData]);
+
+  const onSubmit = async (data) => {
+    setFormData('email', data.email);
+    setFormData('password', data.password);
+    
     const success = await login();
     if (success) {
       window.location.href = '/dashboard';
     }
   };
 
-  const handleChange = (e) => {
-    setFormData(e.target.name, e.target.value);
+  const handleFieldChange = (fieldName, value) => {
+    clearErrors();
+    setFormData(fieldName, value);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16  rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
             <img 
               src="/Logo.png" 
               alt="Logo Finca San Pablo" 
@@ -55,42 +83,87 @@ const LoginForm = () => {
         </CardHeader>
         
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input
-                id="email"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
                 name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="tu@email.com"
+                rules={{ 
+                  required: "El correo electrónico es requerido",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Correo electrónico inválido"
+                  }
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">Correo electrónico</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="tu@email.com"
+                        {...field}
+                        disabled={loading}
+                        className="w-full text-sm sm:text-base"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleFieldChange('email', e.target.value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs sm:text-sm">
+                      {fieldErrors.email || form.formState.errors.email?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
-              <Input
-                id="password"
+              <FormField
+                control={form.control}
                 name="password"
-                type="password"
-                required
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
+                rules={{ 
+                  required: "La contraseña es requerida",
+                  minLength: {
+                    value: 1,
+                    message: "La contraseña es requerida"
+                  }
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">Contraseña</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                        disabled={loading}
+                        className="w-full text-sm sm:text-base"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleFieldChange('password', e.target.value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs sm:text-sm">
+                      {fieldErrors.password || form.formState.errors.password?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Iniciar sesión
-            </Button>
-          </form>
+              <div className="pt-2 sm:pt-4">
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full text-sm sm:text-base"
+                  size="lg"
+                >
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Iniciar sesión
+                </Button>
+              </div>
+            </form>
+          </Form>
 
           <div className="mt-6">
             <div className="relative">
