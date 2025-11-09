@@ -7,10 +7,16 @@ import { fileURLToPath } from "url";
 
 import userRouter from "./routes/userRoutes.js";
 import typeRouter from "./routes/typeRoutes.js"; 
-import potreroRouter from "./routes/potreroRouter.js";
-import loteRouter from "./routes/loteRouter.js";
+import potreroRouter from "./routes/potreroRoutes.js";
+import loteRouter from "./routes/loteRoutes.js";
 import razaRouter from "./routes/razaRoutes.js";
 import animalRouter from "./routes/animalRoutes.js";
+import proveedorRouter from "./routes/proveedorRoutes.js";
+import compraRouter from "./routes/compraRoutes.js";
+import insumoRouter from "./routes/insumoRoutes.js";
+import tipoInsumoRouter from "./routes/tipoInsumoRoutes.js";
+import detalleCompraRouter from "./routes/detalleCompraRoutes.js";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +55,11 @@ app.get("/", (_req, res) => {
       lotes: "/api/lotes",
       razas: "/api/razas",
       animal: "/api/animales",
+      proveedor: "/api/proveedores",
+      compraRouter: "/api/compras",
+      tipoInsumoRouter:"/api/tipoInsumo",
+      insumoRouter:"/api/insumos",
+      detalleCompraRouter:"/api/detalleCompra", 
       health: "/health",
     },
   });
@@ -60,6 +71,11 @@ app.use("/api/potreros", potreroRouter);
 app.use("/api/lotes", loteRouter);
 app.use("/api/razas", razaRouter);
 app.use("/api/animales", animalRouter);
+app.use("/api/proveedores", proveedorRouter); 
+app.use("/api/compras", compraRouter)
+app.use("/api/tipoInsumo", tipoInsumoRouter)
+app.use("/api/insumos", insumoRouter)
+app.use("/api/detalleCompra", detalleCompraRouter) 
 
 app.use((req, res) => {
   res.status(404).json({

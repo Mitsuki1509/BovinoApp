@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 
-export const useLoteStore = create((set, get) => ({
-  lotes: [],
+export const useCompraStore = create((set, get) => ({
+  compras: [],
   loading: false,
   error: null,
 
-  fetchLotes: async () => {
+  fetchCompras: async () => {
     const currentState = get();
     if (currentState.loading) return;
     
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/lotes', {
+      const response = await fetch('http://localhost:3000/api/compras', {
         credentials: 'include'
       });
       
@@ -22,27 +22,27 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        set({ lotes: result.data || [], loading: false });
+        set({ compras: result.data || [], loading: false });
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
       }
     } catch (error) {
       set({ 
-        error: error.message || 'Error al cargar lotes', 
+        error: error.message || 'Error al cargar compras', 
         loading: false 
       });
     }
   },
 
-  createLote: async (loteData) => {
+  createCompra: async (compraData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/lotes', {
+      const response = await fetch('http://localhost:3000/api/compras', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loteData),
+        body: JSON.stringify(compraData),
         credentials: 'include'
       });
       
@@ -54,27 +54,27 @@ export const useLoteStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchLotes();
+        get().fetchCompras();
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al crear lote', loading: false });
+      set({ error: error.message || 'Error al crear compra', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  updateLote: async (id, loteData) => {
+  updateCompra: async (id, compraData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/compras/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loteData),
+        body: JSON.stringify(compraData),
         credentials: 'include'
       });
       
@@ -86,21 +86,21 @@ export const useLoteStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchLotes();
+        get().fetchCompras();
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al actualizar lote', loading: false });
+      set({ error: error.message || 'Error al actualizar compra', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  deleteLote: async (id) => {
+  deleteCompra: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/compras/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -112,7 +112,7 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        get().fetchLotes();
+        get().fetchCompras();
         return { success: true };
       } else {
         return { success: false, error: result.msg };
@@ -122,10 +122,10 @@ export const useLoteStore = create((set, get) => ({
     }
   },
 
-  fetchLoteById: async (id) => {
+  fetchCompraById: async (id) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/compras/${id}`, {
         credentials: 'include'
       });
       
@@ -143,14 +143,40 @@ export const useLoteStore = create((set, get) => ({
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al cargar lote', loading: false });
+      set({ error: error.message || 'Error al cargar compra', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  searchLotes: async (query) => {
+  fetchCompraByNumero: async (numeroCompra) => {
+    set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/search?query=${encodeURIComponent(query)}`, {
+      const response = await fetch(`http://localhost:3000/api/compras/numero/${numeroCompra}`, {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      if (result.ok) {
+        set({ loading: false });
+        return { success: true, data: result.data };
+      } else {
+        set({ error: result.msg || 'Error desconocido', loading: false });
+        return { success: false, error: result.msg };
+      }
+    } catch (error) {
+      set({ error: error.message || 'Error al cargar compra', loading: false });
+      return { success: false, error: error.message };
+    }
+  },
+
+  searchCompras: async (query) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/compras/search?query=${encodeURIComponent(query)}`, {
         credentials: 'include'
       });
       

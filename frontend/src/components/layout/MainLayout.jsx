@@ -29,7 +29,6 @@ import {
   Settings,
   Users,
   Package,
-  Boxes,
   ShoppingCart,
   LogOut,
   Stethoscope,
@@ -58,8 +57,8 @@ const navItems = [
 ];
 
 const inventario = [
-  { title: "Insumos", href: "/insumos", icon: Package },
-  { title: "Compras", href: "/compras", icon: ShoppingCart },
+  { title: "Insumos", href: "/gestion-insumos", icon: Package },
+  { title: "Compras", href: "/gestion-compras", icon: ShoppingCart },
   { title: "Proveedores", href: "/proveedores", icon: Users },
 ];
 

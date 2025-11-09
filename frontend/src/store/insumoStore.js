@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 
-export const useAnimalStore = create((set, get) => ({
-  animales: [],
+export const useInsumoStore = create((set, get) => ({
+  insumos: [],
   loading: false,
   error: null,
 
-  fetchAnimales: async () => {
+  fetchInsumos: async () => {
     const currentState = get();
     if (currentState.loading) return;
     
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/animales', {
+      const response = await fetch('http://localhost:3000/api/insumos', {
         credentials: 'include'
       });
       
@@ -22,21 +22,21 @@ export const useAnimalStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        set({ animales: result.data || [], loading: false });
+        set({ insumos: result.data || [], loading: false });
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
       }
     } catch (error) {
       set({ 
-        error: error.message || 'Error al cargar animales', 
+        error: error.message || 'Error al cargar insumos', 
         loading: false 
       });
     }
   },
 
-  fetchAnimalById: async (id) => {
+  fetchInsumoById: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/animales/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/insumos/${id}`, {
         credentials: 'include'
       });
       
@@ -56,42 +56,30 @@ export const useAnimalStore = create((set, get) => ({
     }
   },
 
-  createAnimal: async (animalData) => {
+  createInsumo: async (insumoData) => {
     set({ loading: true, error: null });
     try {
       const formData = new FormData();
       
-      if (!animalData.lote_id || animalData.lote_id === 'null') {
-        throw new Error('El lote es requerido');
-      }
-      
-      if (!animalData.raza_id || animalData.raza_id === 'null') {
-        throw new Error('La raza es requerida');
-      }
-
-      Object.keys(animalData).forEach(key => {
-        const value = animalData[key];
+      Object.keys(insumoData).forEach(key => {
+        const value = insumoData[key];
         
         if (value === null || value === undefined || value === 'null') {
+          if (key === 'tipo_insumo_id' || key === 'unidad_id') {
+            formData.append(key, ''); 
+          }
           return;
         }
         
-        if (key === 'fecha_nacimiento' || key === 'fecha_destete') {
-          if (value instanceof Date) {
-            formData.append(key, value.toISOString().split('T')[0]);
-          } else if (value) {
-            formData.append(key, value);
-          }
-        } 
-        else if (key === 'imagen' && value instanceof File) {
+        if (key === 'imagen' && value instanceof File) {
           formData.append(key, value);
         }
-        else if (value !== '') {
+        else if (value !== '' && value !== 'null') {
           formData.append(key, value.toString());
         }
       });
 
-      const response = await fetch('http://localhost:3000/api/animales', {
+      const response = await fetch('http://localhost:3000/api/insumos', {
         method: 'POST',
         body: formData,
         credentials: 'include'
@@ -105,53 +93,42 @@ export const useAnimalStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchAnimales(); 
+        get().fetchInsumos(); 
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al crear animal', loading: false });
+      set({ error: error.message || 'Error al crear insumo', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  updateAnimal: async (id, animalData) => {
+  updateInsumo: async (id, insumoData) => {
     set({ loading: true, error: null });
     try {
       const formData = new FormData();
 
-      if (animalData.lote_id !== undefined && (!animalData.lote_id || animalData.lote_id === 'null')) {
-        throw new Error('El lote es requerido');
-      }
-      
-      if (animalData.raza_id !== undefined && (!animalData.raza_id || animalData.raza_id === 'null')) {
-        throw new Error('La raza es requerida');
-      }
-
-      Object.keys(animalData).forEach(key => {
-        const value = animalData[key];
+      Object.keys(insumoData).forEach(key => {
+        const value = insumoData[key];
         
         if (value === null || value === undefined || value === 'null') {
+          if (key === 'tipo_insumo_id' || key === 'unidad_id') {
+            formData.append(key, ''); 
+          }
           return;
         }
-        if (key === 'fecha_nacimiento' || key === 'fecha_destete') {
-          if (value instanceof Date) {
-            formData.append(key, value.toISOString().split('T')[0]);
-          } else if (value) {
-            formData.append(key, value);
-          }
-        } 
-        else if (key === 'imagen' && value instanceof File) {
+        
+        if (key === 'imagen' && value instanceof File) {
           formData.append(key, value);
         }
-        else if (value !== '') {
+        else if (value !== '' && value !== 'null') {
           formData.append(key, value.toString());
         }
       });
 
-      const response = await fetch(`http://localhost:3000/api/animales/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/insumos/${id}`, {
         method: 'PUT',
         body: formData,
         credentials: 'include'
@@ -165,21 +142,21 @@ export const useAnimalStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchAnimales(); 
+        get().fetchInsumos(); 
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al actualizar animal', loading: false });
+      set({ error: error.message || 'Error al actualizar insumo', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  deleteAnimal: async (id) => {
+  deleteInsumo: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/animales/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/insumos/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -191,7 +168,7 @@ export const useAnimalStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        get().fetchAnimales(); 
+        get().fetchInsumos(); 
         return { success: true };
       } else {
         return { success: false, error: result.msg };
@@ -201,9 +178,9 @@ export const useAnimalStore = create((set, get) => ({
     }
   },
 
-  searchAnimales: async (query) => {
+  searchInsumos: async (query) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/animales/search?query=${encodeURIComponent(query)}`, {
+      const response = await fetch(`http://localhost:3000/api/insumos/search?query=${encodeURIComponent(query)}`, {
         credentials: 'include'
       });
       
@@ -223,9 +200,37 @@ export const useAnimalStore = create((set, get) => ({
     }
   },
 
-  fetchAnimalesForSelect: async () => {
+  updateCantidadInsumo: async (id, cantidad, operacion) => {
     try {
-      const response = await fetch('http://localhost:3000/api/animales', {
+      const response = await fetch(`http://localhost:3000/api/insumos/${id}/cantidad`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cantidad, operacion }),
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      if (result.ok) {
+        get().fetchInsumos(); 
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, error: result.msg };
+      }
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
+
+  fetchInsumosForSelect: async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/insumos', {
         credentials: 'include'
       });
       
@@ -245,17 +250,46 @@ export const useAnimalStore = create((set, get) => ({
     }
   },
 
-  getAnimalesBySexo: (sexo) => {
+fetchUnidades: async () => {
+  try {
+    const response = await fetch('http://localhost:3000/api/insumos/unidades', {
+      credentials: 'include'
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+    }
+    
+    if (result.ok) {
+      return { success: true, data: result.data };
+    } else {
+      return { success: false, error: result.msg };
+    }
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+},
+
+  getInsumosByTipo: (tipoInsumoId) => {
     const state = get();
-    return state.animales.filter(animal => animal.sexo === sexo);
+    return state.insumos.filter(insumo => insumo.tipo_insumo_id === tipoInsumoId);
   },
 
-  getAnimalByArete: (arete) => {
+  getInsumosBajoStock: (nivelAlerta = 10) => {
     const state = get();
-    return state.animales.find(animal => animal.arete === arete);
+    return state.insumos.filter(insumo => insumo.cantidad <= nivelAlerta);
+  },
+
+  getInsumoByNombre: (nombre) => {
+    const state = get();
+    return state.insumos.find(insumo => 
+      insumo.nombre.toLowerCase() === nombre.toLowerCase()
+    );
   },
 
   clearError: () => set({ error: null }),
 
-  reset: () => set({ animales: [], loading: false, error: null })
+  reset: () => set({ insumos: [], loading: false, error: null })
 }));

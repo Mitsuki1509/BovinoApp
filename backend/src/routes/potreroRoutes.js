@@ -7,11 +7,8 @@ const potreroRouter = express.Router();
 potreroRouter.get('/', authenticate, PotreroController.getAll);
 potreroRouter.get('/search', authenticate, PotreroController.search);
 potreroRouter.get('/:id', authenticate, PotreroController.getById);
-
 potreroRouter.post('/', authenticate, PotreroController.create);
-
 potreroRouter.put('/:id', authenticate, PotreroController.update);
-
 potreroRouter.delete('/:id', authenticate, PotreroController.delete);
 
 export default potreroRouter;

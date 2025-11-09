@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 export default class AnimalController {
 
-  static async getAnimales(req, res) {
+  static async getAll(req, res) {
     try {
       const animales = await prisma.animales.findMany({
         where: { 
@@ -27,7 +27,8 @@ export default class AnimalController {
           lote: {
             select: {
               lote_id: true,
-              descripcion: true
+              descripcion: true,
+              codigo: true
             }
           },
           raza: {
@@ -55,7 +56,7 @@ export default class AnimalController {
     }
   }
 
-  static async getAnimalById(req, res) {
+  static async getById(req, res) {
     try {
       const { id } = req.params;
 
@@ -93,7 +94,8 @@ export default class AnimalController {
           lote: {
             select: {
               lote_id: true,
-              descripcion: true
+              descripcion: true,
+              codigo: true
             }
           },
           raza: {
@@ -126,7 +128,7 @@ export default class AnimalController {
     }
   }
 
-  static async createAnimal(req, res) {
+  static async create(req, res) {
     try {
       const rolesPermitidos = ['admin', 'veterinario', 'operario', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -165,6 +167,20 @@ export default class AnimalController {
         return res.status(400).json({
           ok: false,
           msg: "La fecha de nacimiento es requerida"
+        });
+      }
+
+      if (!lote_id || lote_id === 'null' || lote_id === '') {
+        return res.status(400).json({
+          ok: false,
+          msg: "El lote es requerido"
+        });
+      }
+
+      if (!raza_id || raza_id === 'null' || raza_id === '') {
+        return res.status(400).json({
+          ok: false,
+          msg: "La raza es requerida"
         });
       }
 
@@ -230,38 +246,34 @@ export default class AnimalController {
         }
       }
 
-      if (lote_id && lote_id !== 'null' && lote_id !== '') {
-        const loteId = parseInt(lote_id);
-        const lote = await prisma.lotes.findFirst({
-          where: { 
-            lote_id: loteId,
-            deleted_at: null 
-          }
-        });
-
-        if (!lote) {
-          return res.status(400).json({
-            ok: false,
-            msg: "El lote especificado no existe"
-          });
+      const loteId = parseInt(lote_id);
+      const lote = await prisma.lotes.findFirst({
+        where: { 
+          lote_id: loteId,
+          deleted_at: null 
         }
+      });
+
+      if (!lote) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El lote especificado no existe"
+        });
       }
 
-      if (raza_id && raza_id !== 'null' && raza_id !== '') {
-        const razaId = parseInt(raza_id);
-        const raza = await prisma.razas.findFirst({
-          where: { 
-            raza_id: razaId,
-            deleted_at: null 
-          }
-        });
-
-        if (!raza) {
-          return res.status(400).json({
-            ok: false,
-            msg: "La raza especificada no existe"
-          });
+      const razaId = parseInt(raza_id);
+      const raza = await prisma.razas.findFirst({
+        where: { 
+          raza_id: razaId,
+          deleted_at: null 
         }
+      });
+
+      if (!raza) {
+        return res.status(400).json({
+          ok: false,
+          msg: "La raza especificada no existe"
+        });
       }
 
       const file = req.file;
@@ -290,7 +302,6 @@ export default class AnimalController {
         }
       }
 
-
       const nuevoAnimal = await prisma.animales.create({
         data: {
           animal_madre_id: animal_madre_id && animal_madre_id !== 'null' && animal_madre_id !== '' 
@@ -299,12 +310,8 @@ export default class AnimalController {
           animal_padre_id: animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== '' 
             ? parseInt(animal_padre_id) 
             : null,
-          lote_id: lote_id && lote_id !== 'null' && lote_id !== '' 
-            ? parseInt(lote_id) 
-            : null,
-          raza_id: raza_id && raza_id !== 'null' && raza_id !== '' 
-            ? parseInt(raza_id) 
-            : null,
+          lote_id: loteId,
+          raza_id: razaId, 
           imagen: imagenNombre ? `http://localhost:3000/uploads/animal_images/${imagenNombre}` : null,
           arete: arete.trim(),
           sexo: sexo,
@@ -327,7 +334,8 @@ export default class AnimalController {
           lote: {
             select: {
               lote_id: true,
-              descripcion: true
+              descripcion: true,
+              codigo: true
             }
           },
           raza: {
@@ -361,7 +369,7 @@ export default class AnimalController {
     }
   }
 
-  static async updateAnimal(req, res) {
+  static async update(req, res) {
     try {
       const rolesPermitidos = ['admin', 'veterinario', 'operario', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -430,6 +438,24 @@ export default class AnimalController {
         });
       }
 
+      if (lote_id !== undefined) {
+        if (!lote_id || lote_id === 'null' || lote_id === '') {
+          return res.status(400).json({
+            ok: false,
+            msg: "El lote es requerido"
+          });
+        }
+      }
+
+      if (raza_id !== undefined) {
+        if (!raza_id || raza_id === 'null' || raza_id === '') {
+          return res.status(400).json({
+            ok: false,
+            msg: "La raza es requerida"
+          });
+        }
+      }
+
       if (animal_madre_id !== undefined) {
         if (animal_madre_id === '' || animal_madre_id === 'null') {
         } else if (animal_madre_id) {
@@ -485,42 +511,36 @@ export default class AnimalController {
       }
 
       if (lote_id !== undefined) {
-        if (lote_id === '' || lote_id === 'null') {
-        } else if (lote_id) {
-          const loteId = parseInt(lote_id);
-          const lote = await prisma.lotes.findFirst({
-            where: { 
-              lote_id: loteId,
-              deleted_at: null 
-            }
-          });
-
-          if (!lote) {
-            return res.status(400).json({
-              ok: false,
-              msg: "El lote especificado no existe"
-            });
+        const loteId = parseInt(lote_id);
+        const lote = await prisma.lotes.findFirst({
+          where: { 
+            lote_id: loteId,
+            deleted_at: null 
           }
+        });
+
+        if (!lote) {
+          return res.status(400).json({
+            ok: false,
+            msg: "El lote especificado no existe"
+          });
         }
       }
 
       if (raza_id !== undefined) {
-        if (raza_id === '' || raza_id === 'null') {
-        } else if (raza_id) {
-          const razaId = parseInt(raza_id);
-          const raza = await prisma.razas.findFirst({
-            where: { 
-              raza_id: razaId,
-              deleted_at: null 
-            }
-          });
-
-          if (!raza) {
-            return res.status(400).json({
-              ok: false,
-              msg: "La raza especificada no existe"
-            });
+        const razaId = parseInt(raza_id);
+        const raza = await prisma.razas.findFirst({
+          where: { 
+            raza_id: razaId,
+            deleted_at: null 
           }
+        });
+
+        if (!raza) {
+          return res.status(400).json({
+            ok: false,
+            msg: "La raza especificada no existe"
+          });
         }
       }
 
@@ -552,15 +572,11 @@ export default class AnimalController {
       }
       
       if (lote_id !== undefined) {
-        updateData.lote_id = lote_id && lote_id !== 'null' && lote_id !== '' 
-          ? parseInt(lote_id) 
-          : null;
+        updateData.lote_id = parseInt(lote_id); 
       }
       
       if (raza_id !== undefined) {
-        updateData.raza_id = raza_id && raza_id !== 'null' && raza_id !== '' 
-          ? parseInt(raza_id) 
-          : null;
+        updateData.raza_id = parseInt(raza_id);
       }
 
       if (imagenNombre) {
@@ -604,7 +620,8 @@ export default class AnimalController {
           lote: {
             select: {
               lote_id: true,
-              descripcion: true
+              descripcion: true,
+              codigo: true
             }
           },
           raza: {
@@ -645,7 +662,7 @@ export default class AnimalController {
     }
   }
 
-  static async deleteAnimal(req, res) {
+  static async delete(req, res) {
     try {
       if (req.usuario.rol !== 'admin') {
         return res.status(403).json({
@@ -713,7 +730,6 @@ export default class AnimalController {
       });
 
     } catch (error) {
-      console.error('Error en deleteAnimal:', error);
       return res.status(500).json({
         ok: false,
         msg: "Error al eliminar el animal"
@@ -721,7 +737,7 @@ export default class AnimalController {
     }
   }
 
-  static async searchAnimales(req, res) {
+  static async search(req, res) {
     try {
       const { query } = req.query;
 
@@ -759,7 +775,8 @@ export default class AnimalController {
           lote: {
             select: {
               lote_id: true,
-              descripcion: true
+              descripcion: true,
+              codigo: true
             }
           },
           raza: {

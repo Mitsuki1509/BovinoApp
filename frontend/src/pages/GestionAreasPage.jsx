@@ -109,12 +109,12 @@ const GestionAreasPage = () => {
         await fetchPotreros();
         
         toast({
-          title:  (
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <span>Eliminado correctamente</span>
-        </div>
-      ),
+          title: (
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <span>Eliminado correctamente</span>
+            </div>
+          ),
           description: `El ${type === 'lote' ? 'lote' : 'potrero'} se eliminó exitosamente.`,
           duration: 3000,
         });
@@ -123,36 +123,36 @@ const GestionAreasPage = () => {
         
         if (errorMessage.includes('referencia') || errorMessage.includes('foreign key') || errorMessage.includes('lotes') || errorMessage.includes('restrict')) {
           toast({
-            title:  (
-        <div className="flex items-center gap-2">
-          <XCircle className="h-5 w-5 text-green-600" />
-          <span>No se puede eliminar</span>
-        </div>
-      ),
+            title: (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600" />
+                <span>No se puede eliminar</span>
+              </div>
+            ),
             description: `No se puede eliminar el potrero porque está siendo usado por uno o más lotes.`,
             variant: "destructive",
             duration: 5000,
           });
         } else if (errorMessage.includes('animales') || errorMessage.includes('asignado')) {
           toast({
-            title:(
-        <div className="flex items-center gap-2">
-          <XCircle className="h-5 w-5 text-green-600" />
-          <span>No se puede eliminar</span>
-        </div>
-      ),
+            title: (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600" />
+                <span>No se puede eliminar</span>
+              </div>
+            ),
             description: `No se puede eliminar el lote porque tiene animales asignados.`,
             variant: "destructive",
             duration: 5000,
           });
         } else {
           toast({
-            title:(
-        <div className="flex items-center gap-2">
-          <XCircle className="h-5 w-5 text-green-600" />
-          <span>Error al eliminar</span>
-        </div>
-      ),
+            title: (
+              <div className="flex items-center gap-2">
+                <XCircle className="h-5 w-5 text-red-600" />
+                <span>Error al eliminar</span>
+              </div>
+            ),
             description: `Error: ${errorMessage}`,
             variant: "destructive",
             duration: 5000,
@@ -162,11 +162,11 @@ const GestionAreasPage = () => {
     } catch (error) {
       toast({
         title: (
-        <div className="flex items-center gap-2">
-          <XCircle className="h-5 w-5 text-green-600" />
-          <span>Error de conexión</span>
-        </div>
-      ),
+          <div className="flex items-center gap-2">
+            <XCircle className="h-5 w-5 text-red-600" />
+            <span>Error de conexión</span>
+          </div>
+        ),
         description: "Por favor, intente nuevamente.",
         variant: "destructive",
         duration: 5000,
@@ -206,7 +206,7 @@ const GestionAreasPage = () => {
   const getItemName = () => {
     if (!itemToDelete) return '';
     return itemToDelete.type === 'lote' 
-      ? itemToDelete.item.descripcion 
+      ? `${itemToDelete.item.codigo} - ${itemToDelete.item.descripcion}`
       : itemToDelete.item.ubicacion;
   };
 
@@ -221,6 +221,7 @@ const GestionAreasPage = () => {
     if (!searchTerm.trim()) return true;
     const searchLower = searchTerm.toLowerCase().trim();
     return (
+      lote.codigo?.toLowerCase().includes(searchLower) ||
       lote.descripcion?.toLowerCase().includes(searchLower) ||
       lote.potrero?.ubicacion?.toLowerCase().includes(searchLower)
     );
@@ -279,7 +280,7 @@ const GestionAreasPage = () => {
           <Input
             placeholder={
               activeTab === 'lotes' 
-                ? "Buscar lotes por descripción o ubicación de potrero..." 
+                ? "Buscar por código, descripción o ubicación..." 
                 : "Buscar potreros por ubicación..."
             }
             value={searchTerm}
@@ -319,8 +320,10 @@ const GestionAreasPage = () => {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b">
+                            <th className="text-left py-3 font-medium">Código</th>
                             <th className="text-left py-3 font-medium">Descripción</th>
                             <th className="text-left py-3 font-medium">Potrero</th>
+                            <th className="text-left py-3 font-medium">Animales</th>
                             {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
                           </tr>
                         </thead>
@@ -329,23 +332,27 @@ const GestionAreasPage = () => {
                             <tr key={lote.lote_id} className="border-b hover:bg-gray-50">
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
-                                  <Package className="h-4 w-4 text-blue-600" />
-                                  <span className="font-medium max-w-md truncate">
-                                    {lote.descripcion}
-                                  </span>
+                                  <Badge variant="secondary" className="font-mono">
+                                    {lote.codigo}
+                                  </Badge>
                                 </div>
                               </td>
                               <td className="py-3">
-                                {lote.potrero ? (
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-green-600" />
-                                    <Badge variant="outline">
-                                      {lote.potrero.ubicacion}
-                                    </Badge>
-                                  </div>
-                                ) : (
-                                  <Badge variant="secondary">Sin potrero</Badge>
-                                )}
+                                <span className="font-medium max-w-md truncate">
+                                  {lote.descripcion}
+                                </span>
+                              </td>
+                              <td className="py-3">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline">
+                                    {lote.potrero?.ubicacion}
+                                  </Badge>
+                                </div>
+                              </td>
+                              <td className="py-3">
+                                <Badge variant={lote._count?.animales > 0 ? "default" : "secondary"}>
+                                  {lote._count?.animales || 0} animales
+                                </Badge>
                               </td>
                               {canManage && (
                                 <td className="py-3">
@@ -390,18 +397,22 @@ const GestionAreasPage = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Package className="h-4 w-4 text-blue-600" />
-                                  <h3 className="font-semibold text-lg">{lote.descripcion}</h3>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4 text-green-600" />
-                                  {lote.potrero ? (
-                                    <Badge variant="outline">
-                                      {lote.potrero.ubicacion}
+                                  <div>
+                                    <Badge variant="secondary" className="font-mono mb-1">
+                                      {lote.codigo}
                                     </Badge>
-                                  ) : (
-                                    <Badge variant="secondary">Sin potrero</Badge>
-                                  )}
+                                    <h3 className="font-semibold text-lg">{lote.descripcion}</h3>
+                                  </div>
                                 </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <MapPin className="h-4 w-4 text-green-600" />
+                                  <Badge variant="outline">
+                                    {lote.potrero?.ubicacion}
+                                  </Badge>
+                                </div>
+                                <Badge variant={lote._count?.animales > 0 ? "default" : "secondary"}>
+                                  {lote._count?.animales || 0} animales
+                                </Badge>
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -473,7 +484,6 @@ const GestionAreasPage = () => {
                             <tr key={potrero.potrero_id} className="border-b hover:bg-gray-50">
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4 text-green-600" />
                                   <span className="font-medium">{potrero.ubicacion}</span>
                                 </div>
                               </td>

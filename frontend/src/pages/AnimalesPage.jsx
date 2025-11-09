@@ -266,7 +266,6 @@ const AnimalesPage = () => {
           </CardContent>
         </Card>
 
-        {/* Lista de Animales */}
         <Card>
           <CardHeader>
             <CardTitle>Lista de Animales</CardTitle>
@@ -347,7 +346,6 @@ const AnimalesPage = () => {
           </CardContent>
         </Card>
 
-        {/* Diálogos y Modales */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
             <DialogHeader>

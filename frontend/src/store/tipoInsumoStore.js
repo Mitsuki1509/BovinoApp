@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 
-export const useLoteStore = create((set, get) => ({
-  lotes: [],
+export const useTipoInsumoStore = create((set, get) => ({
+  tiposInsumo: [],
   loading: false,
   error: null,
 
-  fetchLotes: async () => {
+  fetchTiposInsumo: async () => {
     const currentState = get();
     if (currentState.loading) return;
     
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/lotes', {
+      const response = await fetch('http://localhost:3000/api/tipoInsumo', {
         credentials: 'include'
       });
       
@@ -22,27 +22,27 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        set({ lotes: result.data || [], loading: false });
+        set({ tiposInsumo: result.data || [], loading: false });
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
       }
     } catch (error) {
       set({ 
-        error: error.message || 'Error al cargar lotes', 
+        error: error.message || 'Error al cargar tipos de insumo', 
         loading: false 
       });
     }
   },
 
-  createLote: async (loteData) => {
+  createTipoInsumo: async (tipoInsumoData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/lotes', {
+      const response = await fetch('http://localhost:3000/api/tipoInsumo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loteData),
+        body: JSON.stringify(tipoInsumoData),
         credentials: 'include'
       });
       
@@ -54,27 +54,27 @@ export const useLoteStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchLotes();
+        get().fetchTiposInsumo();
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al crear lote', loading: false });
+      set({ error: error.message || 'Error al crear tipo de insumo', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  updateLote: async (id, loteData) => {
+  updateTipoInsumo: async (id, tipoInsumoData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/tipoInsumo/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loteData),
+        body: JSON.stringify(tipoInsumoData),
         credentials: 'include'
       });
       
@@ -86,21 +86,21 @@ export const useLoteStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchLotes();
+        get().fetchTiposInsumo();
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al actualizar lote', loading: false });
+      set({ error: error.message || 'Error al actualizar tipo de insumo', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  deleteLote: async (id) => {
+  deleteTipoInsumo: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/tipoInsumo/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -112,7 +112,7 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        get().fetchLotes();
+        get().fetchTiposInsumo();
         return { success: true };
       } else {
         return { success: false, error: result.msg };
@@ -122,10 +122,10 @@ export const useLoteStore = create((set, get) => ({
     }
   },
 
-  fetchLoteById: async (id) => {
+  fetchTipoInsumoById: async (id) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/tipoInsumo/${id}`, {
         credentials: 'include'
       });
       
@@ -143,14 +143,14 @@ export const useLoteStore = create((set, get) => ({
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al cargar lote', loading: false });
+      set({ error: error.message || 'Error al cargar tipo de insumo', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  searchLotes: async (query) => {
+  searchTiposInsumo: async (query) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/search?query=${encodeURIComponent(query)}`, {
+      const response = await fetch(`http://localhost:3000/api/tipoInsumo/search?query=${encodeURIComponent(query)}`, {
         credentials: 'include'
       });
       
@@ -170,5 +170,22 @@ export const useLoteStore = create((set, get) => ({
     }
   },
 
-  clearError: () => set({ error: null })
+  getTiposInsumoForSelect: () => {
+    const state = get();
+    return state.tiposInsumo.map(tipo => ({
+      value: tipo.tipo_insumo_id.toString(),
+      label: tipo.nombre
+    }));
+  },
+
+  getTipoInsumoByNombre: (nombre) => {
+    const state = get();
+    return state.tiposInsumo.find(tipo => 
+      tipo.nombre.toLowerCase() === nombre.toLowerCase()
+    );
+  },
+
+  clearError: () => set({ error: null }),
+
+  reset: () => set({ tiposInsumo: [], loading: false, error: null })
 }));

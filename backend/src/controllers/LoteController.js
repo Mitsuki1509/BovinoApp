@@ -14,6 +14,15 @@ export default class LoteController {
               potrero_id: true,
               ubicacion: true
             }
+          },
+          _count: {
+            select: {
+              animales: {
+                where: {
+                  deleted_at: null
+                }
+              }
+            }
           }
         },
         orderBy: {
@@ -27,7 +36,6 @@ export default class LoteController {
       });
 
     } catch (error) {
-      console.error("Error obteniendo lotes:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al obtener los lotes"
@@ -50,6 +58,17 @@ export default class LoteController {
               potrero_id: true,
               ubicacion: true
             }
+          },
+          animales: {
+            where: {
+              deleted_at: null
+            },
+            select: {
+              animal_id: true,
+              arete: true,
+              sexo: true,
+              fecha_nacimiento: true
+            }
           }
         }
       });
@@ -67,7 +86,6 @@ export default class LoteController {
       });
 
     } catch (error) {
-      console.error("Error obteniendo lote:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al obtener el lote"
@@ -84,36 +102,70 @@ export default class LoteController {
         });
       }
 
-      const { potrero_id, descripcion } = req.body;
+      const { potrero_id, descripcion, codigo } = req.body;
+
+      if (!codigo || codigo.trim() === '') {
+        return res.status(400).json({
+          ok: false,
+          msg: "El código del lote es requerido"
+        });
+      }
 
       if (!descripcion || descripcion.trim() === '') {
         return res.status(400).json({
           ok: false,
-          msg: "La descripción es requerida"
+          msg: "La descripción del lote es requerida"
         });
       }
 
-      if (potrero_id) {
-        const potreroId = parseInt(potrero_id);
-        const potreroExistente = await prisma.potreros.findUnique({
-          where: { 
-            potrero_id: potreroId,
-            deleted_at: null 
-          }
+      if (!potrero_id) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El potrero es requerido"
         });
+      }
 
-        if (!potreroExistente) {
-          return res.status(400).json({
-            ok: false,
-            msg: "El potrero especificado no existe"
-          });
+      if (codigo.length > 50) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El código no puede tener más de 50 caracteres"
+        });
+      }
+
+      const codigoExistente = await prisma.lotes.findFirst({
+        where: {
+          codigo: codigo.trim(),
+          deleted_at: null
         }
+      });
+
+      if (codigoExistente) {
+        return res.status(400).json({
+          ok: false,
+          msg: "Ya existe un lote con este código"
+        });
+      }
+
+      const potreroId = parseInt(potrero_id);
+      const potreroExistente = await prisma.potreros.findUnique({
+        where: { 
+          potrero_id: potreroId,
+          deleted_at: null 
+        }
+      });
+
+      if (!potreroExistente) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El potrero especificado no existe"
+        });
       }
 
       const lote = await prisma.lotes.create({
         data: {
+          codigo: codigo.trim(),
           descripcion: descripcion.trim(),
-          potrero_id: potrero_id ? parseInt(potrero_id) : null
+          potrero_id: potreroId
         },
         include: {
           potrero: {
@@ -132,7 +184,13 @@ export default class LoteController {
       });
 
     } catch (error) {
-      console.error("Error creando lote:", error);
+      if (error.code === 'P2002') {
+        return res.status(400).json({
+          ok: false,
+          msg: "Ya existe un lote con este código"
+        });
+      }
+
       return res.status(500).json({
         ok: false,
         msg: "Error al crear el lote"
@@ -150,7 +208,7 @@ export default class LoteController {
       }
 
       const { id } = req.params;
-      const { potrero_id, descripcion } = req.body;
+      const { potrero_id, descripcion, codigo } = req.body;
 
       const loteId = parseInt(id);
 
@@ -168,30 +226,74 @@ export default class LoteController {
         });
       }
 
-      if (potrero_id !== undefined) {
-        if (potrero_id) {
-          const potreroId = parseInt(potrero_id);
-          const potreroExistente = await prisma.potreros.findUnique({
-            where: { 
-              potrero_id: potreroId,
-              deleted_at: null 
-            }
-          });
+      if (codigo !== undefined && (!codigo || codigo.trim() === '')) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El código del lote es requerido"
+        });
+      }
 
-          if (!potreroExistente) {
-            return res.status(400).json({
-              ok: false,
-              msg: "El potrero especificado no existe"
-            });
+      if (descripcion !== undefined && (!descripcion || descripcion.trim() === '')) {
+        return res.status(400).json({
+          ok: false,
+          msg: "La descripción del lote es requerida"
+        });
+      }
+
+      if (potrero_id !== undefined && !potrero_id) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El potrero es requerido"
+        });
+      }
+
+      if (codigo && codigo.length > 50) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El código no puede tener más de 50 caracteres"
+        });
+      }
+
+      if (codigo && codigo.trim() !== loteExistente.codigo) {
+        const codigoExistente = await prisma.lotes.findFirst({
+          where: {
+            codigo: codigo.trim(),
+            lote_id: { not: loteId },
+            deleted_at: null
           }
+        });
+
+        if (codigoExistente) {
+          return res.status(400).json({
+            ok: false,
+            msg: "Ya existe un lote con este código"
+          });
+        }
+      }
+
+      if (potrero_id !== undefined) {
+        const potreroId = parseInt(potrero_id);
+        const potreroExistente = await prisma.potreros.findUnique({
+          where: { 
+            potrero_id: potreroId,
+            deleted_at: null 
+          }
+        });
+
+        if (!potreroExistente) {
+          return res.status(400).json({
+            ok: false,
+            msg: "El potrero especificado no existe"
+          });
         }
       }
 
       const loteActualizado = await prisma.lotes.update({
         where: { lote_id: loteId },
         data: {
+          codigo: codigo ? codigo.trim() : loteExistente.codigo,
           descripcion: descripcion ? descripcion.trim() : loteExistente.descripcion,
-          potrero_id: potrero_id !== undefined ? (potrero_id ? parseInt(potrero_id) : null) : loteExistente.potrero_id
+          potrero_id: potrero_id !== undefined ? parseInt(potrero_id) : loteExistente.potrero_id
         },
         include: {
           potrero: {
@@ -211,6 +313,14 @@ export default class LoteController {
 
     } catch (error) {
       console.error("Error actualizando lote:", error);
+      
+      if (error.code === 'P2002') {
+        return res.status(400).json({
+          ok: false,
+          msg: "Ya existe un lote con este código"
+        });
+      }
+
       return res.status(500).json({
         ok: false,
         msg: "Error al actualizar el lote"
@@ -277,68 +387,6 @@ export default class LoteController {
     }
   }
 
-  static async getByPotrero(req, res) {
-    try {
-      const { potreroId } = req.params;
-      const idPotrero = parseInt(potreroId);
-
-      const lotes = await prisma.lotes.findMany({
-        where: { 
-          potrero_id: idPotrero,
-          deleted_at: null 
-        },
-        include: {
-          potrero: {
-            select: {
-              ubicacion: true
-            }
-          }
-        },
-        orderBy: {
-          lote_id: 'asc'
-        }
-      });
-
-      return res.json({
-        ok: true,
-        data: lotes
-      });
-
-    } catch (error) {
-      console.error("Error obteniendo lotes por potrero:", error);
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al obtener lotes del potrero"
-      });
-    }
-  }
-
-  static async getLotesSinPotrero(req, res) {
-    try {
-      const lotes = await prisma.lotes.findMany({
-        where: { 
-          potrero_id: null,
-          deleted_at: null 
-        },
-        orderBy: {
-          lote_id: 'asc'
-        }
-      });
-
-      return res.json({
-        ok: true,
-        data: lotes
-      });
-
-    } catch (error) {
-      console.error("Error obteniendo lotes sin potrero:", error);
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al obtener lotes sin potrero asignado"
-      });
-    }
-  }
-
   static async search(req, res) {
     try {
       const { query } = req.query;
@@ -363,6 +411,12 @@ export default class LoteController {
                   }
                 },
                 {
+                  codigo: {
+                    contains: query.trim(),
+                    mode: 'insensitive'
+                  }
+                },
+                {
                   potrero: {
                     ubicacion: {
                       contains: query.trim(),
@@ -380,6 +434,15 @@ export default class LoteController {
               potrero_id: true,
               ubicacion: true
             }
+          },
+          _count: {
+            select: {
+              animales: {
+                where: {
+                  deleted_at: null
+                }
+              }
+            }
           }
         },
         orderBy: {
@@ -393,7 +456,6 @@ export default class LoteController {
       });
 
     } catch (error) {
-      console.error("Error buscando lotes:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al buscar lotes"

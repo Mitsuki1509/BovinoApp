@@ -8,11 +8,11 @@ const animalRouter = express.Router();
 
 animalRouter.use(authenticate);
 
-animalRouter.get('/', AnimalController.getAnimales);
-animalRouter.get('/search', AnimalController.searchAnimales);
-animalRouter.get('/:id', AnimalController.getAnimalById);
-animalRouter.post('/', upload.single('imagen'), AnimalController.createAnimal);
-animalRouter.put('/:id', upload.single('imagen'), AnimalController.updateAnimal);
-animalRouter.delete('/:id', AnimalController.deleteAnimal);
+animalRouter.get('/', AnimalController.getAll);
+animalRouter.get('/search', AnimalController.search);
+animalRouter.get('/:id', AnimalController.getById);
+animalRouter.post('/', upload.single('imagen'), AnimalController.create);
+animalRouter.put('/:id', upload.single('imagen'), AnimalController.update);
+animalRouter.delete('/:id', AnimalController.delete);
 
 export default animalRouter;

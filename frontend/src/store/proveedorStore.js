@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 
-export const useLoteStore = create((set, get) => ({
-  lotes: [],
+export const useProveedorStore = create((set, get) => ({
+  proveedores: [],
   loading: false,
   error: null,
 
-  fetchLotes: async () => {
+  fetchProveedores: async () => {
     const currentState = get();
     if (currentState.loading) return;
     
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/lotes', {
+      const response = await fetch('http://localhost:3000/api/proveedores', {
         credentials: 'include'
       });
       
@@ -22,27 +22,27 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        set({ lotes: result.data || [], loading: false });
+        set({ proveedores: result.data || [], loading: false });
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
       }
     } catch (error) {
       set({ 
-        error: error.message || 'Error al cargar lotes', 
+        error: error.message || 'Error al cargar proveedores', 
         loading: false 
       });
     }
   },
 
-  createLote: async (loteData) => {
+  createProveedor: async (proveedorData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/lotes', {
+      const response = await fetch('http://localhost:3000/api/proveedores', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loteData),
+        body: JSON.stringify(proveedorData),
         credentials: 'include'
       });
       
@@ -54,27 +54,27 @@ export const useLoteStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchLotes();
+        get().fetchProveedores(); 
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al crear lote', loading: false });
+      set({ error: error.message || 'Error al crear proveedor', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  updateLote: async (id, loteData) => {
+  updateProveedor: async (id, proveedorData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/proveedores/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(loteData),
+        body: JSON.stringify(proveedorData),
         credentials: 'include'
       });
       
@@ -86,21 +86,21 @@ export const useLoteStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchLotes();
+        get().fetchProveedores(); 
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al actualizar lote', loading: false });
+      set({ error: error.message || 'Error al actualizar proveedor', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  deleteLote: async (id) => {
+  deleteProveedor: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/proveedores/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -112,7 +112,7 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        get().fetchLotes();
+        get().fetchProveedores(); 
         return { success: true };
       } else {
         return { success: false, error: result.msg };
@@ -122,10 +122,9 @@ export const useLoteStore = create((set, get) => ({
     }
   },
 
-  fetchLoteById: async (id) => {
-    set({ loading: true, error: null });
+  searchProveedores: async (query) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/proveedores/search?query=${encodeURIComponent(query)}`, {
         credentials: 'include'
       });
       
@@ -136,21 +135,18 @@ export const useLoteStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        set({ loading: false });
         return { success: true, data: result.data };
       } else {
-        set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al cargar lote', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  searchLotes: async (query) => {
+  getProveedorById: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/lotes/search?query=${encodeURIComponent(query)}`, {
+      const response = await fetch(`http://localhost:3000/api/proveedores/${id}`, {
         credentials: 'include'
       });
       

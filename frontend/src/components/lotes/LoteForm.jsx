@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useLoteStore } from '@/store/loteStore'
 import { usePotreroStore } from '@/store/potreroStore'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
@@ -28,6 +29,7 @@ const LoteForm = ({
 
   const form = useForm({
     defaultValues: {
+      codigo: '',
       descripcion: '',
       potrero_id: ''
     }
@@ -41,12 +43,14 @@ const LoteForm = ({
     if (lote) {
       setIsEditing(true)
       form.reset({
+        codigo: lote.codigo || '',
         descripcion: lote.descripcion || '',
         potrero_id: lote.potrero_id ? lote.potrero_id.toString() : ''
       })
     } else {
       setIsEditing(false)
       form.reset({
+        codigo: '',
         descripcion: '',
         potrero_id: ''
       })
@@ -59,13 +63,9 @@ const LoteForm = ({
     
     try {
       const loteData = {
+        codigo: data.codigo.trim(),
         descripcion: data.descripcion.trim(),
-      }
-
-      if (data.potrero_id && data.potrero_id !== '') {
-        loteData.potrero_id = parseInt(data.potrero_id)
-      } else {
-        loteData.potrero_id = null
+        potrero_id: parseInt(data.potrero_id) // Siempre requerido
       }
 
       let result
@@ -83,18 +83,20 @@ const LoteForm = ({
         
         if (errorMsg.includes('validación') || errorMsg.includes('validacion')) {
           setFormError('Por favor, verifique que todos los campos estén completos correctamente.')
+        } else if (errorMsg.includes('código') || errorMsg.includes('codigo') || errorMsg.includes('existe')) {
+          setFieldErrors({
+            codigo: 'Ya existe un lote con este código. Por favor, use un código diferente.'
+          })
         } else if (errorMsg.includes('descripción') || errorMsg.includes('descripcion')) {
           setFieldErrors({
             descripcion: 'La descripción es requerida'
           })
         } else if (errorMsg.includes('potrero') || errorMsg.includes('Potrero')) {
           setFieldErrors({
-            potrero_id: 'El potrero especificado no existe'
+            potrero_id: 'El potrero es requerido'
           })
         } else if (errorMsg.includes('permisos') || errorMsg.includes('permiso')) {
           setFormError('No tiene permisos para realizar esta acción. Solo administradores y operarios pueden gestionar lotes.')
-        } else if (errorMsg.includes('animales')) {
-          setFormError('No se puede eliminar el lote porque tiene animales asignados.')
         } else {
           setFormError(`Error: ${errorMsg}. Por favor, verifique los datos e intente nuevamente.`)
         }
@@ -109,13 +111,8 @@ const LoteForm = ({
     label: potrero.ubicacion
   }))
 
-  const allPotreroOptions = [
-    { value: '', label: 'Sin potrero asignado' },
-    ...potreroOptions
-  ]
-
   return (
-    <Card className="w-full max-w-md mx-auto border-0 shadow-none">
+    <Card className="w-full border-0 shadow-none">
       <CardContent className="p-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -126,6 +123,38 @@ const LoteForm = ({
             )}
 
             <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="codigo"
+                rules={{ 
+                  required: "El código del lote es obligatorio",
+                  minLength: {
+                    value: 1,
+                    message: "El código del lote es requerido"
+                  },
+                  maxLength: {
+                    value: 50,
+                    message: "El código no puede tener más de 50 caracteres"
+                  }
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel >Código del Lote </FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ej: LOTE-001" 
+                        {...field} 
+                        disabled={loading}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage>
+                      {fieldErrors.codigo || form.formState.errors.codigo?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="descripcion"
@@ -161,12 +190,15 @@ const LoteForm = ({
               <FormField
                 control={form.control}
                 name="potrero_id"
+                rules={{ 
+                  required: "El potrero es requerido"
+                }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Potrero Asociado (Opcional)</FormLabel>
+                    <FormLabel>Potrero Asociado </FormLabel>
                     <FormControl>
                       <Combobox
-                        options={allPotreroOptions}
+                        options={potreroOptions}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar potrero"
@@ -182,12 +214,12 @@ const LoteForm = ({
               />
             </div>
 
-            <div className="flex pt-4">
+            <div className="pt-2 sm:pt-4 flex">
+              
               <Button 
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
-                size="lg"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Lote' : 'Crear Lote'}
