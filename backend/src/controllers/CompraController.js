@@ -1,70 +1,14 @@
 import prisma from "../database.js"
 
 export default class CompraController {
-    static async generarNumeroCompra() {
-        try {
-            const ultimaCompra = await prisma.compras.findFirst({
-                where: {
-                    numero_compra: {
-                        not: "" 
-                    }
-                },
-                orderBy: {
-                    compra_id: 'desc'
-                },
-                select: {
-                    numero_compra: true
-                }
-            });
-
-            let siguienteNumero = 1;
-            
-            if (ultimaCompra && ultimaCompra.numero_compra) {
-                const match = ultimaCompra.numero_compra.match(/COMP-(\d+)/);
-                if (match && match[1]) {
-                    siguienteNumero = parseInt(match[1]) + 1;
-                } else {
-                    const todasCompras = await prisma.compras.findMany({
-                        where: {
-                            numero_compra: {
-                                contains: "COMP-"
-                            }
-                        },
-                        select: {
-                            numero_compra: true
-                        },
-                        orderBy: {
-                            compra_id: 'desc'
-                        }
-                    });
-                    
-                    const numeros = todasCompras
-                        .map(compra => {
-                            const match = compra.numero_compra?.match(/COMP-(\d+)/);
-                            return match ? parseInt(match[1]) : 0;
-                        })
-                        .filter(num => num > 0);
-                    
-                    if (numeros.length > 0) {
-                        siguienteNumero = Math.max(...numeros) + 1;
-                    }
-                }
-            }
-
-            return `COMP-${siguienteNumero.toString().padStart(4, '0')}`;
-        } catch (error) {
-            const timestamp = Date.now();
-            return `COMP-${timestamp.toString().slice(-4)}`;
-        }
-    }
 
     static async generarNumeroCompraSimple() {
         try {
             const totalCompras = await prisma.compras.count();
-            return `COMP-${(totalCompras + 1).toString().padStart(4, '0')}`;
+            return `MONTA-${(totalCompras + 1).toString().padStart(4, '0')}`;
         } catch (error) {
             const timestamp = Date.now();
-            return `COMP-${timestamp.toString().slice(-4)}`;
+            return `MONTA-${timestamp.toString().slice(-4)}`;
         }
     }
 

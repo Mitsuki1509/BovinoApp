@@ -44,7 +44,7 @@ import {
   Syringe,
   Weight
 } from "lucide-react";
-import { FaCow } from 'react-icons/fa6';
+import { FaCow, FaClipboardCheck } from 'react-icons/fa6';
 import { useAuthStore } from "@/store/authStore";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/react-collapsible";
 
@@ -82,9 +82,9 @@ const produccion = [
 ];
 
 const reproduccion = [
-  { title: "Montas", href: "/montas", icon: Heart },
-  { title: "Diagnóstico de Preñez", href: "/diagnostico_preñez", icon: Stethoscope },
-  { title: "Partos", href: "/partos", icon: HelpCircle },
+  { title: "Montas", href: "/montas", icon: FaClipboardCheck },
+  { title: "Diagnóstico de Preñez", href: "/diagnosticos", icon: Stethoscope },
+  { title: "Partos", href: "/partos", icon: FaCow },
 ];
 
 export function MainLayout({ children }) {

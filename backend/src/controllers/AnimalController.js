@@ -7,10 +7,44 @@ export default class AnimalController {
 
   static async getAll(req, res) {
     try {
+      const { sexo, fecha_limite, para_monta } = req.query;
+      
+      let whereClause = { 
+        deleted_at: null 
+      };
+
+      if (sexo && ['M', 'H'].includes(sexo)) {
+        whereClause.sexo = sexo;
+      }
+
+      if (para_monta === 'true') {
+        const fechaActual = new Date();
+        
+        if (sexo === 'H') {
+          const fechaLimiteHembras = new Date();
+          fechaLimiteHembras.setMonth(fechaActual.getMonth() - 15);
+          whereClause.fecha_nacimiento = {
+            lte: fechaLimiteHembras
+          };
+        } else if (sexo === 'M') {
+          const fechaLimiteMachos = new Date();
+          fechaLimiteMachos.setMonth(fechaActual.getMonth() - 18);
+          whereClause.fecha_nacimiento = {
+            lte: fechaLimiteMachos
+          };
+        }
+      }
+      else if (fecha_limite) {
+        const fechaLimiteDate = new Date(fecha_limite);
+        if (!isNaN(fechaLimiteDate.getTime())) {
+          whereClause.fecha_nacimiento = {
+            lte: fechaLimiteDate
+          };
+        }
+      }
+
       const animales = await prisma.animales.findMany({
-        where: { 
-          deleted_at: null 
-        },
+        where: whereClause,
         include: {
           madre: {
             select: {
@@ -696,24 +730,26 @@ export default class AnimalController {
         });
       }
 
-      const hijosConMadre = await prisma.animales.findFirst({
-        where: { 
-          animal_madre_id: animalId,
-          deleted_at: null 
+      const fechaLimite = new Date();
+      fechaLimite.setDate(fechaLimite.getDate() - 7); 
+
+      const eventosRecientes = await prisma.evento_monta.findFirst({
+        where: {
+          OR: [
+            { animal_hembra_id: animalId },
+            { animal_macho_id: animalId }
+          ],
+          deleted_at: null,
+          fecha: {
+            gte: fechaLimite
+          }
         }
       });
 
-      const hijosConPadre = await prisma.animales.findFirst({
-        where: { 
-          animal_padre_id: animalId,
-          deleted_at: null 
-        }
-      });
-
-      if (hijosConMadre || hijosConPadre) {
+      if (eventosRecientes) {
         return res.status(400).json({
           ok: false,
-          msg: "No se puede eliminar el animal porque es padre/madre de otros animales"
+          msg: "No se puede eliminar el animal porque tiene eventos de monta muy recientes"
         });
       }
 

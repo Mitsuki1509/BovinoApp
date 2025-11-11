@@ -9,7 +9,9 @@ import AnimalesPage from './pages/AnimalesPage';
 import ProveedoresPage from './pages/ProveedoresPage';
 import GestionInsumosPage from './pages/GestionInsumosPage';
 import GestionComprasPage from './pages/GestionComprasPage';
-
+import MontasPage from './pages/MontasPage';
+import DiagnosticosPage from './pages/DiagnosticosPage';
+import PartosPage from './pages/PartosPage';
 function App() {
   return (
     <Router>
@@ -25,6 +27,9 @@ function App() {
         <Route path="/proveedores" element={<ProveedoresPage/>}></Route>
         <Route path="/gestion-insumos" element={<GestionInsumosPage/>}></Route>
         <Route path="/gestion-compras" element={<GestionComprasPage/>}></Route>
+        <Route path="/montas" element={<MontasPage/>}></Route>
+        <Route path="/diagnosticos" element={<DiagnosticosPage/>}></Route>
+        <Route path="/partos" element={<PartosPage/>}></Route>
       </Routes>
     </Router>
   );

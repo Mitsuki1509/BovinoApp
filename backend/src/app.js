@@ -16,7 +16,9 @@ import compraRouter from "./routes/compraRoutes.js";
 import insumoRouter from "./routes/insumoRoutes.js";
 import tipoInsumoRouter from "./routes/tipoInsumoRoutes.js";
 import detalleCompraRouter from "./routes/detalleCompraRoutes.js";
-
+import montaRouter from "./routes/montaRoutes.js";
+import diagnosticoRouter from "./routes/diagnosticoRoutes.js";
+import partoRouter from './routes/partoRouter.js';
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,12 +56,15 @@ app.get("/", (_req, res) => {
       potreros: "/api/potreros",
       lotes: "/api/lotes",
       razas: "/api/razas",
-      animal: "/api/animales",
-      proveedor: "/api/proveedores",
-      compraRouter: "/api/compras",
-      tipoInsumoRouter:"/api/tipoInsumo",
-      insumoRouter:"/api/insumos",
-      detalleCompraRouter:"/api/detalleCompra", 
+      animales: "/api/animales",
+      proveedores: "/api/proveedores",
+      compras: "/api/compras",
+      tiposInsumo:"/api/tipoInsumo",
+      insumos:"/api/insumos",
+      detalleCompra:"/api/detalleCompra", 
+      montas: "/api/montas",
+      diagnosticos: "/api/diagnosticos",
+      partos: "/api/partos",
       health: "/health",
     },
   });
@@ -76,6 +81,10 @@ app.use("/api/compras", compraRouter)
 app.use("/api/tipoInsumo", tipoInsumoRouter)
 app.use("/api/insumos", insumoRouter)
 app.use("/api/detalleCompra", detalleCompraRouter) 
+app.use("/api/montas", montaRouter)
+app.use("/api/diagnosticos", diagnosticoRouter)
+app.use("/api/partos", partoRouter);
+
 
 app.use((req, res) => {
   res.status(404).json({
