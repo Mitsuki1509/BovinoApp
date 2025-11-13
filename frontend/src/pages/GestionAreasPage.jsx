@@ -396,16 +396,14 @@ const GestionAreasPage = () => {
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Package className="h-4 w-4 text-blue-600" />
                                   <div>
-                                    <Badge variant="secondary" className="font-mono mb-1">
+                                    <Badge variant="outline" className="font-mono mb-1">
                                       {lote.codigo}
                                     </Badge>
                                     <h3 className="font-semibold text-lg">{lote.descripcion}</h3>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                  <MapPin className="h-4 w-4 text-green-600" />
                                   <Badge variant="outline">
                                     {lote.potrero?.ubicacion}
                                   </Badge>
@@ -529,7 +527,6 @@ const GestionAreasPage = () => {
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4 text-green-600" />
                                   <h3 className="font-semibold text-lg">{potrero.ubicacion}</h3>
                                 </div>
                               </div>

@@ -12,6 +12,9 @@ import GestionComprasPage from './pages/GestionComprasPage';
 import MontasPage from './pages/MontasPage';
 import DiagnosticosPage from './pages/DiagnosticosPage';
 import PartosPage from './pages/PartosPage';
+import EventosSanitariosPage from './pages/EventoSanitarioPage';
+import AlimentacionesPage from './pages/AlimentacionesPage';
+import PesajesPage from './pages/PesajesPage';
 function App() {
   return (
     <Router>
@@ -30,6 +33,9 @@ function App() {
         <Route path="/montas" element={<MontasPage/>}></Route>
         <Route path="/diagnosticos" element={<DiagnosticosPage/>}></Route>
         <Route path="/partos" element={<PartosPage/>}></Route>
+        <Route path="/evento" element={<EventosSanitariosPage/>}></Route>
+        <Route path="/alimentaciones" element={<AlimentacionesPage/>}></Route>
+        <Route path="/pesajes" element={<PesajesPage/>}></Route>
       </Routes>
     </Router>
   );

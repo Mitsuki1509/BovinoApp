@@ -6,13 +6,11 @@ import authenticate from "../middlewares/authenticate.js";
 const upload = multer({ storage: multer.memoryStorage() });
 const insumoRouter = express.Router();
 
-insumoRouter.use(authenticate);
-insumoRouter.get('/', InsumoController.getAll);
-insumoRouter.get('/search', InsumoController.search);
-insumoRouter.get('/unidades', InsumoController.getUnidades); 
-insumoRouter.get('/:id', InsumoController.getById);
-insumoRouter.post('/', upload.single('imagen'), InsumoController.create);
-insumoRouter.put('/:id', upload.single('imagen'), InsumoController.update);
-insumoRouter.delete('/:id', InsumoController.delete);
+insumoRouter.get('/', authenticate, InsumoController.getAll);
+insumoRouter.get('/unidades',authenticate, InsumoController.getUnidades); 
+insumoRouter.get('/:id', authenticate, InsumoController.getById);
+insumoRouter.post('/', authenticate, upload.single('imagen'), InsumoController.create);
+insumoRouter.put('/:id', authenticate, upload.single('imagen'), InsumoController.update);
+insumoRouter.delete('/:id',authenticate, InsumoController.delete);
 
 export default insumoRouter;

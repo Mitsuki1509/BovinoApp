@@ -48,7 +48,6 @@ const PartosPage = () => {
   const [editingParto, setEditingParto] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [hasFetchedData, setHasFetchedData] = useState(false);
-
   const [fechaFiltro, setFechaFiltro] = useState(null);
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -102,10 +101,6 @@ const PartosPage = () => {
     setShowConfirm(true);
   }, []);
 
-  const limpiarFiltroFecha = () => {
-    setFechaFiltro(null);
-  };
-
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
     
@@ -158,31 +153,36 @@ const PartosPage = () => {
     }
   };
 
-  const handleFormSuccess = useCallback(() => {
+  const handleFormSuccess = useCallback(async () => {
     setShowForm(false);
     setEditingParto(null);
-    fetchPartos();
     
-    toast({
-      title: editingParto ?
-        (
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <span>Actualizado correctamente</span>
-          </div>
-        )
-        : 
-        (
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <span>Registrado correctamente</span>
-          </div>
-        ),
-      description: editingParto 
-        ? "El parto se actualizó exitosamente." 
-        : "El parto se registró exitosamente.",
-      duration: 3000,
-    });
+    try {
+      await fetchPartos();
+      
+      toast({
+        title: editingParto ?
+          (
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <span>Actualizado correctamente</span>
+            </div>
+          )
+          : 
+          (
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <span>Registrado correctamente</span>
+            </div>
+          ),
+        description: editingParto 
+          ? "El parto se actualizó exitosamente." 
+          : "El parto se registró exitosamente.",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error al recargar datos:', error);
+    }
   }, [fetchPartos, editingParto, toast]);
 
   const handleFormCancel = useCallback(() => {
@@ -297,7 +297,7 @@ const PartosPage = () => {
             />
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto ">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -315,7 +315,7 @@ const PartosPage = () => {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 " align="start ">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={fechaFiltro}
@@ -324,18 +324,17 @@ const PartosPage = () => {
                   locale={es}
                 />
               </PopoverContent>
-            </Popover>
-
-      
+            </Popover>       
           </div>
         </div>
 
-       
+
         <Card>
           <CardHeader>
             <CardTitle>Lista de Partos</CardTitle>
             <CardDescription>
               {filteredPartos.length} de {partos.length} parto(s) encontrado(s)
+              {(searchTerm || fechaFiltro) && " (filtrados)"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -349,7 +348,7 @@ const PartosPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 font-medium">Número </th>
+                        <th className="text-left py-3 font-medium">Número</th>
                         <th className="text-left py-3 font-medium">Hembra</th>
                         <th className="text-left py-3 font-medium">Tipo Evento</th>
                         <th className="text-left py-3 font-medium">Fecha Parto</th>
@@ -363,27 +362,27 @@ const PartosPage = () => {
                         
                         return (
                           <tr key={partoItem.evento_id} className="border-b hover:bg-gray-50">
-                          
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-                                <Badge variant="outline" className="font-mono">
+                                <Badge variant="secondary" className="font-mono ">
                                   {formatearNumeroMonta(numeroMonta)}
                                 </Badge>
                               </div>
                             </td>
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-                                {areteHembra}
+                                <Badge variant="secondary" className="font-mono ">
+                                  {areteHembra}
+                                </Badge>
+
                               </div>
                             </td>
                             <td className="py-3">
-                              {partoItem.tipo_evento?.nombre || 'N/A'}
+                                {partoItem.tipo_evento?.nombre || 'N/A'}
                             </td>
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-                                <span>
                                   {format(new Date(partoItem.fecha), "dd/MM/yyyy", { locale: es })}
-                                </span>
                               </div>
                             </td>
                             <td className="py-3">
@@ -437,24 +436,19 @@ const PartosPage = () => {
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-
-                                <Badge variant="outline" className="font-mono text-xs">
+                                <Badge variant="secondary" className="font-mono">
                                   {formatearNumeroMonta(numeroMonta)}
+                                </Badge>
+                                <Badge variant="secondary" className="font-mono">
+                                  {areteHembra}
                                 </Badge>
                               </div>
                               <div className="mt-3 space-y-2">
                                 <div className="flex items-center gap-2 text-sm">
-                                  <Baby className="h-4 w-4 text-blue-600" />
-                                  <span className="font-medium">{partoItem.tipo_evento?.nombre || 'N/A'}</span>
+                                  {partoItem.tipo_evento?.nombre || 'N/A'}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-                                  <span className="text-gray-600">Hembra: {areteHembra}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm">
-                                  <CalendarIcon className="h-4 w-4 text-green-600" />
-                                  <span className="text-gray-600">
-                                    {format(new Date(partoItem.fecha), "dd/MM/yyyy", { locale: es })}
-                                  </span>
+                                  {format(new Date(partoItem.fecha), "dd/MM/yyyy", { locale: es })}
                                 </div>
                                 {partoItem.descripcion && (
                                   <div className="text-sm text-gray-600">

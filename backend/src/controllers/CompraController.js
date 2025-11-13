@@ -95,7 +95,6 @@ export default class CompraController {
                         proveedor_id: true,
                         nombre_compañia: true,
                         nombre_contacto: true,
-                        telefono_local: true
                     }
                 },
                 detalle_compras: {
@@ -223,7 +222,6 @@ export default class CompraController {
                             proveedor_id: true,
                             nombre_compañia: true,
                             nombre_contacto: true,
-                            telefono_local: true
                         }
                     }
                 }
@@ -350,7 +348,6 @@ export default class CompraController {
                             proveedor_id: true,
                             nombre_compañia: true,
                             nombre_contacto: true,
-                            telefono_local: true
                         }
                     }
                 }
@@ -447,76 +444,6 @@ export default class CompraController {
         }
     }
 
-    static async search(req, res) {
-        try {
-            const { query } = req.query;
-
-            if (!query || query.trim() === '') {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El parámetro de búsqueda es requerido"
-                });
-            }
-
-            const compras = await prisma.compras.findMany({
-                where: {
-                    AND: [
-                        { deleted_at: null },
-                        {
-                            OR: [
-                                {
-                                    numero_compra: {
-                                        contains: query.trim(),
-                                        mode: 'insensitive'
-                                    }
-                                },
-                                {
-                                    proveedor: {
-                                        nombre_compañia: {
-                                            contains: query.trim(),
-                                            mode: 'insensitive'
-                                        }
-                                    }
-                                },
-                                {
-                                    proveedor: {
-                                        nombre_contacto: {
-                                            contains: query.trim(),
-                                            mode: 'insensitive'
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ]
-                },
-                include: {
-                    proveedor: {
-                        select: {
-                            proveedor_id: true,
-                            nombre_compañia: true,
-                            nombre_contacto: true
-                        }
-                    }
-                },
-                orderBy: {
-                    compra_id: 'desc'
-                }
-            });
-
-            return res.json({
-                ok: true,
-                data: compras
-            });
-
-        } catch (error) {
-            return res.status(500).json({
-                ok: false,
-                msg: "Error al buscar compras"
-            });
-        }
-    }
-
     static async getByNumeroCompra(req, res) {
     try {
         const { numero } = req.params;
@@ -539,7 +466,6 @@ export default class CompraController {
                         proveedor_id: true,
                         nombre_compañia: true,
                         nombre_contacto: true,
-                        telefono_local: true
                     }
                 },
                 detalle_compras: {
@@ -596,5 +522,4 @@ export default class CompraController {
         });
     }
 }
-
 }

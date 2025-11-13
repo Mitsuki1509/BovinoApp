@@ -19,6 +19,10 @@ import detalleCompraRouter from "./routes/detalleCompraRoutes.js";
 import montaRouter from "./routes/montaRoutes.js";
 import diagnosticoRouter from "./routes/diagnosticoRoutes.js";
 import partoRouter from './routes/partoRouter.js';
+import eventoSanitarioRouter from "./routes/eventoSanitarioRouter.js";
+import alimentacionRouter from "./routes/alimentacionRoutes.js";
+import pesajeRouter from "./routes/pesajeRoutes.js";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -65,6 +69,9 @@ app.get("/", (_req, res) => {
       montas: "/api/montas",
       diagnosticos: "/api/diagnosticos",
       partos: "/api/partos",
+      eventoSanitario: "/api/eventosSanitario",
+      alimentaciones: "/api/alimentaciones",
+      pesajes: "/api/pesajes",
       health: "/health",
     },
   });
@@ -84,7 +91,9 @@ app.use("/api/detalleCompra", detalleCompraRouter)
 app.use("/api/montas", montaRouter)
 app.use("/api/diagnosticos", diagnosticoRouter)
 app.use("/api/partos", partoRouter);
-
+app.use("/api/eventosSanitario", eventoSanitarioRouter)
+app.use("/api/alimentaciones", alimentacionRouter)
+app.use("/api/pesajes", pesajeRouter)
 
 app.use((req, res) => {
   res.status(404).json({
@@ -96,7 +105,6 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error("Error global:", error);
   res.status(500).json({
     ok: false,
     message: "Error interno del servidor",

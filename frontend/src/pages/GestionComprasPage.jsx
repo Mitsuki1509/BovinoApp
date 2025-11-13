@@ -447,25 +447,21 @@ const GestionComprasPage = () => {
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Receipt className="h-4 w-4 text-blue-600" />
                                   <div>
-                                    <Badge variant="secondary" className="font-mono mb-1">
+                                    <Badge variant="secondary" className="font-mono">
                                       {compra.numero_compra}
                                     </Badge>
                                     <div className="flex items-center gap-2">
-                                      <User className="h-4 w-4 text-blue-600" />
                                       <h3 className="font-semibold">{compra.proveedor?.nombre_compañia}</h3>
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Calendar className="h-4 w-4 text-green-600" />
                                   <span>
                                     {format(new Date(compra.fecha), "dd/MM/yyyy", { locale: es })}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                  <DollarSign className="h-4 w-4 text-orange-600" />
                                   <span className="font-medium">
                                     ${calcularTotalCompra(compra).toFixed(2)}
                                   </span>
@@ -555,7 +551,7 @@ const GestionComprasPage = () => {
                                 <tr key={detalle.detalle_id} className="border-b hover:bg-gray-50">
                                   <td className="py-3">
                                     <div className="flex items-center gap-2">
-                                      <Badge variant="outline" className="font-mono">
+                                      <Badge variant="secondary" className="font-mono">
                                         {detalle.compra?.numero_compra}
                                       </Badge>
                                     </div>
@@ -630,13 +626,11 @@ const GestionComprasPage = () => {
                                 <div className="flex justify-between items-start">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
-                                      <Receipt className="h-4 w-4 text-blue-600" />
                                       <div>
-                                        <Badge variant="outline" className="font-mono">
+                                        <Badge variant="secondary" className="font-mono">
                                           {detalle.compra?.numero_compra}
                                         </Badge>
                                         <div className="flex items-center gap-2 mt-1">
-                                          <User className="h-4 w-4 text-blue-600" />
                                           <span className="font-medium text-sm">
                                             {detalle.compra?.proveedor?.nombre_compañia}
                                           </span>
@@ -644,7 +638,6 @@ const GestionComprasPage = () => {
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2 mb-2">
-                                      <Package className="h-4 w-4 text-blue-600" />
                                       <div>
                                         <h3 className="font-semibold">{detalle.insumo?.nombre}</h3>
                                         <div className="text-xs text-gray-500">
@@ -668,7 +661,7 @@ const GestionComprasPage = () => {
                                     </div>
                                     <div className="mt-2">
                                       <span className="text-gray-600">Subtotal:</span>
-                                      <div className="font-medium text-green-600">
+                                      <div className="font-medium ">
                                         ${(parseFloat(detalle.precio) * detalle.cantidad).toFixed(2)}
                                       </div>
                                     </div>

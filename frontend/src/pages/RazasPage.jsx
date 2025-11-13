@@ -329,11 +329,6 @@ useEffect(() => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{razaItem.nombre}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
-                                Activa
-                              </Badge>
-                            </div>
                             <div className="mt-2">
                               {razaItem.descripcion ? (
                                 <p className="text-gray-600 text-sm">{razaItem.descripcion}</p>

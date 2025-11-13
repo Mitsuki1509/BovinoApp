@@ -230,48 +230,4 @@ export default class PotreroController {
     }
   }
 
-  static async search(req, res) {
-    try {
-      const { query } = req.query;
-
-      if (!query || query.trim() === '') {
-        return res.status(400).json({
-          ok: false,
-          msg: "El parámetro de búsqueda es requerido"
-        });
-      }
-
-      const potreros = await prisma.potreros.findMany({
-        where: {
-          AND: [
-            { deleted_at: null },
-            {
-              OR: [
-                {
-                  ubicacion: {
-                    contains: query.trim(),
-                    mode: 'insensitive'
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        orderBy: {
-          ubicacion: 'asc'
-        }
-      });
-
-      return res.json({
-        ok: true,
-        data: potreros
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al buscar potreros"
-      });
-    }
-  }
 }

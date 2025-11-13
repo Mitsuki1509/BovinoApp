@@ -6,11 +6,10 @@ const razaRouter = express.Router();
 
 razaRouter.use(authenticate);
 
-razaRouter.get('/', RazaController.getRazas);
-razaRouter.get('/search', RazaController.searchRazas);
-razaRouter.get('/:id', RazaController.getRazaById);
-razaRouter.post('/', RazaController.createRaza);
-razaRouter.put('/:id', RazaController.updateRaza);
-razaRouter.delete('/:id', RazaController.deleteRaza);
+razaRouter.get('/', RazaController.getAll);
+razaRouter.get('/:id', RazaController.getById);
+razaRouter.post('/', RazaController.create);
+razaRouter.put('/:id', RazaController.update);
+razaRouter.delete('/:id', RazaController.delete);
 
 export default razaRouter;

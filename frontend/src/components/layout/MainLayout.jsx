@@ -52,7 +52,7 @@ const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: Home },
   { title: "Usuarios", href: "/users", icon: Users },
   { title: "Tipos de eventos", href: "/types", icon: Calendar },
-  { title: "Alimentación", href: "/control_alimentacion", icon: Utensils },
+  { title: "Alimentación", href: "/alimentaciones", icon: Utensils },
   { title: "Pesajes", href: "/pesajes", icon: Scale },
 ];
 
@@ -69,8 +69,7 @@ const ganado = [
 ];
 
 const sanidad = [
-  { title: "Eventos Sanitarios", href: "/eventos_sanitarios", icon: Stethoscope },
-  { title: "Uso de Insumos", href: "/uso_insumos", icon: Syringe },
+  { title: "Eventos Sanitarios", href: "/evento", icon: Stethoscope },
 ];
 const pesaje = [
   { title: "Registro de Pesajes", href: "/pesajes", icon: Weight },

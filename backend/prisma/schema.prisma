@@ -24,23 +24,19 @@ model finca {
 }
 
 model usuarios {
-  usuario_id                     Int                  @id @default(autoincrement())
-  finca_id                       Int?
-  rol_id                         Int?
-  nombre                         String               @db.VarChar(255)
-  correo                         String               @unique @db.VarChar(255)
-  contraseña                    String?              @db.VarChar(255)
-  verificado                     Boolean?             @default(false)
-  google_oauth                   Boolean?             @default(false)
-  deleted_at                     DateTime?            @db.Timestamp(6)
-  alimentaciones                 alimentacion[]
-  eventos_sanitarios_operador    evento_sanitario[]   @relation("EventoSanitarioOperador")
-  eventos_sanitarios_veterinario evento_sanitario[]   @relation("EventoSanitarioVeterinario")
-  pesajes_realizados             pesajes[]
-  producciones_carne             produccion_carne[]
-  producciones_leche             produccion_lechera[]
-  finca                          finca?               @relation(fields: [finca_id], references: [finca_id], onDelete: NoAction, onUpdate: NoAction)
-  rol                            roles?               @relation(fields: [rol_id], references: [rol_id], onDelete: NoAction, onUpdate: NoAction)
+  usuario_id         Int                  @id @default(autoincrement())
+  finca_id           Int?
+  rol_id             Int?
+  nombre             String               @db.VarChar(255)
+  correo             String               @unique @db.VarChar(255)
+  contraseña        String?              @db.VarChar(255)
+  verificado         Boolean?             @default(false)
+  google_oauth       Boolean?             @default(false)
+  deleted_at         DateTime?            @db.Timestamp(6)
+  producciones_carne produccion_carne[]
+  producciones_leche produccion_lechera[]
+  finca              finca?               @relation(fields: [finca_id], references: [finca_id], onDelete: NoAction, onUpdate: NoAction)
+  rol                roles?               @relation(fields: [rol_id], references: [rol_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model unidades {
@@ -171,22 +167,17 @@ model detalle_compras {
 }
 
 model evento_sanitario {
-  evento_sanitario_id    Int             @id @default(autoincrement())
-  animal_id              Int?
-  tipo_evento_id         Int?
-  usuario_veterinario_id Int?
-  usuario_operador_id    Int?
-  estado                 String?         @db.VarChar(100)
-  diagnostico            String?
-  tratamiento            String?
-  fecha_diagnostico      DateTime?       @db.Date
-  fecha                  DateTime        @db.Date
-  deleted_at             DateTime?       @db.Timestamp(6)
-  insumos_usados         evento_insumo[]
-  animal                 animales?       @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
-  tipo_evento            tipo_evento?    @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
-  operador               usuarios?       @relation("EventoSanitarioOperador", fields: [usuario_operador_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
-  veterinario            usuarios?       @relation("EventoSanitarioVeterinario", fields: [usuario_veterinario_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
+  evento_sanitario_id Int             @id @default(autoincrement())
+  animal_id           Int?
+  tipo_evento_id      Int?
+  estado              String?         @db.VarChar(100)
+  diagnostico         String?
+  tratamiento         String?
+  fecha               DateTime        @db.Date
+  deleted_at          DateTime?       @db.Timestamp(6)
+  evento_insumo       evento_insumo[]
+  animal              animales?       @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_evento         tipo_evento?    @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model evento_insumo {
@@ -202,28 +193,24 @@ model evento_insumo {
 
 model alimentacion {
   alimentacion_id     Int       @id @default(autoincrement())
-  insumo_id           Int?
-  usuario_operador_id Int?
-  animal_id           Int?
+  insumo_id           Int
+  animal_id           Int
   cantidad            Int
   fecha               DateTime  @db.Date
   deleted_at          DateTime? @db.Timestamp(6)
   animal              animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   insumo              insumos?  @relation(fields: [insumo_id], references: [insumo_id], onDelete: NoAction, onUpdate: NoAction)
-  usuario             usuarios? @relation(fields: [usuario_operador_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model pesajes {
   pesaje_id           Int       @id @default(autoincrement())
-  usuario_operador_id Int?
-  animal_id           Int?
-  unidad_id           Int?
+  animal_id           Int
+  unidad_id           Int
   peso                Decimal   @db.Decimal(10, 2)
   fecha               DateTime  @db.Date
   deleted_at          DateTime? @db.Timestamp(6)
   animal              animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   unidad              unidades? @relation(fields: [unidad_id], references: [unidad_id], onDelete: NoAction, onUpdate: NoAction)
-  usuario             usuarios? @relation(fields: [usuario_operador_id], references: [usuario_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model produccion_carne {
@@ -256,35 +243,33 @@ model evento_monta {
   animal_macho_id  Int?
   tipo_evento_id   Int?
   deleted_at       DateTime?            @db.Timestamp(6)
-  numero_monta     Int?                
+  numero_monta     Int?
   descripcion      String?
   estado           Boolean?
   diagnosticos     diagnostico_prenez[]
   hembra           animales?            @relation("MontaHembra", fields: [animal_hembra_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   macho            animales?            @relation("MontaMacho", fields: [animal_macho_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   tipo_evento      tipo_evento?         @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([animal_hembra_id, numero_monta]) 
 }
 
 model diagnostico_prenez {
-  prenez_id            Int           @id(map: "diagnostico_preñez_pkey") @default(autoincrement())
+  prenez_id            Int            @id(map: "diagnostico_preñez_pkey") @default(autoincrement())
   monta_id             Int?
-  metodo               String?       @db.VarChar(100)
-  fecha_probable_parto DateTime?     @db.Date
-  deleted_at           DateTime?     @db.Timestamp(6)
+  metodo               String?        @db.VarChar(100)
+  fecha_probable_parto DateTime?      @db.Date
+  deleted_at           DateTime?      @db.Timestamp(6)
   resultado            Boolean?
-  monta                evento_monta? @relation(fields: [monta_id], references: [monta_id], onDelete: NoAction, onUpdate: NoAction, map: "diagnostico_preñez_monta_id_fkey")
-  partos               evento_parto[] // ← RELACIÓN INVERSA AGREGADA
+  monta                evento_monta?  @relation(fields: [monta_id], references: [monta_id], onDelete: NoAction, onUpdate: NoAction, map: "diagnostico_preñez_monta_id_fkey")
+  partos               evento_parto[]
 }
 
 model evento_parto {
-  evento_id      Int                  @id @default(autoincrement())
+  evento_id      Int                 @id @default(autoincrement())
   tipo_evento_id Int?
   descripcion    String?
-  fecha          DateTime             @db.Date
-  deleted_at     DateTime?            @db.Timestamp(6)
+  fecha          DateTime            @db.Date
+  deleted_at     DateTime?           @db.Timestamp(6)
   prenez_id      Int?
-  tipo_evento    tipo_evento?         @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
-  prenez         diagnostico_prenez?  @relation(fields: [prenez_id], references: [prenez_id], onDelete: NoAction, onUpdate: NoAction)
+  prenez         diagnostico_prenez? @relation(fields: [prenez_id], references: [prenez_id], onDelete: NoAction, onUpdate: NoAction)
+  tipo_evento    tipo_evento?        @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
 }

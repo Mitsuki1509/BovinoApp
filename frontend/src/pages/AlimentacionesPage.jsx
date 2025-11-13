@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { useDiagnosticoStore } from '../store/diagnosticoStore';
-import { useMontaStore } from '../store/montaStore';
+import { useAlimentacionStore } from '@/store/alimentacionStore';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,26 +20,32 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar, Stethoscope
+  XCircle, Calendar as CalendarIcon, Utensils
  } from 'lucide-react';
-import DiagnosticoForm from '@/components/diagnosticos/DiagnosticoForm';
+import AlimentacionForm from '@/components/alimentaciones/AlimentacionForm';
 import Modal from '@/components/ui/modal';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
-const DiagnosticosPage = () => {
+const AlimentacionesPage = () => {
   const navigate = useNavigate();
   const { checkAuth, user } = useAuthStore();
-  const { diagnosticos, fetchDiagnosticos, deleteDiagnostico, loading } = useDiagnosticoStore();
-  const { fetchMontas } = useMontaStore();
+  const { alimentaciones, fetchAlimentaciones, deleteAlimentacion, loading } = useAlimentacionStore();
   const [authStatus, setAuthStatus] = useState('checking');
   const [showForm, setShowForm] = useState(false);
-  const [editingDiagnostico, setEditingDiagnostico] = useState(null);
+  const [editingAlimentacion, setEditingAlimentacion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [hasFetchedData, setHasFetchedData] = useState(false);
+  const [fechaFiltro, setFechaFiltro] = useState(null);
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -69,27 +74,23 @@ const DiagnosticosPage = () => {
 
   useEffect(() => {
     if (authStatus === 'authenticated' && 
-        (user?.rol === 'admin' || user?.rol === 'veterinario') && 
-        !hasFetchedData) {
-      console.log('Cargando datos...');
-      fetchDiagnosticos();
-      fetchMontas(); 
-      setHasFetchedData(true);
+        (user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario')) {
+      fetchAlimentaciones();
     }
-  }, [authStatus, user, fetchDiagnosticos, fetchMontas, hasFetchedData]);
+  }, [authStatus, user, fetchAlimentaciones]);
 
   const handleCreate = useCallback(() => {
-    setEditingDiagnostico(null);
+    setEditingAlimentacion(null);
     setShowForm(true);
   }, []);
 
-  const handleEdit = useCallback((diagnosticoData) => {
-    setEditingDiagnostico(diagnosticoData);
+  const handleEdit = useCallback((alimentacionData) => {
+    setEditingAlimentacion(alimentacionData);
     setShowForm(true);
   }, []);
 
-  const handleDeleteClick = useCallback((diagnosticoItem) => {
-    setItemToDelete(diagnosticoItem);
+  const handleDeleteClick = useCallback((alimentacionItem) => {
+    setItemToDelete(alimentacionItem);
     setShowConfirm(true);
   }, []);
 
@@ -98,11 +99,9 @@ const DiagnosticosPage = () => {
     
     setDeleteLoading(true);
     try {
-      const result = await deleteDiagnostico(itemToDelete.prenez_id);
+      const result = await deleteAlimentacion(itemToDelete.alimentacion_id);
       
       if (result.success) {
-        await fetchDiagnosticos();
-        
         toast({
           title: (
             <div className="flex items-center gap-2">
@@ -110,35 +109,21 @@ const DiagnosticosPage = () => {
               <span>Eliminado correctamente</span>
             </div>
           ),
-          description: "El diagnóstico se eliminó exitosamente.",
+          description: "La alimentación se eliminó exitosamente.",
           duration: 3000,
         });
       } else {
-        if (result.error?.includes('partos') || result.error?.includes('asociados')) {
-          toast({
-            title: (
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-600" />
-                <span>Error al eliminar</span>
-              </div>
-            ),
-            description: "No se puede eliminar porque este diagnóstico tiene partos asociados.",
-            variant: "destructive",
-            duration: 5000,
-          });
-        } else {
-          toast({
-            title: (
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-600" />
-                <span>Error al eliminar</span>
-              </div>
-            ),
-            description: result.error || "Error desconocido al eliminar el diagnóstico.",
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
+        toast({
+          title: (
+            <div className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              <span>Error al eliminar</span>
+            </div>
+          ),
+          description: result.error || "Error desconocido al eliminar la alimentación.",
+          variant: "destructive",
+          duration: 5000,
+        });
       }
     } catch (error) {
       toast({
@@ -161,11 +146,11 @@ const DiagnosticosPage = () => {
 
   const handleFormSuccess = useCallback(() => {
     setShowForm(false);
-    setEditingDiagnostico(null);
-    fetchDiagnosticos();
-    
+    setEditingAlimentacion(null);
+    fetchAlimentaciones();
+
     toast({
-      title: editingDiagnostico ?
+      title: editingAlimentacion ?
         (
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -176,62 +161,51 @@ const DiagnosticosPage = () => {
         (
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
-            <span>Creado correctamente</span>
+            <span>Registrado correctamente</span>
           </div>
         ),
-      description: editingDiagnostico 
-        ? "El diagnóstico se actualizó exitosamente." 
-        : "El diagnóstico se creó exitosamente.",
+      description: editingAlimentacion 
+        ? "La alimentación se actualizó exitosamente." 
+        : "La alimentación se registró exitosamente.",
       duration: 3000,
     });
-  }, [fetchDiagnosticos, editingDiagnostico, toast]);
+  }, [fetchAlimentaciones, editingAlimentacion, toast]);
 
   const handleFormCancel = useCallback(() => {
     setShowForm(false);
-    setEditingDiagnostico(null);
+    setEditingAlimentacion(null);
   }, []);
 
-  const formatearNumeroMonta = (numeroMonta) => {
-    if (!numeroMonta) return 'N/A';
-    
-    if (typeof numeroMonta === 'number') {
-      return `MONTA-${numeroMonta.toString()}`;
+  const filteredAlimentaciones = alimentaciones.filter(alimentacionItem => {
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      const coincide = (
+        alimentacionItem.animal?.arete?.toLowerCase().includes(searchLower) ||
+        alimentacionItem.insumo?.nombre?.toLowerCase().includes(searchLower) ||
+        alimentacionItem.insumo?.descripcion?.toLowerCase().includes(searchLower)
+      );
+      if (!coincide) return false;
+    }
+
+    if (fechaFiltro) {
+      const fechaAlimentacion = new Date(alimentacionItem.fecha);
+      const fechaFiltroDate = new Date(fechaFiltro);
+      
+      if (fechaAlimentacion.toDateString() !== fechaFiltroDate.toDateString()) {
+        return false;
+      }
     }
     
-    return numeroMonta;
-  };
-
-  const filteredDiagnosticos = diagnosticos.filter(diagnosticoItem => {
-    if (!searchTerm.trim()) return true;
-    
-    const searchLower = searchTerm.toLowerCase().trim();
-    const numeroMontaFormateado = formatearNumeroMonta(diagnosticoItem.monta?.numero_monta);
-    
-    return (
-      diagnosticoItem.metodo?.toLowerCase().includes(searchLower) ||
-      diagnosticoItem.monta?.hembra?.arete?.toLowerCase().includes(searchLower) ||
-      diagnosticoItem.monta?.macho?.arete?.toLowerCase().includes(searchLower) ||
-      numeroMontaFormateado.toLowerCase().includes(searchLower) ||
-      (diagnosticoItem.resultado ? 'positivo' : 'negativo').includes(searchLower)
-    );
+    return true;
   });
 
   const getItemName = () => {
     if (!itemToDelete) return '';
-    return `Diagnóstico #${itemToDelete.prenez_id}`;
+    return `Alimentación #${itemToDelete.alimentacion_id}`;
   };
 
-  const getResultadoBadge = (resultado) => {
-    return resultado ? 
-      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
-        Positivo
-      </Badge> :
-      <Badge variant="outline" className="bg-red-100 text-red-800 hover:bg-red-100">
-        Negativo
-      </Badge>;
-  };
-
-  const canManage = user?.rol === 'admin' || user?.rol === 'veterinario';
+  const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
+  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario';
 
   if (!canManage) {
     return (
@@ -243,7 +217,7 @@ const DiagnosticosPage = () => {
                 <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold">Acceso Restringido</h3>
                 <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de diagnósticos.
+                  No tienes permisos para acceder a la gestión de alimentaciones.
                 </p>
               </div>
             </CardContent>
@@ -258,8 +232,8 @@ const DiagnosticosPage = () => {
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Diagnósticos</h1>
-            <p className="text-gray-600 text-sm sm:text-base">Administra los diagnósticos de preñez del sistema</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Alimentaciones</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Administra las alimentaciones de los animales</p>
           </div>
           <Button 
             onClick={handleCreate} 
@@ -267,25 +241,57 @@ const DiagnosticosPage = () => {
             type="button"
           >
             <Plus className="h-4 w-4" />
-            Nuevo Diagnóstico
+            Nueva Alimentación
           </Button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar diagnósticos por método, arete de animales, número de monta o resultado..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 w-full"
-          />
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Buscar alimentaciones por arete, nombre de insumo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full sm:w-[200px] justify-start text-left font-normal",
+                    !fechaFiltro && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {fechaFiltro ? (
+                    format(fechaFiltro, "dd/MM/yyyy", { locale: es })
+                  ) : (
+                    <span>Filtrar por fecha</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={fechaFiltro}
+                  onSelect={setFechaFiltro}
+                  initialFocus
+                  locale={es}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Diagnósticos</CardTitle>
+            <CardTitle>Lista de Alimentaciones</CardTitle>
             <CardDescription>
-              {filteredDiagnosticos.length} de {diagnosticos.length} diagnóstico(s) encontrado(s)
+              {filteredAlimentaciones.length} de {alimentaciones.length} alimentación(es) encontrada(s)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -299,57 +305,44 @@ const DiagnosticosPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left py-3 font-medium">Número</th>
-                        <th className="text-left py-3 font-medium">Hembra</th>
-                        <th className="text-left py-3 font-medium">Macho</th>
-                        <th className="text-left py-3 font-medium">Método</th>
-                        <th className="text-left py-3 font-medium">Resultado</th>
-                        <th className="text-left py-3 font-medium">Fecha Parto Probable</th>
+                        <th className="text-left py-3 font-medium">Animal</th>
+                        <th className="text-left py-3 font-medium">Insumo</th>
+                        <th className="text-left py-3 font-medium">Cantidad</th>
+                        <th className="text-left py-3 font-medium">Fecha</th>
                         <th className="text-left py-3 font-medium">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredDiagnosticos.map((diagnosticoItem) => (                        
-                        <tr key={diagnosticoItem.prenez_id} className="border-b hover:bg-gray-50">
-                          
+                      {filteredAlimentaciones.map((alimentacionItem) => (                        
+                        <tr key={alimentacionItem.alimentacion_id} className="border-b hover:bg-gray-50">
                           <td className="py-3">
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="font-mono">
-                                {formatearNumeroMonta(diagnosticoItem.monta?.numero_monta)}
+                                {alimentacionItem.animal?.arete}
                               </Badge>
                             </div>
                           </td>
                           <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {diagnosticoItem.monta?.hembra?.arete || 'N/A'}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {diagnosticoItem.monta?.macho?.arete || 'No asignado'}
-
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            {diagnosticoItem.metodo || 'N/A'}
-                          </td>
-                          <td className="py-3">
-                            {getResultadoBadge(diagnosticoItem.resultado)}
-                          </td>
-                          <td className="py-3">
-                            {diagnosticoItem.fecha_probable_parto ? (
-                              <div className="flex items-center gap-2">
-                                <span>
-                                  {format(new Date(diagnosticoItem.fecha_probable_parto), "dd/MM/yyyy", { locale: es })}
+                            <div className="flex flex-col">
+                              <span className="font-medium">{alimentacionItem.insumo?.nombre}</span>
+                              {alimentacionItem.insumo?.descripcion && (
+                                <span className="text-sm text-gray-600">
+                                  {alimentacionItem.insumo.descripcion}
                                 </span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">N/A</span>
-                            )}
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <Badge variant="outline">
+                              {alimentacionItem.cantidad} {alimentacionItem.insumo?.unidad?.nombre || ''}
+                            </Badge>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {format(new Date(alimentacionItem.fecha), "dd/MM/yyyy", { locale: es })}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-3">
                             <DropdownMenu>
@@ -364,17 +357,14 @@ const DiagnosticosPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(diagnosticoItem)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar diagnóstico
-                                </DropdownMenuItem>
-                                {user.rol === 'admin' && (
+                                
+                                {canDelete && (
                                   <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(diagnosticoItem)}
+                                    onClick={() => handleDeleteClick(alimentacionItem)}
                                     className="text-red-600 focus:text-red-600"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar diagnóstico
+                                    Eliminar alimentación
                                   </DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
@@ -387,35 +377,31 @@ const DiagnosticosPage = () => {
                 </div>
 
                 <div className="sm:hidden space-y-4">
-                  {filteredDiagnosticos.map((diagnosticoItem) => (
-                    <Card key={diagnosticoItem.prenez_id} className="p-4">
+                  {filteredAlimentaciones.map((alimentacionItem) => (
+                    <Card key={alimentacionItem.alimentacion_id} className="p-4">
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                       
-                              {getResultadoBadge(diagnosticoItem.resultado)}
+                              <Badge variant="secondary" className="font-mono">
+                                {alimentacionItem.animal?.arete}
+                              </Badge>
+                              <Badge variant="outline">
+                                {alimentacionItem.cantidad} {alimentacionItem.insumo?.unidad?.nombre || ''}
+                              </Badge>
                             </div>
                             <div className="mt-3 space-y-2">
                               <div className="flex items-center gap-2 text-sm">
-                                <Badge variant="outline" className="font-mono text-xs">
-                                  {formatearNumeroMonta(diagnosticoItem.monta?.numero_monta)}
-                                </Badge>
+                                <span className="font-medium">{alimentacionItem.insumo?.nombre}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">{diagnosticoItem.metodo || 'N/A'}</span>
+                                <span className="text-gray-600">
+                                  {format(new Date(alimentacionItem.fecha), "dd/MM/yyyy", { locale: es })}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">Hembra: {diagnosticoItem.monta?.hembra?.arete || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">Macho: {diagnosticoItem.monta?.macho?.arete || 'No asignado'}</span>
-                              </div>
-                              {diagnosticoItem.fecha_probable_parto && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <span className="text-gray-600">
-                                    Parto: {format(new Date(diagnosticoItem.fecha_probable_parto), "dd/MM/yyyy", { locale: es })}
-                                  </span>
+                              {alimentacionItem.insumo?.descripcion && (
+                                <div className="text-sm text-gray-600">
+                                  {alimentacionItem.insumo.descripcion}
                                 </div>
                               )}
                             </div>
@@ -432,17 +418,17 @@ const DiagnosticosPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(diagnosticoItem)}>
+                              <DropdownMenuItem onClick={() => handleEdit(alimentacionItem)}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                Editar diagnóstico
+                                Editar alimentación
                               </DropdownMenuItem>
-                              {user.rol === 'admin' && (
+                              {canDelete && (
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeleteClick(diagnosticoItem)}
+                                  onClick={() => handleDeleteClick(alimentacionItem)}
                                   className="text-red-600 focus:text-red-600"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
-                                  Eliminar diagnóstico
+                                  Eliminar alimentación
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
@@ -455,9 +441,9 @@ const DiagnosticosPage = () => {
               </div>
             )}
 
-            {filteredDiagnosticos.length === 0 && !loading && (
+            {filteredAlimentaciones.length === 0 && !loading && (
               <div className="text-center py-8 text-gray-500">
-                {searchTerm ? 'No se encontraron diagnósticos que coincidan con la búsqueda' : 'No hay diagnósticos registrados'}
+                {searchTerm || fechaFiltro ? 'No se encontraron alimentaciones que coincidan con los filtros' : 'No hay alimentaciones registradas'}
               </div>
             )}
           </CardContent>
@@ -467,17 +453,17 @@ const DiagnosticosPage = () => {
           <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
-                {editingDiagnostico ? 'Editar Diagnóstico' : 'Nuevo Diagnóstico de Preñez'}
+                {editingAlimentacion ? 'Editar Alimentación' : 'Nueva Alimentación'}
               </DialogTitle>
               <DialogDescription className="text-sm sm:text-base">
-                {editingDiagnostico 
-                  ? 'Actualiza la información del diagnóstico' 
-                  : 'Complete la información para crear un nuevo diagnóstico de preñez'
+                {editingAlimentacion 
+                  ? 'Actualiza la información de la alimentación' 
+                  : 'Complete la información para registrar una nueva alimentación'
                 }
               </DialogDescription>
             </DialogHeader>
-            <DiagnosticoForm
-              diagnostico={editingDiagnostico}
+            <AlimentacionForm
+              alimentacion={editingAlimentacion}
               onSuccess={handleFormSuccess}
               onCancel={handleFormCancel}
             />
@@ -487,8 +473,8 @@ const DiagnosticosPage = () => {
         <Modal
           open={showConfirm}
           onOpenChange={setShowConfirm}
-          title="Eliminar Diagnóstico"
-          description={`¿Está seguro de eliminar el ${getItemName()}? Esta acción no se puede deshacer.`}
+          title="Eliminar Alimentación"
+          description={`¿Está seguro de eliminar la ${getItemName()}? Esta acción no se puede deshacer y se restaurará el stock del insumo.`}
           variant="destructive"
           confirmText="Eliminar"
           loading={deleteLoading}
@@ -501,4 +487,4 @@ const DiagnosticosPage = () => {
   );
 };
 
-export default DiagnosticosPage;
+export default AlimentacionesPage;

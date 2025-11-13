@@ -370,7 +370,7 @@ const TypesPage = () => {
                               </div>
                               <div className="mt-2">
                                 {hasSubTypes ? (
-                                  <span className="text-green-600 font-medium text-sm">
+                                  <span className="font-medium text-sm">
                                     {typeItem.hijos.length} sub-evento(s)
                                   </span>
                                 ) : (

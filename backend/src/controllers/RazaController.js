@@ -2,7 +2,7 @@ import prisma from "../database.js";
 
 export default class RazaController {
 
-  static async getRazas(req, res) {
+  static async getAll(req, res) {
     try {
       const razas = await prisma.razas.findMany({
         where: { 
@@ -26,7 +26,7 @@ export default class RazaController {
     }
   }
 
-  static async getRazaById(req, res) {
+  static async getById(req, res) {
     try {
       const { id } = req.params;
 
@@ -57,7 +57,7 @@ export default class RazaController {
     }
   }
 
-  static async createRaza(req, res) {
+  static async create(req, res) {
     try {
       if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario' && req.usuario.rol !== 'operario') {
         return res.status(403).json({
@@ -130,7 +130,7 @@ export default class RazaController {
     }
   }
 
-  static async updateRaza(req, res) {
+  static async update(req, res) {
     try {
       if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario' && req.usuario.rol !== 'operario') {
         return res.status(403).json({
@@ -195,7 +195,7 @@ export default class RazaController {
     }
   }
 
-  static async deleteRaza(req, res) {
+  static async delete(req, res) {
     try {
       if (req.usuario.rol !== 'admin') {
         return res.status(403).json({
@@ -254,44 +254,4 @@ export default class RazaController {
     }
   }
 
-  static async searchRazas(req, res) {
-    try {
-      const { query } = req.query;
-
-      if (!query || !query.trim()) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El término de búsqueda es requerido"
-        });
-      }
-
-      const razas = await prisma.razas.findMany({
-        where: {
-          AND: [
-            { deleted_at: null },
-            {
-              OR: [
-                { nombre: { contains: query.trim(), mode: 'insensitive' } },
-                { descripcion: { contains: query.trim(), mode: 'insensitive' } }
-              ]
-            }
-          ]
-        },
-        orderBy: {
-          nombre: 'asc'
-        }
-      });
-
-      return res.json({
-        ok: true,
-        data: razas
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al buscar razas"
-      });
-    }
-  }
 }
