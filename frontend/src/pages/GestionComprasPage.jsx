@@ -289,7 +289,7 @@ const GestionComprasPage = () => {
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Compras</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Órdenes de Compras</h1>
             <p className="text-gray-600 text-sm sm:text-base">Administra compras y sus detalles</p>
           </div>
           <div className="flex gap-2">
@@ -351,11 +351,7 @@ const GestionComprasPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  </div>
-                ) : (
+                {(
                   <div className="overflow-x-auto">
                     <div className="hidden sm:block">
                       <table className="w-full text-sm">
@@ -525,11 +521,7 @@ const GestionComprasPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                  </div>
-                ) : (
+                {(
                   <div className="overflow-x-auto">
                     {filteredDetalles.length > 0 ? (
                       <>

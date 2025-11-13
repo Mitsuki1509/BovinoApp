@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 const PesajesPage = () => {
   const navigate = useNavigate();
   const { checkAuth, user } = useAuthStore();
-  const { pesajes, fetchPesajes, deletePesaje, loading, getEstadisticasPesajes } = usePesajeStore();
+  const { pesajes, fetchPesajes, deletePesaje, loading} = usePesajeStore();
   const [authStatus, setAuthStatus] = useState('checking');
   const [showForm, setShowForm] = useState(false);
   const [editingPesaje, setEditingPesaje] = useState(null);
@@ -175,7 +175,7 @@ const PesajesPage = () => {
     setShowForm(false);
     setEditingPesaje(null);
   }, []);
-  
+
   const filteredPesajes = pesajes.filter(pesajeItem => {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
@@ -204,8 +204,6 @@ const PesajesPage = () => {
     if (!itemToDelete) return '';
     return `Pesaje #${itemToDelete.pesaje_id}`;
   };
-
-  const estadisticas = getEstadisticasPesajes();
 
   const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
   const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario';
@@ -298,11 +296,7 @@ const PesajesPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
-            ) : (
+            {(
               <div className="overflow-x-auto">
                 <div className="hidden sm:block">
                   <table className="w-full text-sm">

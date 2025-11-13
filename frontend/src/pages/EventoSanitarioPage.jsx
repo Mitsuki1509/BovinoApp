@@ -314,11 +314,7 @@ const EventosSanitariosPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
-            ) : (
+            {(
               <div className="overflow-x-auto">
                 <div className="hidden sm:block">
                   <table className="w-full text-sm">
@@ -384,10 +380,7 @@ const EventosSanitariosPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(eventoItem)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar evento
-                                </DropdownMenuItem>
+                              
                                 {canDelete && (
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(eventoItem)}

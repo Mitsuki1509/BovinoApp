@@ -338,11 +338,7 @@ const PartosPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              </div>
-            ) : (
+            {(
               <div className="overflow-x-auto">
                 <div className="hidden sm:block">
                   <table className="w-full text-sm">
