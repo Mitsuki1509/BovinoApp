@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Upload, X, Package, Scale, Tag, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, X, AlertCircle } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -118,7 +118,6 @@ const InsumoForm = ({
   };
 
   const tipoInsumoOptions = [
-    { value: '', label: 'Sin tipo específico' },
     ...(tiposInsumo || []).map(tipo => ({
       value: tipo.tipo_insumo_id.toString(),
       label: tipo.nombre
@@ -126,7 +125,7 @@ const InsumoForm = ({
   ];
 
   const unidadOptions = [
-    { value: '', label: 'Seleccionar unidad' },
+  
     ...(unidades || []).map(unidad => ({
       value: unidad.unidad_id.toString(),
       label: unidad.nombre
@@ -140,20 +139,34 @@ const InsumoForm = ({
     setFieldErrors({});
     
     try {
-
+      const errors = {};
+      
       if (!data.nombre || data.nombre.trim() === '') {
-        throw new Error('El nombre es requerido');
+        errors.nombre = 'El nombre es requerido';
+      }
+      
+      if (!data.tipo_insumo_id || data.tipo_insumo_id === '') {
+        errors.tipo_insumo_id = 'El tipo de insumo es requerido';
       }
       
       if (!data.cantidad || data.cantidad === '' || parseInt(data.cantidad) < 0) {
-        throw new Error('La cantidad es requerida y debe ser mayor o igual a 0');
+        errors.cantidad = 'La cantidad es requerida y debe ser mayor o igual a 0';
+      }
+
+      if (!data.unidad_id || data.unidad_id === '') {
+        errors.unidad_id = 'La unidad de medida es requerida';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        throw new Error('Por favor, complete todos los campos requeridos');
       }
 
       const formData = {
         nombre: data.nombre.trim(),
-        tipo_insumo_id: data.tipo_insumo_id || '',
+        tipo_insumo_id: data.tipo_insumo_id,
         cantidad: parseInt(data.cantidad),
-        unidad_id: data.unidad_id || '',
+        unidad_id: data.unidad_id,
         descripcion: data.descripcion || '',
         imagen: data.imagen
       };
@@ -202,6 +215,14 @@ const InsumoForm = ({
         setFieldErrors({
           cantidad: 'La cantidad es requerida y debe ser mayor o igual a 0'
         });
+      } else if (error.message.includes('tipo_insumo_id')) {
+        setFieldErrors({
+          tipo_insumo_id: 'El tipo de insumo es requerido'
+        });
+      } else if (error.message.includes('unidad_id')) {
+        setFieldErrors({
+          unidad_id: 'La unidad de medida es requerida'
+        });
       } else {
         setFormError(error.message || 'Error de conexión. Por favor, intente nuevamente.');
       }
@@ -223,17 +244,7 @@ const InsumoForm = ({
           </div>
         )}
 
-        <div className="space-y-4">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3 px-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Package className="h-4 w-4 text-blue-600" />
-                Información Básica
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Datos principales del insumo
-              </CardDescription>
-            </CardHeader>
+        <div className="space-y-4">     
             <CardContent className="space-y-3 px-4">
               <FormField
                 control={form.control}
@@ -251,7 +262,7 @@ const InsumoForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Nombre del Insumo </FormLabel>
+                    <FormLabel className="text-sm">Nombre del Insumo</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Ej: Concentrado para ganado, Vacuna, etc."
@@ -287,26 +298,15 @@ const InsumoForm = ({
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3 px-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Tag className="h-4 w-4 text-green-600" />
-                Clasificación
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Tipo y categoría del insumo
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
               <FormField
                 control={form.control}
                 name="tipo_insumo_id"
+                rules={{
+                  required: "El tipo de insumo es obligatorio"
+                }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Tipo de Insumo</FormLabel>
+                    <FormLabel className="text-sm">Tipo de Insumo </FormLabel>
                     <FormControl>
                       <Combobox
                         options={tipoInsumoOptions}
@@ -323,20 +323,6 @@ const InsumoForm = ({
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3 px-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Scale className="h-4 w-4 text-purple-600" />
-                Inventario
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Cantidad y unidad de medida
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
@@ -377,9 +363,12 @@ const InsumoForm = ({
                 <FormField
                   control={form.control}
                   name="unidad_id"
+                  rules={{
+                    required: "La unidad de medida es obligatoria"
+                  }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">Unidad de Medida</FormLabel>
+                      <FormLabel className="text-sm">Unidad de Medida </FormLabel>
                       <FormControl>
                         <Combobox
                           options={unidadOptions}
@@ -398,17 +387,15 @@ const InsumoForm = ({
                 />
               </div>
             </CardContent>
-          </Card>
 
+          
           <Card className="shadow-sm">
             <CardHeader className="pb-3 px-4">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Upload className="h-4 w-4 text-indigo-600" />
-                Fotografía
+                Fotografía (opcional)
               </CardTitle>
-              <CardDescription className="text-xs">
-                Imagen de identificación (opcional)
-              </CardDescription>
+            
             </CardHeader>
             <CardContent className="space-y-3">
               <Input
@@ -445,6 +432,7 @@ const InsumoForm = ({
             type="submit"
             disabled={loading}
             className="w-full py-4 font-semibold"
+            variant="inventario"
           >
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {isEditing ? 'Actualizar Insumo' : 'Crear Insumo'}

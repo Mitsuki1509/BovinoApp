@@ -98,7 +98,6 @@ export default class InsumoController {
 
   static async create(req, res) {
     try {
-
       const rolesPermitidos = ['admin', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
         return res.status(403).json({
@@ -114,7 +113,6 @@ export default class InsumoController {
         unidad_id,
         descripcion
       } = req.body;
-
       
       if (!nombre || nombre.trim() === '') {
         return res.status(400).json({
@@ -194,7 +192,6 @@ export default class InsumoController {
       if (file) {
         const ext = path.extname(file.originalname);
         imagenNombre = crypto.randomUUID() + ext;
-
         await fs.writeFile(`./public/uploads/insumo_images/${imagenNombre}`, file.buffer);
       }
 
@@ -225,6 +222,9 @@ export default class InsumoController {
         }
       });
 
+      if (nuevoInsumo.cantidad < 10) {
+      }
+
       return res.status(201).json({
         ok: true,
         msg: "Insumo creado exitosamente",
@@ -232,7 +232,6 @@ export default class InsumoController {
       });
 
     } catch (error) {
-      
       if (error.code === 'P2002') {
         return res.status(400).json({
           ok: false,
@@ -372,7 +371,6 @@ export default class InsumoController {
       if (file) {
         const ext = path.extname(file.originalname);
         imagenNombre = crypto.randomUUID() + ext;
-
         await fs.writeFile(`./public/uploads/insumo_images/${imagenNombre}`, file.buffer);
       }
 
@@ -412,6 +410,10 @@ export default class InsumoController {
           }
         }
       });
+
+      if (insumoActualizado.cantidad < 10) {
+        await StockService.crearNotificacionStockBajo(insumoActualizado);
+      }
 
       return res.json({
         ok: true,
@@ -525,163 +527,6 @@ export default class InsumoController {
     }
   }
 
-  static async search(req, res) {
-    try {
-      const { query } = req.query;
-
-      if (!query || !query.trim()) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El término de búsqueda es requerido"
-        });
-      }
-
-      const insumos = await prisma.insumos.findMany({
-        where: {
-          AND: [
-            { deleted_at: null },
-            {
-              OR: [
-                { nombre: { contains: query.trim(), mode: 'insensitive' } },
-                {
-                  tipo_insumo: {
-                    nombre: { contains: query.trim(), mode: 'insensitive' }
-                  }
-                },
-                {
-                  descripcion: { contains: query.trim(), mode: 'insensitive' }
-                }
-              ]
-            }
-          ]
-        },
-        include: {
-          tipo_insumo: {
-            select: {
-              tipo_insumo_id: true,
-              nombre: true
-            }
-          },
-          unidad: {
-            select: {
-              unidad_id: true,
-              nombre: true
-            }
-          }
-        },
-        orderBy: {
-          nombre: 'asc'
-        }
-      });
-
-      return res.json({
-        ok: true,
-        data: insumos
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al buscar insumos"
-      });
-    }
-  }
-
-  static async updateCantidad(req, res) {
-    try {
-      const rolesPermitidos = ['admin', 'contable', 'operario'];
-      if (!rolesPermitidos.includes(req.usuario.rol)) {
-        return res.status(403).json({
-          ok: false,
-          msg: "No tienes permisos para actualizar cantidades de insumos"
-        });
-      }
-
-      const { id } = req.params;
-      const { cantidad, operacion } = req.body; 
-
-      const insumoId = parseInt(id);
-
-      if (isNaN(insumoId)) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del insumo debe ser un número válido"
-        });
-      }
-
-      if (!cantidad || cantidad <= 0) {
-        return res.status(400).json({
-          ok: false,
-          msg: "La cantidad debe ser mayor a 0"
-        });
-      }
-
-      const insumo = await prisma.insumos.findFirst({
-        where: { 
-          insumo_id: insumoId,
-          deleted_at: null 
-        }
-      });
-
-      if (!insumo) {
-        return res.status(404).json({
-          ok: false,
-          msg: "Insumo no encontrado"
-        });
-      }
-
-      let nuevaCantidad = insumo.cantidad;
-
-      if (operacion === 'disminuir') {
-        if (insumo.cantidad < cantidad) {
-          return res.status(400).json({
-            ok: false,
-            msg: "No hay suficiente stock para realizar esta operación"
-          });
-        }
-        nuevaCantidad = insumo.cantidad - cantidad;
-      } else if (operacion === 'incrementar') {
-        nuevaCantidad = insumo.cantidad + cantidad;
-      } else {
-        return res.status(400).json({
-          ok: false,
-          msg: "Operación no válida. Use 'incrementar' o 'disminuir'"
-        });
-      }
-
-      const insumoActualizado = await prisma.insumos.update({
-        where: { insumo_id: insumoId },
-        data: { cantidad: nuevaCantidad },
-        include: {
-          tipo_insumo: {
-            select: {
-              tipo_insumo_id: true,
-              nombre: true
-            }
-          },
-          unidad: {
-            select: {
-              unidad_id: true,
-              nombre: true
-            }
-          }
-        }
-      });
-
-      return res.json({
-        ok: true,
-        msg: `Cantidad ${operacion === 'incrementar' ? 'incrementada' : 'disminuida'} exitosamente`,
-        data: insumoActualizado
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al actualizar la cantidad del insumo"
-      });
-    }
-  }
-
   static async getUnidades(req, res) {
     try {
       const unidades = await prisma.unidades.findMany({
@@ -705,4 +550,5 @@ export default class InsumoController {
       });
     }
   }
+
 }

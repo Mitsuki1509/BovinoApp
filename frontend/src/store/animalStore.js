@@ -201,59 +201,6 @@ export const useAnimalStore = create((set, get) => ({
     }
   },
 
-  searchAnimales: async (query) => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/animales/search?query=${encodeURIComponent(query)}`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        return { success: true, data: result.data };
-      } else {
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  },
-
-  fetchAnimalesForSelect: async () => {
-    try {
-      const response = await fetch('http://localhost:3000/api/animales', {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        return { success: true, data: result.data || [] };
-      } else {
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  },
-
-  getAnimalesBySexo: (sexo) => {
-    const state = get();
-    return state.animales.filter(animal => animal.sexo === sexo);
-  },
-
-  getAnimalByArete: (arete) => {
-    const state = get();
-    return state.animales.find(animal => animal.arete === arete);
-  },
 
   clearError: () => set({ error: null }),
 

@@ -66,19 +66,27 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div 
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat bg-fixed py-12 px-4 sm:px-6 lg:px-8"
+      style={{
+        backgroundImage: 'url("/login.jpg")',
+      }}
+    >
+      <div className="absolute inset-0 "></div>
+      
+      <Card className="w-full max-w-md relative z-10 bg-white/60 backdrop-blur-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 rounded-full overflow-hidden flex items-center justify-center mb-4">
             <img 
-              src="/Logo.png" 
+              src="/logo.jpg" 
               alt="Logo Finca San Pablo" 
-              className="w-16 h-16 object-contain"
+              className="object-cover rounded-full"
             />
           </div>
+
           <CardTitle className="text-2xl">Finca San Pablo</CardTitle>
           <CardDescription>
-            Ingresa a tu cuenta para gestionar tu finca
+            Ingresa a tu cuenta para gestionar la finca
           </CardDescription>
         </CardHeader>
         
@@ -104,7 +112,7 @@ const LoginForm = () => {
                         placeholder="tu@email.com"
                         {...field}
                         disabled={loading}
-                        className="w-full text-sm sm:text-base"
+                        className="w-full text-sm sm:text-base border-neutral-400"
                         onChange={(e) => {
                           field.onChange(e);
                           handleFieldChange('email', e.target.value);
@@ -137,7 +145,7 @@ const LoginForm = () => {
                         placeholder="••••••••"
                         {...field}
                         disabled={loading}
-                        className="w-full text-sm sm:text-base"
+                        className="w-full text-sm sm:text-base  border-neutral-400"
                         onChange={(e) => {
                           field.onChange(e);
                           handleFieldChange('password', e.target.value);
@@ -156,6 +164,7 @@ const LoginForm = () => {
                   type="submit" 
                   disabled={loading}
                   className="w-full text-sm sm:text-base"
+                  variant="login"
                   size="lg"
                 >
                   {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -171,7 +180,7 @@ const LoginForm = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">O inicia sesión con</span>
+                <span className="px-2 bg-transparent text-gray-600">O inicia sesión con</span>
               </div>
             </div>
 
@@ -195,7 +204,7 @@ const LoginForm = () => {
             </div>
           </div>
 
-          <div className="mt-4 text-center text-xs text-gray-500">
+          <div className="mt-4 text-center text-xs text-gray-600">
             <p>Nota: Solo usuarios previamente registrados pueden acceder</p>
           </div>
         </CardContent>

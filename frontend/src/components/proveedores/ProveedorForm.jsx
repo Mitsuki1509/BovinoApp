@@ -220,6 +220,7 @@ const ProveedorForm = ({
                 disabled={loading}
                 className="flex-1 text-sm sm:text-base"
                 size="lg"
+                variant="inventario"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Proveedor' : 'Crear Proveedor'}

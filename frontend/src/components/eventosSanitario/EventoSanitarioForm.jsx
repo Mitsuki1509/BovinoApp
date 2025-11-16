@@ -55,21 +55,15 @@ const EventoSanitarioForm = ({
   });
 
   useEffect(() => {
-    console.log('Cargando datos...');
     fetchAnimales();
     fetchEventTypes();
     fetchInsumos();
   }, [fetchAnimales, fetchEventTypes, fetchInsumos]);
 
   useEffect(() => {
-    console.log('Insumos disponibles:', insumos);
-    console.log('Loading insumos:', loadingInsumos);
-  }, [insumos, loadingInsumos]);
-
-  useEffect(() => {
     if (eventoSanitario) {
       setIsEditing(true);
-      setEstadoEvento(eventoSanitario.estado ? 1 : 0);
+      setEstadoEvento(eventoSanitario.estado === 'Completado' ? 1 : 0);
       form.reset({
         animal_id: eventoSanitario.animal_id ? eventoSanitario.animal_id.toString() : '',
         tipo_evento_id: eventoSanitario.tipo_evento_id ? eventoSanitario.tipo_evento_id.toString() : '',
@@ -108,19 +102,25 @@ const EventoSanitarioForm = ({
     setFormError('');
     
     try {
-      const eventoSanitarioData = {
-        animal_id: parseInt(data.animal_id),
-        tipo_evento_id: parseInt(data.tipo_evento_id),
-        estado: estadoEvento === 1 ? 'Completado' : 'Pendiente',
-        diagnostico: data.diagnostico || null,
-        tratamiento: data.tratamiento || null,
-        fecha: data.fecha.toISOString().split('T')[0],
-        insumos: insumosSeleccionados.map(insumo => ({
-          insumo_id: parseInt(insumo.insumo_id),
-          cantidad: parseInt(insumo.cantidad)
-        }))
-      };
-
+      const fechaSeleccionada = new Date(data.fecha);
+      const fechaFormateada = fechaSeleccionada.toISOString().split('T')[0];
+      
+      const eventoSanitarioData = isEditing 
+        ? {
+            estado: estadoEvento === 1 ? 'Completado' : 'Pendiente'
+          }
+        : {
+            animal_id: parseInt(data.animal_id),
+            tipo_evento_id: parseInt(data.tipo_evento_id),
+            estado: estadoEvento === 1 ? 'Completado' : 'Pendiente',
+            diagnostico: data.diagnostico || null,
+            tratamiento: data.tratamiento || null,
+            fecha: fechaFormateada,
+            insumos: insumosSeleccionados.map(insumo => ({
+              insumo_id: parseInt(insumo.insumo_id),
+              cantidad: parseInt(insumo.cantidad)
+            }))
+          };
 
       let result;
       if (isEditing) {
@@ -175,15 +175,20 @@ const EventoSanitarioForm = ({
       label: tipo.nombre
     }));
 
-    const insumosOptions = insumos && insumos.length > 0 
-      ? insumos
-          .filter(insumo => !insumo.deleted_at)
-          .map(insumo => ({
-            value: insumo.insumo_id.toString(),
-            label: `${insumo.nombre}` 
-          }))
-      : [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
+  const insumosOptions = insumos && insumos.length > 0 
+    ? insumos
+        .filter(insumo => !insumo.deleted_at)
+        .map(insumo => ({
+          value: insumo.insumo_id.toString(),
+          label: `${insumo.nombre}` 
+        }))
+    : [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
 
+  const getMinDate = () => {
+    const today = new Date();
+    today.setDate(today.getDate() + 1);
+    return today;
+  };
 
   return (
     <Card className="w-full border-0 shadow-none">
@@ -203,49 +208,53 @@ const EventoSanitarioForm = ({
             )}
 
             <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="animal_id"
-                rules={{ required: "El animal es obligatorio" }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Animal</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={animalesOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar animal"
-                        disabled={loading}
-                        className="w-full"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!isEditing && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="animal_id"
+                    rules={{ required: "El animal es obligatorio" }}
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Animal</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            options={animalesOptions}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Seleccionar animal"
+                            disabled={loading}
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="tipo_evento_id"
-                rules={{ required: "El tipo de evento es obligatorio" }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Tipo de Evento Sanitario</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={tipoEventoOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar tipo de evento"
-                        disabled={loading}
-                        className="w-full"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="tipo_evento_id"
+                    rules={{ required: "El tipo de evento es obligatorio" }}
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Tipo de Evento Sanitario</FormLabel>
+                        <FormControl>
+                          <Combobox
+                            options={tipoEventoOptions}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="Seleccionar tipo de evento"
+                            disabled={loading}
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
               <div className="flex flex-row items-center justify-between rounded-lg border p-3">
                 <div className="space-y-0.5">
@@ -262,176 +271,196 @@ const EventoSanitarioForm = ({
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="fecha"
-                rules={{ required: "La fecha es requerida" }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Fecha del Evento</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
+              {!isEditing && (
+                <FormField
+                  control={form.control}
+                  name="fecha"
+                  rules={{ 
+                    required: "La fecha es requerida",
+                    validate: {
+                      futureDate: (value) => {
+                        const selectedDate = new Date(value);
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        tomorrow.setHours(0, 0, 0, 0);
+                        return selectedDate >= tomorrow || "La fecha debe ser futura (a partir de mañana)";
+                      }
+                    }
+                  }}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha del Evento</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                              disabled={loading}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP", { locale: es })
+                              ) : (
+                                <span>Seleccionar fecha</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            locale={es}
+                            disabled={(date) => date <= new Date()}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {!isEditing && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="diagnostico"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Diagnóstico (Opcional)</FormLabel>
                         <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
+                          <Textarea
+                            {...field}
+                            placeholder="Descripción del diagnóstico..."
                             disabled={loading}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
+                            className="w-full resize-none"
+                            rows={3}
+                          />
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={es}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="diagnostico"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Diagnóstico (Opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Descripción del diagnóstico..."
-                        disabled={loading}
-                        className="w-full resize-none"
-                        rows={3}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tratamiento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tratamiento (Opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Descripción del tratamiento aplicado..."
-                        disabled={loading}
-                        className="w-full resize-none"
-                        rows={3}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Insumos Utilizados (Opcional)
-                  </label>
-                  <div className="flex gap-2">
-                    {loadingInsumos && (
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <FormMessage />
+                      </FormItem>
                     )}
-                    <Button
-                      type="button"
-                      onClick={agregarInsumo}
-                      variant="outline"
-                      size="sm"
-                      disabled={loading || loadingInsumos}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Agregar Insumo
-                    </Button>
-                  </div>
-                </div>
+                  />
 
-                {insumosOptions.length === 1 && insumosOptions[0].value === 'no-data' && (
-                  <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
-                    No hay insumos disponibles en el sistema. 
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto text-amber-700 ml-1"
-                      onClick={() => fetchInsumos()}
-                    >
-                      Reintentar
-                    </Button>
-                  </div>
-                )}
+                  <FormField
+                    control={form.control}
+                    name="tratamiento"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tratamiento (Opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Descripción del tratamiento aplicado..."
+                            disabled={loading}
+                            className="w-full resize-none"
+                            rows={3}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
 
-                {insumosSeleccionados.map((insumo, index) => (
-                  <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium">Insumo</label>
-                        <Combobox
-                          options={insumosOptions}
-                          value={insumo.insumo_id}
-                          onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
-                          placeholder={
-                            loadingInsumos 
-                              ? "Cargando insumos..." 
-                              : "Seleccionar insumo"
-                          }
-                          disabled={loading || loadingInsumos}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium">Cantidad</label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={insumo.cantidad}
-                          onChange={(e) => actualizarInsumo(index, 'cantidad', e.target.value)}
-                          placeholder="Cantidad"
-                          disabled={loading}
-                        />
-                      </div>
+              {!isEditing && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Insumos Utilizados (Opcional)
+                    </label>
+                    <div className="flex gap-2">
+                      {loadingInsumos && (
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      )}
+                      <Button
+                        type="button"
+                        onClick={agregarInsumo}
+                        variant="outline"
+                        size="sm"
+                        disabled={loading || loadingInsumos}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Agregar Insumo
+                      </Button>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => eliminarInsumo(index)}
-                      variant="ghost"
-                      size="icon"
-                      disabled={loading}
-                      className="mt-6"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
                   </div>
-                ))}
-              </div>
+
+                  {insumosOptions.length === 1 && insumosOptions[0].value === 'no-data' && (
+                    <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
+                      No hay insumos disponibles en el sistema. 
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto text-amber-700 ml-1"
+                        onClick={() => fetchInsumos()}
+                      >
+                        Reintentar
+                      </Button>
+                    </div>
+                  )}
+
+                  {insumosSeleccionados.map((insumo, index) => (
+                    <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Insumo</label>
+                          <Combobox
+                            options={insumosOptions}
+                            value={insumo.insumo_id}
+                            onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
+                            placeholder={
+                              loadingInsumos 
+                                ? "Cargando insumos..." 
+                                : "Seleccionar insumo"
+                            }
+                            disabled={loading || loadingInsumos}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Cantidad</label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={insumo.cantidad}
+                            onChange={(e) => actualizarInsumo(index, 'cantidad', e.target.value)}
+                            placeholder="Cantidad"
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => eliminarInsumo(index)}
+                        variant="ghost"
+                        size="icon"
+                        disabled={loading}
+                        className="mt-6"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
-           
               <Button 
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="sanidad"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {isEditing ? 'Actualizar Evento' : 'Crear Evento'}
+                {isEditing ? 'Actualizar Estado' : 'Crear Evento'}
               </Button>
             </div>
           </form>

@@ -213,7 +213,7 @@ const GestionComprasPage = () => {
 
   const handleDetalleFormSuccess = useCallback(() => {
     setShowDetalleForm(false);
-    // Recargar detalles si la función existe
+
     if (fetchDetalles) {
       fetchDetalles();
     }
@@ -298,6 +298,7 @@ const GestionComprasPage = () => {
                 onClick={handleCreate} 
                 className="flex items-center gap-2"
                 type="button"
+                variant="inventario"
               >
                 <Plus className="h-4 w-4" />
                 Crear Compra
@@ -308,6 +309,7 @@ const GestionComprasPage = () => {
                 onClick={handleCreateDetalle} 
                 className="flex items-center gap-2"
                 type="button"
+                variant="inventario"
               >
                 <Plus className="h-4 w-4" />
                 Agregar Insumo
@@ -357,11 +359,10 @@ const GestionComprasPage = () => {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b">
-                            <th className="text-left py-3 font-medium">N° Compra</th>
+                            <th className="text-left py-3 font-medium">Número</th>
                             <th className="text-left py-3 font-medium">Proveedor</th>
                             <th className="text-left py-3 font-medium">Fecha</th>
                             <th className="text-left py-3 font-medium">Total</th>
-                            <th className="text-left py-3 font-medium">Detalles</th>
                             {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
                           </tr>
                         </thead>
@@ -396,11 +397,7 @@ const GestionComprasPage = () => {
                                   </span>
                                 </div>
                               </td>
-                              <td className="py-3">
-                                <Badge variant={compra._count?.detalle_compras > 0 ? "default" : "secondary"}>
-                                  {compra._count?.detalle_compras || 0} insumos
-                                </Badge>
-                              </td>
+                          
                               {canManage && (
                                 <td className="py-3">
                                   <DropdownMenu>
@@ -462,9 +459,7 @@ const GestionComprasPage = () => {
                                     ${calcularTotalCompra(compra).toFixed(2)}
                                   </span>
                                 </div>
-                                <Badge variant={compra._count?.detalle_compras > 0 ? "default" : "secondary"}>
-                                  {compra._count?.detalle_compras || 0} insumos
-                                </Badge>
+                              
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -529,7 +524,7 @@ const GestionComprasPage = () => {
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b">
-                                <th className="text-left py-3 font-medium">N° Compra</th>
+                                <th className="text-left py-3 font-medium">Número</th>
                                 <th className="text-left py-3 font-medium">Proveedor</th>
                                 <th className="text-left py-3 font-medium">Insumo</th>
                                 <th className="text-left py-3 font-medium">Precio Unitario</th>
@@ -558,10 +553,8 @@ const GestionComprasPage = () => {
                                   <td className="py-3">
                                     <div className="flex items-center gap-2">
                                       <div>
-                                        <span className="font-medium">{detalle.insumo?.nombre}</span>
-                                        <div className="text-xs text-gray-500">
-                                          {detalle.insumo?.tipo_insumo?.nombre} - {detalle.insumo?.unidad?.nombre}
-                                        </div>
+                                        <span >{detalle.insumo?.nombre}</span>
+                                      
                                       </div>
                                     </div>
                                   </td>
@@ -632,9 +625,6 @@ const GestionComprasPage = () => {
                                     <div className="flex items-center gap-2 mb-2">
                                       <div>
                                         <h3 className="font-semibold">{detalle.insumo?.nombre}</h3>
-                                        <div className="text-xs text-gray-500">
-                                          {detalle.insumo?.tipo_insumo?.nombre} - {detalle.insumo?.unidad?.nombre}
-                                        </div>
                                       </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 text-sm">

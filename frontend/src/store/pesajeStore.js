@@ -221,7 +221,6 @@ export const usePesajeStore = create((set, get) => ({
     }
   },
 
-  // Métodos utilitarios para filtrar datos
   getPesajesByAnimalId: (animalId) => {
     const state = get();
     return state.pesajes.filter(pesaje => pesaje.animal_id === animalId);

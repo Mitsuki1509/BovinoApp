@@ -253,6 +253,7 @@ const TypesPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="finca"
           >
             <Plus className="h-4 w-4" />
             Crear Tipo
@@ -285,7 +286,6 @@ const TypesPage = () => {
                       <tr className="border-b">
                         <th className="text-left py-3 font-medium">Nombre</th>
                         <th className="text-left py-3 font-medium">Tipo Evento</th>
-                        <th className="text-left py-3 font-medium">Sub-eventos</th>
                         <th className="text-left py-3 font-medium">Acciones</th>
                       </tr>
                     </thead>
@@ -298,21 +298,11 @@ const TypesPage = () => {
                           <tr key={typeItem.tipo_evento_id} className="border-b hover:bg-gray-50">
                             <td className="py-3 font-medium">{typeItem.nombre}</td>
                             <td className="py-3">
-                              <Badge variant={parentName === 'Categoría Principal' ? 'default' : 'secondary'}>
+                              <Badge variant={parentName === 'Categoría Principal' ? 'finca' : 'secondary'}>
                                 {parentName}
                               </Badge>
                             </td>
-                            <td className="py-3">
-                              {hasSubTypes ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="font-medium">
-                                    {typeItem.hijos.length} sub-evento(s)
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">Sin sub-eventos</span>
-                              )}
-                            </td>
+                            
                             <td className="py-3">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -360,19 +350,11 @@ const TypesPage = () => {
                             <div className="flex-1">
                               <h3 className="font-semibold text-lg">{typeItem.nombre}</h3>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={parentName === 'Categoría Principal' ? 'default' : 'secondary'}>
+                                <Badge variant={parentName === 'Categoría Principal' ? 'finca' : 'secondary'}>
                                   {parentName}
                                 </Badge>
                               </div>
-                              <div className="mt-2">
-                                {hasSubTypes ? (
-                                  <span className="font-medium text-sm">
-                                    {typeItem.hijos.length} sub-evento(s)
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400 text-sm">Sin sub-eventos</span>
-                                )}
-                              </div>
+                              
                             </div>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

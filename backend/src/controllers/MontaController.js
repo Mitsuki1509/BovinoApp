@@ -1,4 +1,5 @@
 import prisma from "../database.js";
+import NotificacionController from "./NotificacionController.js";
 
 export default class MontaController {
 
@@ -10,7 +11,7 @@ export default class MontaController {
                     deleted_at: null
                 },
                 orderBy: {
-                    numero_monta: 'desc'
+                    monta_id: 'desc'
                 },
                 select: {
                     numero_monta: true
@@ -20,10 +21,25 @@ export default class MontaController {
             let siguienteNumero = 1;
             
             if (ultimaMonta && ultimaMonta.numero_monta) {
-                siguienteNumero = ultimaMonta.numero_monta + 1;
+                if (typeof ultimaMonta.numero_monta === 'string') {
+                    const match = ultimaMonta.numero_monta.match(/MONTA-(\d+)/);
+                    if (match && match[1]) {
+                        siguienteNumero = parseInt(match[1]) + 1;
+                    } else {
+                        const totalMontasHembra = await prisma.evento_monta.count({
+                            where: { 
+                                animal_hembra_id: animalHembraId,
+                                deleted_at: null 
+                            }
+                        });
+                        siguienteNumero = totalMontasHembra + 1;
+                    }
+                } else if (typeof ultimaMonta.numero_monta === 'number') {
+                    siguienteNumero = ultimaMonta.numero_monta + 1;
+                }
             }
 
-            return siguienteNumero;
+            return `MONTA-${siguienteNumero}`;
         } catch (error) {
             const totalMontasHembra = await prisma.evento_monta.count({
                 where: { 
@@ -31,7 +47,7 @@ export default class MontaController {
                     deleted_at: null 
                 }
             });
-            return totalMontasHembra + 1;
+            return `MONTA-${totalMontasHembra + 1}`;
         }
     }
 
@@ -77,7 +93,7 @@ export default class MontaController {
                     }
                 },
                 orderBy: {
-                    monta_id: 'desc'
+                    fecha: 'desc'
                 }
             });
 
@@ -202,16 +218,28 @@ export default class MontaController {
                 animal_macho_id,
                 tipo_evento_id,
                 descripcion,
-                estado
+                estado,
+                fecha
             } = req.body;
 
-            if (!animal_hembra_id) {
+            if (!animal_hembra_id || !fecha) {
                 return res.status(400).json({
                     ok: false,
-                    msg: "El ID de la hembra es requerido"
+                    msg: "Los campos animal_hembra_id y fecha son obligatorios"
                 });
             }
 
+            const fechaMonta = new Date(fecha);
+            if (isNaN(fechaMonta.getTime())) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "La fecha proporcionada no es válida"
+                });
+            }
+
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+         
             const hembraId = parseInt(animal_hembra_id);
             const machoId = animal_macho_id ? parseInt(animal_macho_id) : null;
 
@@ -300,7 +328,8 @@ export default class MontaController {
                     tipo_evento_id: tipo_evento_id ? parseInt(tipo_evento_id) : null,
                     numero_monta: numeroMonta,
                     descripcion: descripcion ? descripcion.trim() : null,
-                    estado: estado !== undefined ? Boolean(estado) : true
+                    estado: estado !== undefined ? Boolean(estado) : false,
+                    fecha: fechaMonta
                 },
                 include: {
                     hembra: {
@@ -326,6 +355,11 @@ export default class MontaController {
                 }
             });
 
+            // NUEVA LÓGICA: Crear notificaciones si la monta está pendiente
+            if (!nuevaMonta.estado) {
+                await MontaController.crearNotificacionMontaPendiente(nuevaMonta);
+            }
+
             return res.status(201).json({
                 ok: true,
                 msg: "Monta registrada exitosamente",
@@ -350,10 +384,19 @@ export default class MontaController {
 
     static async validarRegistroMonta(animalHembraId, numeroMonta) {
         try {
+            const numeroMatch = numeroMonta.match(/MONTA-(\d+)/);
+            const numero = numeroMatch ? parseInt(numeroMatch[1]) : 1;
+
+            if (numero === 1) {
+                return { puede: true, mensaje: null };
+            }
+
+            const numeroMontaAnterior = `MONTA-${numero - 1}`;
+            
             const montaAnterior = await prisma.evento_monta.findFirst({
                 where: {
                     animal_hembra_id: animalHembraId,
-                    numero_monta: numeroMonta - 1,
+                    numero_monta: numeroMontaAnterior,
                     deleted_at: null
                 },
                 include: {
@@ -365,21 +408,17 @@ export default class MontaController {
                 }
             });
 
-            if (numeroMonta === 1) {
-                return { puede: true, mensaje: null };
-            }
-
             if (!montaAnterior) {
                 return { 
                     puede: false, 
-                    mensaje: `No existe la monta #${numeroMonta - 1}. Debe registrar las montas en orden secuencial.` 
+                    mensaje: `No existe la monta ${numeroMontaAnterior}. Debe registrar las montas en orden secuencial.` 
                 };
             }
 
             if (montaAnterior.diagnosticos.length === 0) {
                 return { 
                     puede: false, 
-                    mensaje: `La monta ${numeroMonta - 1} no tiene diagnóstico registrado. Debe diagnosticar antes de registrar una nueva monta.` 
+                    mensaje: `La monta ${numeroMontaAnterior} no tiene diagnóstico registrado. Debe diagnosticar antes de registrar una nueva monta.` 
                 };
             }
 
@@ -396,7 +435,7 @@ export default class MontaController {
                 if (!partoExistente) {
                     return { 
                         puede: false, 
-                        mensaje: `La monta ${numeroMonta - 1} tiene diagnóstico positivo pero no ha tenido parto. Espere el parto antes de registrar una nueva monta.` 
+                        mensaje: `La monta ${numeroMontaAnterior} tiene diagnóstico positivo pero no ha tenido parto. Espere el parto antes de registrar una nueva monta.` 
                     };
                 }
             }
@@ -424,7 +463,8 @@ export default class MontaController {
                 animal_macho_id,
                 tipo_evento_id,
                 descripcion,
-                estado
+                estado,
+                fecha
             } = req.body;
 
             const montaId = parseInt(id);
@@ -455,6 +495,27 @@ export default class MontaController {
                     ok: false,
                     msg: "El estado es requerido"
                 });
+            }
+
+            let fechaMonta = null;
+            if (fecha !== undefined) {
+                if (!fecha) {
+                    return res.status(400).json({
+                        ok: false,
+                        msg: "La fecha de la monta es requerida"
+                    });
+                }
+
+                fechaMonta = new Date(fecha);
+              
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                if (fechaMonta > hoy) {
+                    return res.status(400).json({
+                        ok: false,
+                        msg: "La fecha de la monta no puede ser futura"
+                    });
+                }
             }
 
             if (animal_hembra_id !== undefined) {
@@ -543,6 +604,28 @@ export default class MontaController {
             if (tipo_evento_id !== undefined) updateData.tipo_evento_id = parseInt(tipo_evento_id);
             if (descripcion !== undefined) updateData.descripcion = descripcion ? descripcion.trim() : null;
             if (estado !== undefined) updateData.estado = Boolean(estado);
+            if (fecha !== undefined) updateData.fecha = fechaMonta;
+
+            // Notificar cuando se completa una monta que estaba pendiente
+            if (estado === true && !montaExistente.estado) {
+                const montaActualizada = await prisma.evento_monta.findFirst({
+                    where: { 
+                        monta_id: montaId,
+                        deleted_at: null 
+                    },
+                    include: {
+                        hembra: {
+                            select: {
+                                arete: true
+                            }
+                        }
+                    }
+                });
+                
+                if (montaActualizada) {
+                    await MontaController.crearNotificacionMontaCompletada(montaActualizada);
+                }
+            }
 
             const montaActualizada = await prisma.evento_monta.update({
                 where: { monta_id: montaId },
@@ -659,4 +742,157 @@ export default class MontaController {
         }
     }
 
+
+    static async crearNotificacionMontaPendiente(monta) {
+        try {
+            if (!monta.estado) {
+                await MontaController.crearNotificacionInicialMonta(monta);
+                await MontaController.programarNotificacionUnDiaAntesMonta(monta);
+            }
+        } catch (error) {}
+    }
+
+    static async crearNotificacionInicialMonta(monta) {
+        try {
+            const mensaje = `Se programó monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} con estado: Pendiente`;
+
+            const usuarios = await prisma.usuarios.findMany({
+                where: {
+                    rol: {
+                        nombre: { in: ['admin', 'veterinario'] }
+                    },
+                    deleted_at: null
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (usuarios.length === 0) {
+                return;
+            }
+
+            const notificacionesData = usuarios.map(usuario => ({
+                usuario_id: usuario.usuario_id,
+                titulo: `Nueva Monta Programada - ${monta.hembra?.arete || 'Hembra'}`,
+                mensaje: mensaje,
+                tipo: 'info',
+                modulo: 'monta',
+                fecha: new Date(),
+                leida: false
+            }));
+
+            await prisma.notificaciones.createMany({
+                data: notificacionesData
+            });
+
+        } catch (error) {}
+    }
+
+    static async programarNotificacionUnDiaAntesMonta(monta) {
+        try {
+            const fechaMonta = new Date(monta.fecha);
+            const fechaNotificacion = new Date(fechaMonta);
+            fechaNotificacion.setDate(fechaMonta.getDate() - 1);
+            fechaNotificacion.setHours(8, 0, 0, 0);
+            
+            const ahora = new Date();
+            const diferenciaMs = fechaNotificacion.getTime() - ahora.getTime();
+            
+            if (diferenciaMs > 0) {
+                setTimeout(async () => {
+                    const montaActualizada = await prisma.evento_monta.findFirst({
+                        where: { 
+                            monta_id: monta.monta_id,
+                            deleted_at: null 
+                        },
+                        include: {
+                            hembra: {
+                                select: {
+                                    arete: true
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (montaActualizada && !montaActualizada.estado) {
+                        await MontaController.crearNotificacionRecordatorioMonta(montaActualizada);
+                    }
+                }, diferenciaMs);
+            }
+        } catch (error) {}
+    }
+
+    static async crearNotificacionRecordatorioMonta(monta) {
+        try {
+            const fechaMonta = new Date(monta.fecha);
+            const mensaje = `Recordatorio: La monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} es para mañana (${fechaMonta.toLocaleDateString('es-ES')})`;
+
+            const usuarios = await prisma.usuarios.findMany({
+                where: {
+                    rol: {
+                        nombre: { in: ['admin', 'veterinario'] }
+                    },
+                    deleted_at: null
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (usuarios.length === 0) {
+                return;
+            }
+
+            const notificacionesData = usuarios.map(usuario => ({
+                usuario_id: usuario.usuario_id,
+                titulo: `Recordatorio Monta - ${monta.hembra?.arete || 'Hembra'}`,
+                mensaje: mensaje,
+                tipo: 'warning',
+                modulo: 'monta',
+                fecha: new Date(),
+                leida: false
+            }));
+
+            await prisma.notificaciones.createMany({
+                data: notificacionesData
+            });
+
+        } catch (error) {}
+    }
+
+    static async crearNotificacionMontaCompletada(monta) {
+        try {
+            const mensaje = `La monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} ha sido completada`;
+
+            const usuarios = await prisma.usuarios.findMany({
+                where: {
+                    rol: {
+                        nombre: { in: ['admin', 'veterinario'] }
+                    },
+                    deleted_at: null
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (usuarios.length === 0) return;
+
+            const notificacionesData = usuarios.map(usuario => ({
+                usuario_id: usuario.usuario_id,
+                titulo: `Monta Completada - ${monta.hembra?.arete || 'Hembra'}`,
+                mensaje: mensaje,
+                tipo: 'success',
+                modulo: 'monta',
+                fecha: new Date(),
+                leida: false
+            }));
+
+            await prisma.notificaciones.createMany({
+                data: notificacionesData
+            });
+            
+        } catch (error) {}
+    }
 }

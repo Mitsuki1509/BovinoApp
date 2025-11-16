@@ -27,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
   XCircle, Calendar
  } from 'lucide-react';
@@ -196,16 +195,35 @@ const MontasPage = () => {
     setEditingMonta(null);
   }, []);
 
-  const formatearNumeroMonta = (numeroMonta) => {
-    if (!numeroMonta) return 'N/A';
-    
-
-    if (typeof numeroMonta === 'number') {
-      return `MONTA-${numeroMonta.toString()}`;
-    }
-    
-    return numeroMonta;
+    const formatearNumeroMonta = (numeroMonta) => {
+      if (!numeroMonta) return 'N/A';
+      
+      // Si ya está en formato string, retornarlo directamente
+      if (typeof numeroMonta === 'string') {
+          return numeroMonta;
+      }
+      
+      // Si es número, formatearlo (para compatibilidad con datos existentes)
+      return `MONTA-${numeroMonta}`;
   };
+
+  const formatDateSafe = (dateString) => {
+    try {
+        if (!dateString) return 'N/A';
+        
+        // Dividir la fecha en partes YYYY-MM-DD
+        const [year, month, day] = dateString.split('-');
+        
+        // Crear fecha local (sin conversión UTC)
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        if (isNaN(date.getTime())) return 'N/A';
+        
+        return date.toLocaleDateString('es-ES');
+    } catch (error) {
+        return 'N/A';
+    }
+};
 
   const filteredMontas = montas.filter(montaItem => {
     if (filtroEstado === 'completadas' && !montaItem.estado) return false;
@@ -269,6 +287,7 @@ const MontasPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="reproduccion"
           >
             <Plus className="h-4 w-4" />
             Crear Monta
@@ -324,6 +343,7 @@ const MontasPage = () => {
                         <th className="text-left py-3 font-medium">Macho</th>
                         <th className="text-left py-3 font-medium">Tipo Evento</th>
                         <th className="text-left py-3 font-medium">Estado</th>
+                        <th className="text-left py-3 font-medium">Fecha</th>
                         <th className="text-left py-3 font-medium">Acciones</th>
                       </tr>
                     </thead>
@@ -350,8 +370,12 @@ const MontasPage = () => {
                           <td className="py-3">
                             {montaItem.tipo_evento?.nombre || 'N/A'}
                           </td>
+
                           <td className="py-3">
                             {getEstadoBadge(montaItem.estado)}
+                          </td>
+                          <td className="py-3">
+                            {formatDateSafe(montaItem.fecha)}
                           </td>
                           <td className="py-3">
                             <DropdownMenu>

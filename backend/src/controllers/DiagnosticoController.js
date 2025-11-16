@@ -1,4 +1,5 @@
-import prisma from "../database.js"
+import prisma from "../database.js";
+import NotificacionController from "./NotificacionController.js";
 
 export default class DiagnosticoPrenezController {
 
@@ -212,6 +213,11 @@ export default class DiagnosticoPrenezController {
                 include: {
                     diagnosticos: {
                         where: { deleted_at: null }
+                    },
+                    hembra: {
+                        select: {
+                            arete: true,
+                        }
                     }
                 }
             });
@@ -223,7 +229,7 @@ export default class DiagnosticoPrenezController {
                 });
             }
 
-            if (monta.diagnosticos.length > 0) {
+            if (monta.diagnosticos && monta.diagnosticos.length > 0) {
                 return res.status(400).json({
                     ok: false,
                     msg: "Esta monta ya tiene un diagnóstico registrado. No se puede registrar otro diagnóstico para la misma monta."
@@ -246,12 +252,24 @@ export default class DiagnosticoPrenezController {
                 });
             }
 
+            let fechaParto = null;
+            if (fecha_probable_parto) {
+                fechaParto = new Date(fecha_probable_parto);
+                
+                if (isNaN(fechaParto.getTime())) {
+                    return res.status(400).json({
+                        ok: false,
+                        msg: "La fecha probable de parto no es válida"
+                    });
+                }
+            }
+
             const nuevoDiagnostico = await prisma.diagnostico_prenez.create({
                 data: {
                     monta_id: montaId,
                     metodo: metodo ? metodo.trim() : null,
                     resultado: resultadoBool,
-                    fecha_probable_parto: fecha_probable_parto ? new Date(fecha_probable_parto) : null
+                    fecha_probable_parto: fechaParto
                 },
                 include: {
                     monta: {
@@ -274,6 +292,13 @@ export default class DiagnosticoPrenezController {
                     }
                 }
             });
+
+            // NUEVA LÓGICA: Crear notificaciones para diagnóstico positivo
+            if (nuevoDiagnostico.resultado === true) {
+                await DiagnosticoPrenezController.crearNotificacionDiagnosticoPositivo(nuevoDiagnostico, monta.hembra);
+            } else {
+                await DiagnosticoPrenezController.crearNotificacionDiagnosticoNegativo(nuevoDiagnostico, monta.hembra);
+            }
 
             return res.status(201).json({
                 ok: true,
@@ -320,6 +345,17 @@ export default class DiagnosticoPrenezController {
                 where: { 
                     prenez_id: diagnosticoId,
                     deleted_at: null 
+                },
+                include: {
+                    monta: {
+                        include: {
+                            hembra: {
+                                select: {
+                                    arete: true,
+                                }
+                            }
+                        }
+                    }
                 }
             });
 
@@ -422,6 +458,14 @@ export default class DiagnosticoPrenezController {
                 }
             });
 
+            if (resultado !== undefined && resultadoFinal !== diagnosticoExistente.resultado) {
+                if (resultadoFinal === true) {
+                    await DiagnosticoPrenezController.crearNotificacionDiagnosticoPositivo(diagnosticoActualizado, diagnosticoExistente.monta.hembra);
+                } else {
+                    await DiagnosticoPrenezController.crearNotificacionDiagnosticoNegativo(diagnosticoActualizado, diagnosticoExistente.monta.hembra);
+                }
+            }
+
             return res.json({
                 ok: true,
                 msg: "Diagnóstico actualizado exitosamente",
@@ -509,4 +553,240 @@ export default class DiagnosticoPrenezController {
         }
     }
 
+
+    static async crearNotificacionDiagnosticoPositivo(diagnostico, hembra) {
+        try {
+            const fechaParto = new Date(diagnostico.fecha_probable_parto);
+            const hoy = new Date();
+            
+            const diffTime = fechaParto - hoy;
+            const diffDias = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            await DiagnosticoPrenezController.crearNotificacionInicialParto(diagnostico, hembra, diffDias);
+            await DiagnosticoPrenezController.programarNotificacionPartoProximo(diagnostico, hembra);
+
+        } catch (error) {}
+    }
+
+    static async crearNotificacionInicialParto(diagnostico, hembra, diffDias) {
+        try {
+            const fechaParto = new Date(diagnostico.fecha_probable_parto);
+            const mensaje = `Buenas noticias! ${hembra?.arete || 'Hembra'} está preñada. Parto probable en ${diffDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
+
+            const usuarios = await prisma.usuarios.findMany({
+                where: {
+                    rol: {
+                        nombre: { in: ['admin', 'veterinario'] }
+                    },
+                    deleted_at: null
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (usuarios.length === 0) {
+                return;
+            }
+
+            const notificacionesData = usuarios.map(usuario => ({
+                usuario_id: usuario.usuario_id,
+                titulo: `Diagnóstico Positivo - ${hembra?.arete || 'Hembra'}`,
+                mensaje: mensaje,
+                tipo: 'success',
+                modulo: 'parto',
+                fecha: new Date(),
+                leida: false
+            }));
+
+            await prisma.notificaciones.createMany({
+                data: notificacionesData
+            });
+
+        } catch (error) {}
+    }
+
+    static async programarNotificacionPartoProximo(diagnostico, hembra) {
+        try {
+            const fechaParto = new Date(diagnostico.fecha_probable_parto);
+            const fechaNotificacion = new Date(fechaParto);
+            fechaNotificacion.setDate(fechaParto.getDate() - 7);
+            fechaNotificacion.setHours(8, 0, 0, 0);
+            
+            const ahora = new Date();
+            const diferenciaMs = fechaNotificacion.getTime() - ahora.getTime();
+            
+            if (diferenciaMs > 0) {
+                setTimeout(async () => {
+                    const diagnosticoActualizado = await prisma.diagnostico_prenez.findFirst({
+                        where: { 
+                            prenez_id: diagnostico.prenez_id,
+                            deleted_at: null 
+                        },
+                        include: {
+                            partos: {
+                                where: {
+                                    deleted_at: null
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (diagnosticoActualizado && diagnosticoActualizado.partos.length === 0) {
+                        await DiagnosticoPrenezController.crearNotificacionRecordatorioParto(diagnosticoActualizado, hembra);
+                    }
+                }, diferenciaMs);
+            } else {
+                const diagnosticoActualizado = await prisma.diagnostico_prenez.findFirst({
+                    where: { 
+                        prenez_id: diagnostico.prenez_id,
+                        deleted_at: null 
+                    },
+                    include: {
+                        partos: {
+                            where: {
+                                deleted_at: null
+                            }
+                        }
+                    }
+                });
+                
+                if (diagnosticoActualizado && diagnosticoActualizado.partos.length === 0) {
+                    await DiagnosticoPrenezController.crearNotificacionRecordatorioParto(diagnosticoActualizado, hembra);
+                }
+            }
+        } catch (error) {}
+    }
+
+    static async crearNotificacionRecordatorioParto(diagnostico, hembra) {
+        try {
+            const fechaParto = new Date(diagnostico.fecha_probable_parto);
+            const ahora = new Date();
+            const diferenciaMs = fechaParto.getTime() - ahora.getTime();
+            const diferenciaDias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+            
+            let mensaje = '';
+            let tipo = 'warning';
+
+            if (diferenciaDias <= 0) {
+                mensaje = `PARTO INMINENTE: ${hembra?.arete || 'Hembra'} tiene parto estimado para HOY (${fechaParto.toLocaleDateString('es-ES')})`;
+                tipo = 'error';
+            } else if (diferenciaDias <= 3) {
+                mensaje = `Parto Muy Próximo: ${hembra?.arete || 'Hembra'} tiene parto estimado en ${diferenciaDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
+                tipo = 'error';
+            } else {
+                mensaje = `Recordatorio Parto: ${hembra?.arete || 'Hembra'} tiene parto estimado en ${diferenciaDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
+            }
+
+            const usuarios = await prisma.usuarios.findMany({
+                where: {
+                    rol: {
+                        nombre: { in: ['admin', 'veterinario'] }
+                    },
+                    deleted_at: null
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (usuarios.length === 0) {
+                return;
+            }
+
+            const notificacionesData = usuarios.map(usuario => ({
+                usuario_id: usuario.usuario_id,
+                titulo: `Recordatorio Parto - ${hembra?.arete || 'Hembra'}`,
+                mensaje: mensaje,
+                tipo: tipo,
+                modulo: 'parto',
+                fecha: new Date(),
+                leida: false
+            }));
+
+            await prisma.notificaciones.createMany({
+                data: notificacionesData
+            });
+
+        } catch (error) {}
+    }
+
+    static async crearNotificacionDiagnosticoNegativo(diagnostico, hembra) {
+        try {
+            const mensaje = `El diagnóstico para ${hembra?.arete || 'Hembra'} resultó negativo. No hay preñez.`;
+
+            const usuarios = await prisma.usuarios.findMany({
+                where: {
+                    rol: {
+                        nombre: { in: ['admin', 'veterinario'] }
+                    },
+                    deleted_at: null
+                },
+                select: {
+                    usuario_id: true
+                }
+            });
+
+            if (usuarios.length === 0) {
+                return;
+            }
+
+            const notificacionesData = usuarios.map(usuario => ({
+                usuario_id: usuario.usuario_id,
+                titulo: `Diagnóstico Negativo - ${hembra?.arete || 'Hembra'}`,
+                mensaje: mensaje,
+                tipo: 'info',
+                modulo: 'parto',
+                fecha: new Date(),
+                leida: false
+            }));
+
+            await prisma.notificaciones.createMany({
+                data: notificacionesData
+            });
+
+        } catch (error) {}
+    }
+
+    static async verificarPartosProximos() {
+        try {
+            const hoy = new Date();
+            const unaSemanaDespues = new Date();
+            unaSemanaDespues.setDate(hoy.getDate() + 7);
+
+            const diagnosticosProximos = await prisma.diagnostico_prenez.findMany({
+                where: {
+                    resultado: true,
+                    fecha_probable_parto: {
+                        gte: hoy,
+                        lte: unaSemanaDespues
+                    },
+                    deleted_at: null
+                },
+                include: {
+                    monta: {
+                        include: {
+                            hembra: {
+                                select: {
+                                    arete: true
+                                }
+                            }
+                        }
+                    },
+                    partos: {
+                        where: {
+                            deleted_at: null
+                        }
+                    }
+                }
+            });
+
+            for (const diagnostico of diagnosticosProximos) {
+                if (diagnostico.partos.length === 0) {
+                    await DiagnosticoPrenezController.crearNotificacionRecordatorioParto(diagnostico, diagnostico.monta.hembra);
+                }
+            }
+
+        } catch (error) {}
+    }
 }

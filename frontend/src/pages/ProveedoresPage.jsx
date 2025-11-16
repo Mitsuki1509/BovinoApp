@@ -236,6 +236,7 @@ const ProveedoresPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="inventario"
           >
             <Plus className="h-4 w-4" />
             Crear Proveedor

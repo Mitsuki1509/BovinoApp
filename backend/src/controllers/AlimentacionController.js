@@ -106,153 +106,154 @@ export default class AlimentacionController {
     }
 
     static async create(req, res) {
-        try {
-            const rolesPermitidos = ['admin', 'veterinario', 'operario'];
-            if (!rolesPermitidos.includes(req.usuario.rol)) {
-                return res.status(403).json({
-                    ok: false,
-                    msg: "No tienes permisos para crear alimentaciones"
-                });
+    try {
+        const rolesPermitidos = ['admin', 'veterinario', 'operario'];
+        if (!rolesPermitidos.includes(req.usuario.rol)) {
+            return res.status(403).json({
+                ok: false,
+                msg: "No tienes permisos para crear alimentaciones"
+            });
+        }
+
+        const {
+            animal_id,
+            insumo_id,
+            cantidad,
+            fecha
+        } = req.body;
+
+        if (!animal_id || !insumo_id || !cantidad || !fecha) {
+            return res.status(400).json({
+                ok: false,
+                msg: "Los campos animal_id, insumo_id, cantidad y fecha son obligatorios"
+            });
+        }
+
+        const animalId = parseInt(animal_id);
+        const insumoId = parseInt(insumo_id);
+        const cantidadInt = parseInt(cantidad);
+
+        if (isNaN(animalId) || isNaN(insumoId) || isNaN(cantidadInt)) {
+            return res.status(400).json({
+                ok: false,
+                msg: "Los IDs y la cantidad deben ser números válidos"
+            });
+        }
+
+        if (cantidadInt <= 0) {
+            return res.status(400).json({
+                ok: false,
+                msg: "La cantidad debe ser mayor a 0"
+            });
+        }
+
+        const animal = await prisma.animales.findFirst({
+            where: { 
+                animal_id: animalId,
+                deleted_at: null 
             }
+        });
 
-            const {
-                animal_id,
-                insumo_id,
-                cantidad,
-                fecha
-            } = req.body;
+        if (!animal) {
+            return res.status(400).json({
+                ok: false,
+                msg: "El animal especificado no existe"
+            });
+        }
 
-            if (!animal_id || !insumo_id || !cantidad || !fecha) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Los campos animal_id, insumo_id, cantidad y fecha son obligatorios"
-                });
+        const insumo = await prisma.insumos.findFirst({
+            where: { 
+                insumo_id: insumoId,
+                deleted_at: null 
             }
+        });
 
-            const animalId = parseInt(animal_id);
-            const insumoId = parseInt(insumo_id);
-            const cantidadInt = parseInt(cantidad);
+        if (!insumo) {
+            return res.status(400).json({
+                ok: false,
+                msg: "El insumo especificado no existe"
+            });
+        }
 
-            if (isNaN(animalId) || isNaN(insumoId) || isNaN(cantidadInt)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Los IDs y la cantidad deben ser números válidos"
-                });
-            }
+        if (insumo.cantidad < cantidadInt) {
+            return res.status(400).json({
+                ok: false,
+                msg: `Stock insuficiente para el insumo ${insumo.nombre}. Stock disponible: ${insumo.cantidad}`
+            });
+        }
 
-            if (cantidadInt <= 0) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "La cantidad debe ser mayor a 0"
-                });
-            }
-
-            const animal = await prisma.animales.findFirst({
-                where: { 
+        const result = await prisma.$transaction(async (prisma) => {
+            const nuevaAlimentacion = await prisma.alimentacion.create({
+                data: {
                     animal_id: animalId,
-                    deleted_at: null 
-                }
-            });
-
-            if (!animal) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El animal especificado no existe"
-                });
-            }
-
-            const insumo = await prisma.insumos.findFirst({
-                where: { 
                     insumo_id: insumoId,
-                    deleted_at: null 
-                }
-            });
-
-            if (!insumo) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El insumo especificado no existe"
-                });
-            }
-
-            if (insumo.cantidad < cantidadInt) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: `Stock insuficiente para el insumo ${insumo.nombre}. Stock disponible: ${insumo.cantidad}`
-                });
-            }
-
-            const result = await prisma.$transaction(async (prisma) => {
-                const nuevaAlimentacion = await prisma.alimentacion.create({
-                    data: {
-                        animal_id: animalId,
-                        insumo_id: insumoId,
-                        cantidad: cantidadInt,
-                        fecha: new Date(fecha)
+                    cantidad: cantidadInt,
+                    fecha: new Date(fecha)
+                },
+                include: {
+                    animal: {
+                        select: {
+                            animal_id: true,
+                            arete: true
+                        }
                     },
-                    include: {
-                        animal: {
-                            select: {
-                                animal_id: true,
-                                arete: true
-                            }
-                        },
-                        insumo: {
-                            select: {
-                                insumo_id: true,
-                                nombre: true,
-                                cantidad: true,
-                                unidad: {
-                                    select: {
-                                        nombre: true
-                                    }
+                    insumo: {
+                        select: {
+                            insumo_id: true,
+                            nombre: true,
+                            cantidad: true,
+                            unidad: {
+                                select: {
+                                    nombre: true
                                 }
                             }
                         }
                     }
-                });
+                }
+            });
 
-                await prisma.insumos.update({
-                    where: { insumo_id: insumoId },
-                    data: {
-                        cantidad: {
-                            decrement: cantidadInt
-                        }
+            await prisma.insumos.update({
+                where: { insumo_id: insumoId },
+                data: {
+                    cantidad: {
+                        decrement: cantidadInt
                     }
-                });
-
-                return nuevaAlimentacion;
+                }
             });
 
-            return res.status(201).json({
-                ok: true,
-                msg: "Alimentación registrada exitosamente",
-                data: result
-            });
+            return nuevaAlimentacion;
+        });
 
-        } catch (error) {
-            
-            if (error.code === 'P2002') {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Ya existe una alimentación con estos datos"
-                });
-            }
-            
-            if (error.code === 'P2003') {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Error de referencia: Verifique que los IDs proporcionados existen"
-                });
-            }
+       
 
-            return res.status(500).json({
+        return res.status(201).json({
+            ok: true,
+            msg: "Alimentación registrada exitosamente",
+            data: result
+        });
+
+    } catch (error) {
+        if (error.code === 'P2002') {
+            return res.status(400).json({
                 ok: false,
-                msg: "Error al registrar la alimentación",
-                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+                msg: "Ya existe una alimentación con estos datos"
             });
         }
+        
+        if (error.code === 'P2003') {
+            return res.status(400).json({
+                ok: false,
+                msg: "Error de referencia: Verifique que los IDs proporcionados existen"
+            });
+        }
+
+        return res.status(500).json({
+            ok: false,
+            msg: "Error al registrar la alimentación",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
+}
 
     static async delete(req, res) {
         try {

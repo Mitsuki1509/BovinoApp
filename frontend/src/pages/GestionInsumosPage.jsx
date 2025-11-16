@@ -260,6 +260,7 @@ const GestionInsumosPage = () => {
               onClick={handleCreate} 
               className="flex items-center gap-2 w-full sm:w-auto"
               type="button"
+              variant="inventario"
             >
               <Plus className="h-4 w-4" />
               Crear {activeTab === 'insumos' ? 'Insumo' : 'Tipo'}
@@ -385,7 +386,6 @@ const GestionInsumosPage = () => {
                         <thead>
                           <tr className="border-b">
                             <th className="text-left py-3 font-medium">Nombre</th>
-                            <th className="text-left py-3 font-medium">Insumos</th>
                             {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
                           </tr>
                         </thead>
@@ -397,11 +397,7 @@ const GestionInsumosPage = () => {
                                   <span className="font-medium">{tipo.nombre}</span>
                                 </div>
                               </td>
-                              <td className="py-3">
-                                <Badge variant={tipo._count?.insumos > 0 ? "default" : "secondary"}>
-                                  {tipo._count?.insumos || 0} insumos
-                                </Badge>
-                              </td>
+                           
                               {canManage && (
                                 <td className="py-3">
                                   <DropdownMenu>
@@ -447,7 +443,6 @@ const GestionInsumosPage = () => {
                                   <Tag className="h-4 w-4 text-blue-600" />
                                   <h3 className="font-semibold text-lg">{tipo.nombre}</h3>
                                 </div>
-                               
                               </div>
                               {canManage && (
                                 <DropdownMenu>

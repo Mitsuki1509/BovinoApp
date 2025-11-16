@@ -69,6 +69,7 @@ const AnimalCard = ({ animal, onVerDetalles }) => {
 
         <Button
           onClick={() => onVerDetalles(animal)}
+          variant="ganado"
         >
           Más información
         </Button>

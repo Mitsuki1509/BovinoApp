@@ -244,6 +244,21 @@ const EventosSanitariosPage = () => {
     );
   }
 
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const [year, month, day] = dateString.split('-');
+        
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        if (isNaN(date.getTime())) return 'Fecha inválida';
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+};
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -256,6 +271,7 @@ const EventosSanitariosPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="sanidad"
           >
             <Plus className="h-4 w-4" />
             Nuevo Evento
@@ -348,11 +364,11 @@ const EventosSanitariosPage = () => {
                           </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">
-                              <span>
-                                {format(new Date(eventoItem.fecha), "dd/MM/yyyy", { locale: es })}
-                              </span>
+                                <span>
+                                     {formatDateWithoutTZ(eventoItem.fecha)}
+                                </span>
                             </div>
-                          </td>
+                        </td>
                           <td className="py-3">
                             {eventoItem.diagnostico || '-'}
                           </td>
@@ -380,8 +396,12 @@ const EventosSanitariosPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                              
+                                  <DropdownMenuItem onClick={() => handleEdit(eventoItem)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar evento
+                              </DropdownMenuItem>
                                 {canDelete && (
+
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(eventoItem)}
                                     className="text-red-600 focus:text-red-600"
@@ -417,7 +437,7 @@ const EventosSanitariosPage = () => {
                               </div>
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-600">
-                                  {format(new Date(eventoItem.fecha), "dd/MM/yyyy", { locale: es })}
+                                      {formatDateWithoutTZ(eventoItem.fecha)}
                                 </span>
                               </div>
                               {eventoItem.diagnostico && (

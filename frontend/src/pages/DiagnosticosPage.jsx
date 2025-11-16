@@ -253,6 +253,22 @@ const DiagnosticosPage = () => {
     );
   }
 
+  const formatDateSafe = (dateString) => {
+    try {
+        if (!dateString) return 'N/A';
+        
+        const date = new Date(dateString);
+        
+        // Ajustar por huso horario local
+        const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+        
+        return format(adjustedDate, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        console.error('Error formateando fecha:', error);
+        return 'N/A';
+    }
+};
+
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -265,6 +281,7 @@ const DiagnosticosPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="reproduccion"
           >
             <Plus className="h-4 w-4" />
             Nuevo Diagnóstico
@@ -340,7 +357,7 @@ const DiagnosticosPage = () => {
                             {diagnosticoItem.fecha_probable_parto ? (
                               <div className="flex items-center gap-2">
                                 <span>
-                                  {format(new Date(diagnosticoItem.fecha_probable_parto), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateSafe(diagnosticoItem.fecha_probable_parto)}
                                 </span>
                               </div>
                             ) : (
@@ -410,7 +427,7 @@ const DiagnosticosPage = () => {
                               {diagnosticoItem.fecha_probable_parto && (
                                 <div className="flex items-center gap-2 text-sm">
                                   <span className="text-gray-600">
-                                    Parto: {format(new Date(diagnosticoItem.fecha_probable_parto), "dd/MM/yyyy", { locale: es })}
+                                    Parto: {formatDateSafe(diagnosticoItem.fecha_probable_parto)}s
                                   </span>
                                 </div>
                               )}

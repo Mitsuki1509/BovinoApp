@@ -9,7 +9,6 @@ const animalRouter = express.Router();
 animalRouter.use(authenticate);
 
 animalRouter.get('/', AnimalController.getAll);
-animalRouter.get('/search', AnimalController.search);
 animalRouter.get('/:id', AnimalController.getById);
 animalRouter.post('/', upload.single('imagen'), AnimalController.create);
 animalRouter.put('/:id', upload.single('imagen'), AnimalController.update);

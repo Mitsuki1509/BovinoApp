@@ -15,6 +15,9 @@ import PartosPage from './pages/PartosPage';
 import EventosSanitariosPage from './pages/EventoSanitarioPage';
 import AlimentacionesPage from './pages/AlimentacionesPage';
 import PesajesPage from './pages/PesajesPage';
+import ProduccionesLecheraPage from './pages/ProduccionLecheraPage';
+import GestionCarnePage from './pages/GestionCarnePage';
+
 function App() {
   return (
     <Router>
@@ -36,6 +39,8 @@ function App() {
         <Route path="/evento" element={<EventosSanitariosPage/>}></Route>
         <Route path="/alimentaciones" element={<AlimentacionesPage/>}></Route>
         <Route path="/pesajes" element={<PesajesPage/>}></Route>
+        <Route path="/produccionLechera" element={<ProduccionesLecheraPage/>}></Route>
+        <Route path="/produccionCarne" element={<GestionCarnePage/>}></Route>
       </Routes>
     </Router>
   );

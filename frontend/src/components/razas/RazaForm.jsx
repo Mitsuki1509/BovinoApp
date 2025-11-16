@@ -168,6 +168,7 @@ const RazaForm = ({
                 disabled={loading}
                 className="flex-1 text-sm sm:text-base"
                 size="lg"
+                variant="ganado"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Raza' : 'Crear Raza'}

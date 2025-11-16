@@ -101,7 +101,7 @@ const TipoInsumoForm = ({
           }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">Nombre del Tipo *</FormLabel>
+              <FormLabel className="text-sm">Nombre del Tipo</FormLabel>
               <FormControl>
                 <Input
                   placeholder="Ej: Alimentos, Medicamentos, etc."
@@ -119,6 +119,7 @@ const TipoInsumoForm = ({
           type="submit"
           disabled={loading}
           className="w-full py-2 font-semibold"
+          variant="inventario"
         >
           {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           {isEditing ? 'Actualizar Tipo' : 'Crear Tipo'}

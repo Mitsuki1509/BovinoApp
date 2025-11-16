@@ -122,28 +122,6 @@ export const useProveedorStore = create((set, get) => ({
     }
   },
 
-  searchProveedores: async (query) => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/proveedores/search?query=${encodeURIComponent(query)}`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        return { success: true, data: result.data };
-      } else {
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  },
-
   getProveedorById: async (id) => {
     try {
       const response = await fetch(`http://localhost:3000/api/proveedores/${id}`, {

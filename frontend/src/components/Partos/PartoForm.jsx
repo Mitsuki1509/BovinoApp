@@ -78,11 +78,18 @@ const PartoForm = ({
     try {
       console.log('Datos del formulario:', data)
 
+      // Formatear fecha correctamente
+    const fechaParto = new Date(data.fecha);
+    const year = fechaParto.getFullYear();
+    const month = String(fechaParto.getMonth() + 1).padStart(2, '0');
+    const day = String(fechaParto.getDate()).padStart(2, '0');
+    const fechaFormateada = `${year}-${month}-${day}`; 
+    
       const partoData = {
         prenez_id: parseInt(data.prenez_id),
         tipo_evento_id: parseInt(data.tipo_evento_id),
         descripcion: data.descripcion || null,
-        fecha: data.fecha.toISOString().split('T')[0]
+        fecha: fechaFormateada
       }
 
       console.log('Enviando datos al servidor:', partoData)
@@ -124,9 +131,9 @@ const PartoForm = ({
   )
 
   const diagnosticosOptions = diagnosticosPositivos.map(diagnostico => ({
-    value: diagnostico.prenez_id.toString(),
-    label: `Monta-${diagnostico.monta?.numero_monta} - Hembra: ${diagnostico.monta?.hembra?.arete || 'N/A'}`
-  }))
+  value: diagnostico.prenez_id.toString(),
+  label: `${diagnostico.monta?.numero_monta} - Hembra: ${diagnostico.monta?.hembra?.arete || 'N/A'}`
+}))
 
   const tipoEventoOptions = eventTypes
     .filter(tipo => !tipo.deleted_at)
@@ -283,6 +290,7 @@ const PartoForm = ({
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="reproduccion"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Parto' : 'Registrar Parto'}

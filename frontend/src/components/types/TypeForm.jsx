@@ -107,7 +107,7 @@ const TypeForm = ({
   }))
 
   const allParentOptions = [
-    { value: '', label: 'Sin evento asociado (categoría principal)' },
+    
     ...parentTypeOptions
   ]
 
@@ -185,6 +185,7 @@ const TypeForm = ({
                 disabled={loading}
                 className="w-full text-sm sm:text-base"
                 size="lg"
+                variant="finca"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Tipo' : 'Crear Tipo'}

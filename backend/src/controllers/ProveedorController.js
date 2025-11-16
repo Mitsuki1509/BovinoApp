@@ -267,44 +267,4 @@ export default class ProveedorController {
             })
         }
     }
-    static async searchProveedor(req, res){
-        try{
-            const {query} = req.query
-            if(!query || !query.trim()){
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El término de búsqueda es requerido"
-                })
-            }
-            
-            const proveedores = await prisma.proveedores.findMany({
-                where: {
-                    AND: [
-                        { deleted_at: null },
-                        {
-                            OR: [
-                                { nombre_compañia: { contains: query.trim(), mode: 'insensitive' } },
-                                { nombre_contacto: { contains: query.trim(), mode: 'insensitive' } },
-                                { telefono_local: { contains: query.trim(), mode: 'insensitive' } }
-                            ]
-                        }
-                    ]
-                },
-                orderBy: {
-                    nombre_compañia: 'asc'
-                }
-            });
-
-            return res.json({
-                ok: true,
-                data:proveedores
-            })
-
-        }catch(error){
-            return res.status(500).json({
-                ok: false,
-                msg: "Error al buscar proveedores"
-            })
-        }
-    }
 }

@@ -2,19 +2,18 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Loader2, Upload, X, MapPin, Tag, AlertCircle, Users } from 'lucide-react';
-import { format, differenceInMonths } from 'date-fns';
+import { CalendarIcon, Loader2, Upload, X, AlertCircle } from 'lucide-react';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useAnimalStore } from '@/store/animalStore';
 import { useLoteStore } from '@/store/loteStore';
 import { useRazaStore } from '@/store/razaStore';
 import { Combobox } from '@/components/ui/combobox';
-import { FaCow } from 'react-icons/fa6';
 import {
   Form,
   FormControl,
@@ -64,27 +63,6 @@ const AnimalForm = ({
       imagen: null
     }
   });
-
-  const getAnimalesAptosParaReproduccion = () => {
-    const fechaNacimiento = form.watch('fecha_nacimiento');
-    if (!fechaNacimiento) return { madres: [], padres: [] };
-
-    const madresAptas = animales.filter(animal => {
-      if (animal.sexo !== 'H') return false;
-      
-      const edadEnMeses = differenceInMonths(fechaNacimiento, new Date(animal.fecha_nacimiento));
-      return edadEnMeses >= 15;
-    });
-
-    const padresAptos = animales.filter(animal => {
-      if (animal.sexo !== 'M') return false;
-      
-      const edadEnMeses = differenceInMonths(fechaNacimiento, new Date(animal.fecha_nacimiento));
-      return edadEnMeses >= 18;
-    });
-
-    return { madres: madresAptas, padres: padresAptos };
-  };
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -152,19 +130,15 @@ const AnimalForm = ({
     setImagenPreview(null);
   };
 
-  const { madres, padres } = getAnimalesAptosParaReproduccion();
-
   const madreOptions = [
-    { value: '', label: 'Sin madre registrada' },
-    ...madres.map(madre => ({
+    ...animales.filter(a => a.sexo === 'H').map(madre => ({
       value: madre.animal_id.toString(),
       label: `${madre.arete}${madre.raza ? ` - ${madre.raza.nombre}` : ''}`
     }))
   ];
 
   const padreOptions = [
-    { value: '', label: 'Sin padre registrado' },
-    ...padres.map(padre => ({
+    ...animales.filter(a => a.sexo === 'M').map(padre => ({
       value: padre.animal_id.toString(),
       label: `${padre.arete}${padre.raza ? ` - ${padre.raza.nombre}` : ''}`
     }))
@@ -186,21 +160,35 @@ const AnimalForm = ({
     setFieldErrors({});
     
     try {
-      if (!data.lote_id || data.lote_id === '') {
-        throw new Error('El lote es requerido');
+      const errors = {};
+      
+      if (!data.arete || data.arete.trim() === '') {
+        errors.arete = 'El número de arete es requerido';
       }
       
-      if (!data.raza_id || data.raza_id === '') {
-        throw new Error('La raza es requerida');
+      if (!data.sexo || data.sexo === '') {
+        errors.sexo = 'El sexo es requerido';
+      }
+      
+      if (!data.fecha_nacimiento) {
+        errors.fecha_nacimiento = 'La fecha de nacimiento es requerida';
       }
 
-      const fechaNacimientoISO = data.fecha_nacimiento 
-        ? data.fecha_nacimiento.toISOString().split('T')[0]
-        : null;
+      if (!data.lote_id || data.lote_id === '') {
+        errors.lote_id = 'El lote es requerido';
+      }
 
-      const fechaDesteteISO = data.fecha_destete 
-        ? data.fecha_destete.toISOString().split('T')[0]
-        : null;
+      if (!data.raza_id || data.raza_id === '') {
+        errors.raza_id = 'La raza es requerida';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        throw new Error('Por favor, complete todos los campos requeridos');
+      }
+
+      const fechaNacimientoISO = data.fecha_nacimiento.toISOString().split('T')[0];
+      const fechaDesteteISO = data.fecha_destete ? data.fecha_destete.toISOString().split('T')[0] : null;
 
       const formData = {
         arete: data.arete.trim(),
@@ -226,45 +214,10 @@ const AnimalForm = ({
         onSuccess?.();
       } else {
         const errorMessage = result?.error || 'Error al guardar el animal';
-        
-        if (errorMessage.includes('validación') || errorMessage.includes('validacion')) {
-          setFormError('Por favor, verifique que todos los campos estén completos correctamente.');
-        } else if (errorMessage.includes('arete') || errorMessage.includes('Arete') || errorMessage.includes('existe')) {
-          setFieldErrors({
-            arete: 'Ya existe un animal con este número de arete. Por favor, use un número diferente.'
-          });
-        } else if (errorMessage.includes('sexo') || errorMessage.includes('Sexo')) {
-          setFieldErrors({
-            sexo: 'El sexo es requerido'
-          });
-        } else if (errorMessage.includes('fecha_nacimiento') || errorMessage.includes('fecha')) {
-          setFieldErrors({
-            fecha_nacimiento: 'La fecha de nacimiento es requerida'
-          });
-        } else if (errorMessage.includes('lote') || errorMessage.includes('Lote')) {
-          setFieldErrors({
-            lote_id: 'El lote es requerido'
-          });
-        } else if (errorMessage.includes('raza') || errorMessage.includes('Raza')) {
-          setFieldErrors({
-            raza_id: 'La raza es requerida'
-          });
-        } else {
-          setFormError(`Error: ${errorMessage}. Por favor, verifique los datos e intente nuevamente.`);
-        }
+        setFormError(errorMessage);
       }
     } catch (error) {
-      if (error.message.includes('lote')) {
-        setFieldErrors({
-          lote_id: 'El lote es requerido'
-        });
-      } else if (error.message.includes('raza')) {
-        setFieldErrors({
-          raza_id: 'La raza es requerida'
-        });
-      } else {
-        setFormError(error.message || 'Error de conexión. Por favor, intente nuevamente.');
-      }
+      setFormError(error.message || 'Error de conexión. Por favor, intente nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -283,224 +236,183 @@ const AnimalForm = ({
           </div>
         )}
 
-        <div className="space-y-4">
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3 px-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Tag className="h-4 w-4 text-blue-600" />
-                Información Básica
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Datos principales de identificación
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 px-4">
+
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="arete"
+              rules={{ 
+                required: "El número de arete es obligatorio",
+                minLength: { value: 1, message: "El número de arete es requerido" },
+                maxLength: { value: 255, message: "El número de arete no puede tener más de 255 caracteres" }
+              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Número de Arete</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ej: A001"
+                      {...field}
+                      disabled={loading}
+                      className="text-sm h-9"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs">
+                    {fieldErrors.arete || form.formState.errors.arete?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="arete"
-                rules={{ 
-                  required: "El número de arete es obligatorio",
-                  minLength: {
-                    value: 1,
-                    message: "El número de arete es requerido"
-                  },
-                  maxLength: {
-                    value: 255,
-                    message: "El número de arete no puede tener más de 255 caracteres"
-                  }
-                }}
+                name="sexo"
+                rules={{ required: "El sexo es obligatorio" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Número de Arete </FormLabel>
+                    <FormLabel className="text-sm">Sexo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Seleccione sexo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="M">Macho</SelectItem>
+                        <SelectItem value="H">Hembra</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs">
+                      {fieldErrors.sexo || form.formState.errors.sexo?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="raza_id"
+                rules={{ required: "La raza es requerida" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Raza</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Ej: A001"
-                        {...field}
+                      <Combobox
+                        options={razaOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar raza..."
                         disabled={loading}
-                        className="text-sm h-9"
+                        className="h-9"
                       />
                     </FormControl>
                     <FormMessage className="text-xs">
-                      {fieldErrors.arete || form.formState.errors.arete?.message}
+                      {fieldErrors.raza_id || form.formState.errors.raza_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="sexo"
-                  rules={{ 
-                    required: "El sexo es obligatorio"
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Sexo </FormLabel>
-                      <Select 
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Seleccione sexo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="M">Macho</SelectItem>
-                          <SelectItem value="H">Hembra</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="text-xs">
-                        {fieldErrors.sexo || form.formState.errors.sexo?.message}
-                      </FormMessage>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="raza_id"
-                  rules={{
-                    required: "La raza es requerida",
-                    validate: value => value !== '' || 'La raza es requerida'
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Raza </FormLabel>
+            <FormField
+              control={form.control}
+              name="fecha_nacimiento"
+              rules={{ required: "La fecha de nacimiento es obligatoria" }}
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-sm">Fecha de Nacimiento</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
                       <FormControl>
-                        <Combobox
-                          options={razaOptions}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Seleccionar raza..."
-                          disabled={loading}
-                          className="h-9"
-                        />
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-3 w-3" />
+                          {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Seleccione fecha'}
+                        </Button>
                       </FormControl>
-                      <FormMessage className="text-xs">
-                        {fieldErrors.raza_id || form.formState.errors.raza_id?.message}
-                      </FormMessage>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        locale={es}
+                        disabled={(date) => date > new Date()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage className="text-xs">
+                    {fieldErrors.fecha_nacimiento || form.formState.errors.fecha_nacimiento?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
 
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <CalendarIcon className="h-4 w-4 text-green-600" />
-                Fechas Importantes
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Fechas relevantes del animal
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <FormField
-                control={form.control}
-                name="fecha_nacimiento"
-                rules={{ 
-                  required: "La fecha de nacimiento es obligatoria"
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="text-sm">Fecha de Nacimiento </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal h-9",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-3 w-3" />
-                            {field.value ? (
-                              format(field.value, 'dd/MM/yyyy', { locale: es })
-                            ) : (
-                              <span>Seleccione fecha</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={es}
-                          disabled={(date) => date > new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage className="text-xs">
-                      {fieldErrors.fecha_nacimiento || form.formState.errors.fecha_nacimiento?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="fecha_destete"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-sm">Fecha de Destete</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                        >
+                          <CalendarIcon className="mr-2 h-3 w-3" />
+                          {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Destete (opcional)'}
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        locale={es}
+                        disabled={(date) => date > new Date()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage className="text-xs">
+                    {form.formState.errors.fecha_destete?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="fecha_destete"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="text-sm">Fecha de Destete</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal h-9",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-3 w-3" />
-                            {field.value ? (
-                              format(field.value, 'dd/MM/yyyy', { locale: es })
-                            ) : (
-                              <span>Destete (opcional)</span>
-                            )}
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={es}
-                          disabled={(date) => date > new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage className="text-xs">
-                      {form.formState.errors.fecha_destete?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
+            <FormField
+              control={form.control}
+              name="lote_id"
+              rules={{ required: "El lote es requerido" }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Lote</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      options={loteOptions}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar lote..."
+                      disabled={loading}
+                      className="h-9"
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs">
+                    {fieldErrors.lote_id || form.formState.errors.lote_id?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
 
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FaCow className="h-4 w-4 text-purple-600" />
-                Parentesco
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Padre y madre del animal
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="animal_madre_id"
@@ -513,16 +425,10 @@ const AnimalForm = ({
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Buscar madre..."
-                        disabled={loading || !form.watch('fecha_nacimiento')}
+                        disabled={loading}
                         className="h-9"
                       />
                     </FormControl>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {form.watch('fecha_nacimiento') 
-                        ? `${madres.length} hembras aptas`
-                        : 'Seleccione fecha primero'
-                      }
-                    </div>
                     <FormMessage className="text-xs">
                       {form.formState.errors.animal_madre_id?.message}
                     </FormMessage>
@@ -542,115 +448,65 @@ const AnimalForm = ({
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Buscar padre..."
-                        disabled={loading || !form.watch('fecha_nacimiento')}
+                        disabled={loading}
                         className="h-9"
                       />
                     </FormControl>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {form.watch('fecha_nacimiento') 
-                        ? `${padres.length} machos aptos`
-                        : 'Seleccione fecha primero'
-                      }
-                    </div>
                     <FormMessage className="text-xs">
                       {form.formState.errors.animal_padre_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
 
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <MapPin className="h-4 w-4 text-orange-600" />
-                Ubicación
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Lote de pertenencia
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="lote_id"
-                rules={{
-                  required: "El lote es requerido",
-                  validate: value => value !== '' || 'El lote es requerido'
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Lote </FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={loteOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar lote..."
-                        disabled={loading}
-                        className="h-9"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs">
-                      {fieldErrors.lote_id || form.formState.errors.lote_id?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
+        <Card>
+          <CardHeader>
+           <CardTitle className="flex items-center gap-2 text-base">
                 <Upload className="h-4 w-4 text-indigo-600" />
-                Fotografía
+                Fotografía (opcional)
               </CardTitle>
-              <CardDescription className="text-xs">
-                Imagen de identificación (opcional)
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="cursor-pointer h-9"
-              />
+            
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="cursor-pointer h-9"
+            />
 
-              {imagenPreview && (
-                <div className="relative inline-block">
-                  <img
-                    src={imagenPreview}
-                    alt="Preview"
-                    className="h-24 w-24 object-cover rounded-lg border border-gray-200"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0"
-                    onClick={removeImage}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            {imagenPreview && (
+              <div className="relative inline-block">
+                <img
+                  src={imagenPreview}
+                  alt="Preview"
+                  className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0"
+                  onClick={removeImage}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <div className="pt-2">
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 font-semibold"
-          >
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {isEditing ? 'Actualizar Animal' : 'Crear Animal'}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full py-4 font-semibold"
+          variant="ganado"
+        >
+          {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {isEditing ? 'Actualizar Animal' : 'Crear Animal'}
+        </Button>
       </form>
     </Form>
   );

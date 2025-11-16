@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar as CalendarIcon, Scale, TrendingUp
+  XCircle, Calendar as CalendarIcon, Scale, TrendingUp, Hash
  } from 'lucide-react';
 import PesajeForm from '@/components/pesajes/PesajeForm';
 import Modal from '@/components/ui/modal';
@@ -183,7 +183,8 @@ const PesajesPage = () => {
         pesajeItem.animal?.arete?.toLowerCase().includes(searchLower) ||
         pesajeItem.animal?.nombre?.toLowerCase().includes(searchLower) ||
         pesajeItem.unidad?.nombre?.toLowerCase().includes(searchLower) ||
-        pesajeItem.peso?.toString().includes(searchTerm)
+        pesajeItem.peso?.toString().includes(searchTerm) ||
+        pesajeItem.numero_pesaje?.toLowerCase().includes(searchLower) // Agregar búsqueda por número de pesaje
       );
       if (!coincide) return false;
     }
@@ -202,7 +203,7 @@ const PesajesPage = () => {
 
   const getItemName = () => {
     if (!itemToDelete) return '';
-    return `Pesaje #${itemToDelete.pesaje_id}`;
+    return `Pesaje ${itemToDelete.numero_pesaje || `#${itemToDelete.pesaje_id}`}`;
   };
 
   const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
@@ -240,6 +241,7 @@ const PesajesPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="ganado"
           >
             <Plus className="h-4 w-4" />
             Nuevo Pesaje
@@ -250,7 +252,7 @@ const PesajesPage = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Buscar pesajes por arete, nombre de animal, unidad o peso..."
+              placeholder="Buscar pesajes por número, arete, nombre de animal, unidad o peso..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-full"
@@ -302,6 +304,7 @@ const PesajesPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
+                        <th className="text-left py-3 font-medium">Número</th>
                         <th className="text-left py-3 font-medium">Animal</th>
                         <th className="text-left py-3 font-medium">Peso</th>
                         <th className="text-left py-3 font-medium">Fecha</th>
@@ -311,26 +314,30 @@ const PesajesPage = () => {
                     <tbody>
                       {filteredPesajes.map((pesajeItem) => (                        
                         <tr key={pesajeItem.pesaje_id} className="border-b hover:bg-gray-50">
-                          <td className="py-3">
+                          <td className='py-3'>
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline">
-                                {pesajeItem.animal?.arete}
-                              </Badge>
-                              {pesajeItem.animal?.arete && (
-                                <span className="text-sm text-gray-600">
-                                  {pesajeItem.animal.nombre}
-                                </span>
-                              )}
+                              <Badge variant="secondary" className="font-mono">
+                                {pesajeItem.numero_pesaje || `PES-${pesajeItem.pesaje_id.toString().padStart(4, '0')}`}
+                              </Badge>                   
                             </div>
                           </td>
                           <td className="py-3">
-                              {parseFloat(pesajeItem.peso).toFixed(2) }                              {pesajeItem.unidad?.abreviatura || pesajeItem.unidad?.nombre}
-
-                            
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="font-mono">
+                                {pesajeItem.animal?.arete}
+                              </Badge>
+                            </div>
                           </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">
-                              <span>
+                                <Badge variant="outline">
+                                {parseFloat(pesajeItem.peso).toFixed(2)} {pesajeItem.unidad?.abreviatura || pesajeItem.unidad?.nombre}
+                              </Badge>
+                            </div>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">
                                 {format(new Date(pesajeItem.fecha), "dd/MM/yyyy", { locale: es })}
                               </span>
                             </div>
@@ -377,7 +384,12 @@ const PesajesPage = () => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline">
+                               <Badge variant="secondary" className="font-mono">
+                                {pesajeItem.numero_pesaje || `PES-${pesajeItem.pesaje_id.toString().padStart(4, '0')}`}
+                              </Badge> 
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="secondary" className="font-mono">
                                 {pesajeItem.animal?.arete}
                               </Badge>
                               <Badge variant="outline">
@@ -385,13 +397,16 @@ const PesajesPage = () => {
                               </Badge>
                             </div>
                             <div className="mt-3 space-y-2">
-                              
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-600">
                                   {format(new Date(pesajeItem.fecha), "dd/MM/yyyy", { locale: es })}
                                 </span>
                               </div>
-                             
+                              {pesajeItem.animal?.nombre && (
+                                <div className="text-sm text-gray-600">
+                                  Animal: {pesajeItem.animal.nombre}
+                                </div>
+                              )}
                             </div>
                           </div>
                           <DropdownMenu>

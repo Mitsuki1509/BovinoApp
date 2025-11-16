@@ -28,7 +28,6 @@ import { cn } from '@/lib/utils';
 const PesajeForm = ({ 
   pesaje = null, 
   onSuccess,
-  onCancel 
 }) => {
   const { createPesaje, updatePesaje, loading, fetchUnidades } = usePesajeStore();
   const { animales, fetchAnimales } = useAnimalStore();
@@ -189,7 +188,6 @@ const PesajeForm = ({
                 )}
               />
 
-              {/* Campos alineados a la misma altura */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <FormField
                   control={form.control}
@@ -312,6 +310,7 @@ const PesajeForm = ({
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="ganado"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Pesaje' : 'Registrar Pesaje'}

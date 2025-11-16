@@ -268,6 +268,7 @@ const GestionAreasPage = () => {
               onClick={handleCreate} 
               className="flex items-center gap-2 w-full sm:w-auto"
               type="button"
+              variant="ganado"
             >
               <Plus className="h-4 w-4" />
               Crear {activeTab === 'lotes' ? 'Lote' : 'Potrero'}
@@ -319,7 +320,6 @@ const GestionAreasPage = () => {
                             <th className="text-left py-3 font-medium">Código</th>
                             <th className="text-left py-3 font-medium">Descripción</th>
                             <th className="text-left py-3 font-medium">Potrero</th>
-                            <th className="text-left py-3 font-medium">Animales</th>
                             {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
                           </tr>
                         </thead>
@@ -345,11 +345,7 @@ const GestionAreasPage = () => {
                                   </Badge>
                                 </div>
                               </td>
-                              <td className="py-3">
-                                <Badge variant={lote._count?.animales > 0 ? "default" : "secondary"}>
-                                  {lote._count?.animales || 0} animales
-                                </Badge>
-                              </td>
+                            
                               {canManage && (
                                 <td className="py-3">
                                   <DropdownMenu>
@@ -393,7 +389,7 @@ const GestionAreasPage = () => {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
                                   <div>
-                                    <Badge variant="outline" className="font-mono mb-1">
+                                    <Badge variant="secondary" className="font-mono mb-1">
                                       {lote.codigo}
                                     </Badge>
                                     <h3 className="font-semibold text-lg">{lote.descripcion}</h3>
@@ -404,9 +400,7 @@ const GestionAreasPage = () => {
                                     {lote.potrero?.ubicacion}
                                   </Badge>
                                 </div>
-                                <Badge variant={lote._count?.animales > 0 ? "default" : "secondary"}>
-                                  {lote._count?.animales || 0} animales
-                                </Badge>
+                               
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

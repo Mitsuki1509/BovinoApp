@@ -201,17 +201,29 @@ const PartosPage = () => {
   };
 
   const obtenerDatosMonta = (partoItem) => {
-    const prenez = partoItem.prenez;
-    if (!prenez) return { numeroMonta: 'N/A', areteHembra: 'N/A' };
+  try {
+    if (!partoItem || !partoItem.prenez) {
+      console.warn('⚠️ Parto sin preñez asociada:', partoItem);
+      return { numeroMonta: 'N/A', areteHembra: 'N/A' };
+    }
     
+    const prenez = partoItem.prenez;
     const monta = prenez.monta;
-    if (!monta) return { numeroMonta: 'N/A', areteHembra: 'N/A' };
+    
+    if (!monta) {
+      console.warn('⚠️ Prenéz sin monta asociada:', prenez);
+      return { numeroMonta: 'N/A', areteHembra: 'N/A' };
+    }
     
     return {
-      numeroMonta: monta.numero_monta,
+      numeroMonta: monta.numero_monta || 'N/A',
       areteHembra: monta.hembra?.arete || 'N/A'
     };
-  };
+  } catch (error) {
+    console.error('❌ Error en obtenerDatosMonta:', error);
+    return { numeroMonta: 'N/A', areteHembra: 'N/A' };
+  }
+};
 
   const filteredPartos = partos.filter(partoItem => {
     if (searchTerm.trim()) {
@@ -267,6 +279,41 @@ const PartosPage = () => {
       </MainLayout>
     );
   }
+ const formatDateSafe = (dateString) => {
+  try {
+    if (!dateString) {
+      console.warn('⚠️ Fecha vacía recibida');
+      return 'N/A';
+    }
+    
+    console.log('📅 Fecha recibida para formatear:', dateString);
+    
+    // Si ya es una fecha de JavaScript
+    if (dateString instanceof Date) {
+      const adjustedDate = new Date(dateString.getTime() + dateString.getTimezoneOffset() * 60000);
+      return format(adjustedDate, "dd/MM/yyyy", { locale: es });
+    }
+    
+    // Si es string, intentar parsear
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      console.error('❌ Fecha inválida:', dateString);
+      return 'N/A';
+    }
+    
+    // Ajustar por huso horario local
+    const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    const result = format(adjustedDate, "dd/MM/yyyy", { locale: es });
+    
+    console.log('📅 Fecha formateada:', result);
+    return result;
+    
+  } catch (error) {
+    console.error('❌ Error en formatDateSafe:', error, 'Fecha:', dateString);
+    return 'N/A';
+  }
+};
 
   return (
     <MainLayout>
@@ -280,6 +327,7 @@ const PartosPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="reproduccion"
           >
             <Plus className="h-4 w-4" />
             Registrar Parto
@@ -378,7 +426,7 @@ const PartosPage = () => {
                             </td>
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-                                  {format(new Date(partoItem.fecha), "dd/MM/yyyy", { locale: es })}
+{formatDateSafe(partoItem.fecha)}
                               </div>
                             </td>
                             <td className="py-3">
@@ -444,7 +492,7 @@ const PartosPage = () => {
                                   {partoItem.tipo_evento?.nombre || 'N/A'}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-                                  {format(new Date(partoItem.fecha), "dd/MM/yyyy", { locale: es })}
+{formatDateSafe(partoItem.fecha)}
                                 </div>
                                 {partoItem.descripcion && (
                                   <div className="text-sm text-gray-600">

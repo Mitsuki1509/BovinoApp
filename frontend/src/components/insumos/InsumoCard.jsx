@@ -69,6 +69,7 @@ const InsumoCard = ({ insumo, onVerDetalles }) => {
 
         <Button
           onClick={() => onVerDetalles(insumo)}
+          variant="inventario"
         >
           Más información
         </Button>

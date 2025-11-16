@@ -244,6 +244,7 @@ const DetalleCompraForm = ({
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="inventario"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Agregar Insumo

@@ -18,10 +18,14 @@ import tipoInsumoRouter from "./routes/tipoInsumoRoutes.js";
 import detalleCompraRouter from "./routes/detalleCompraRoutes.js";
 import montaRouter from "./routes/montaRoutes.js";
 import diagnosticoRouter from "./routes/diagnosticoRoutes.js";
-import partoRouter from './routes/partoRouter.js';
-import eventoSanitarioRouter from "./routes/eventoSanitarioRouter.js";
+import partoRouter from './routes/partoRoutes.js';
+import eventoSanitarioRouter from "./routes/eventoSanitarioRoutes.js";
 import alimentacionRouter from "./routes/alimentacionRoutes.js";
 import pesajeRouter from "./routes/pesajeRoutes.js";
+import produccionLecheraRouter from "./routes/produccionLecheraRoutes.js";
+import mataderoRouter from "./routes/mataderoRoutes.js";
+import produccionCarneRouter from "./routes/produccionCarneRoutes.js";
+import notificacionesRouter from "./routes/notificacionesRoutes.js"
 
 dotenv.config();
 
@@ -72,6 +76,10 @@ app.get("/", (_req, res) => {
       eventoSanitario: "/api/eventosSanitario",
       alimentaciones: "/api/alimentaciones",
       pesajes: "/api/pesajes",
+      produccionLechera:"/api/produccionLechera",
+      mataderos: "/api/mataderos",
+      produccionCarne:"/api/produccionCarne",
+      notificaciones: "/api/notificaciones",
       health: "/health",
     },
   });
@@ -94,6 +102,10 @@ app.use("/api/partos", partoRouter);
 app.use("/api/eventosSanitario", eventoSanitarioRouter)
 app.use("/api/alimentaciones", alimentacionRouter)
 app.use("/api/pesajes", pesajeRouter)
+app.use("/api/produccionLechera", produccionLecheraRouter)
+app.use("/api/mataderos", mataderoRouter)
+app.use("/api/produccionCarne", produccionCarneRouter)
+app.use("/api/notificaciones", notificacionesRouter)
 
 app.use((req, res) => {
   res.status(404).json({

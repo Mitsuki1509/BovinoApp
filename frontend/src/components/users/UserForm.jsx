@@ -257,6 +257,7 @@ const UserForm = ({
                 disabled={loading}
                 className="w-full text-sm sm:text-base"
                 size="lg"
+                variant="finca"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Usuario' : 'Crear Usuario'}

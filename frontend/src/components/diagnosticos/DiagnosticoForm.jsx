@@ -87,75 +87,69 @@ const DiagnosticoForm = ({
     setFieldErrors({})
     
     try {
-     
-      if (!data.monta_id) {
-        setFormError('La monta es requerida')
-        return
-      }
-
-      if (!data.metodo || data.metodo.trim() === '') {
-        setFormError('El método de diagnóstico es requerido')
-        return
-      }
-
-      if (data.resultado) {
-        if (!data.fecha_probable_parto) {
-          setFormError('La fecha probable de parto es requerida para diagnósticos positivos')
-          return
-        }
+        console.log('Datos del formulario:', data);
         
-        const fecha = new Date(data.fecha_probable_parto)
-        if (isNaN(fecha.getTime())) {
-          setFormError('La fecha probable de parto no es válida')
-          return
-        }
-      }
-
-      const diagnosticoData = {
-        monta_id: parseInt(data.monta_id),
-        metodo: data.metodo.trim(),
-        resultado: data.resultado
-      }
-
-      if (data.resultado && data.fecha_probable_parto) {
-        const fecha = new Date(data.fecha_probable_parto)
-        diagnosticoData.fecha_probable_parto = fecha.toISOString().split('T')[0]
-        console.log('Fecha formateada para enviar:', diagnosticoData.fecha_probable_parto)
-      } else {
-        diagnosticoData.fecha_probable_parto = null
-      }
-
-          
-      let result
-      if (isEditing) {
-        result = await updateDiagnostico(diagnostico.prenez_id, diagnosticoData)
-      } else {
-        result = await createDiagnostico(diagnosticoData)
-      }
-
-
-      if (result?.success) {
-        form.reset()
-        onSuccess?.()
-      } else {
-        const errorMsg = result?.error || 'Error al procesar la solicitud'
-        setFormError(errorMsg)
+        let fechaPartoFormateada = null;
         
-        if (result.error?.includes('monta')) {
-          setFieldErrors(prev => ({ ...prev, monta_id: 'La monta especificada no existe' }))
+        if (!data.monta_id) {
+            setFormError('La monta es requerida')
+            return
         }
-        if (result.error?.includes('método') || result.error?.includes('metodo')) {
-          setFieldErrors(prev => ({ ...prev, metodo: 'El método es requerido' }))
+
+        if (!data.metodo || data.metodo.trim() === '') {
+            setFormError('El método de diagnóstico es requerido')
+            return
         }
-        if (result.error?.includes('fecha')) {
-          setFieldErrors(prev => ({ ...prev, fecha_probable_parto: 'La fecha no es válida' }))
+
+        if (data.resultado) {
+            if (!data.fecha_probable_parto) {
+                setFormError('La fecha probable de parto es requerida para diagnósticos positivos')
+                return
+            }
+            
+            const fecha = new Date(data.fecha_probable_parto);
+            console.log('Fecha original:', data.fecha_probable_parto);
+            console.log('Fecha como Date:', fecha);
+            console.log('Fecha timestamp:', fecha.getTime());
+            
+            if (isNaN(fecha.getTime())) {
+                setFormError('La fecha probable de parto no es válida')
+                return
+            }
+            
+            // Formatear fecha en formato ISO (más seguro)
+            fechaPartoFormateada = fecha.toISOString().split('T')[0];
+            console.log('Fecha formateada ISO:', fechaPartoFormateada);
         }
-      }
+
+        const diagnosticoData = {
+            monta_id: parseInt(data.monta_id),
+            metodo: data.metodo.trim(),
+            resultado: data.resultado,
+            fecha_probable_parto: fechaPartoFormateada
+        }
+
+        console.log('Datos finales a enviar:', diagnosticoData);
+
+        let result
+        if (isEditing) {
+            result = await updateDiagnostico(diagnostico.prenez_id, diagnosticoData)
+        } else {
+            result = await createDiagnostico(diagnosticoData)
+        }
+
+        if (result?.success) {
+            form.reset()
+            onSuccess?.()
+        } else {
+            const errorMsg = result?.error || 'Error al procesar la solicitud'
+            setFormError(errorMsg)
+        }
     } catch (error) {
-      console.error('Error en onSubmit:', error)
-      setFormError('Error de conexión. Por favor, intente nuevamente.')
+        console.error('Error en onSubmit:', error)
+        setFormError('Error de conexión. Por favor, intente nuevamente.')
     }
-  }
+}
 
   const calcularFechaParto = () => {
     const hoy = new Date();
@@ -164,14 +158,16 @@ const DiagnosticoForm = ({
     return fechaParto;
   }
 
+  // CORRECCIÓN: Filtrar montas que no tengan diagnóstico y estén activas
   const montasOptions = montas
     .filter(monta => 
       !monta.deleted_at &&
-      monta.estado === true
+      monta.estado === true &&
+      (!monta.diagnosticos || monta.diagnosticos.length === 0) // Solo montas sin diagnóstico
     )
     .map(monta => ({
       value: monta.monta_id.toString(),
-      label: `Monta-${monta.numero_monta} - Hembra: ${monta.hembra?.arete || 'N/A'} ${monta.macho ? `- Macho: ${monta.macho?.arete}` : ''}`
+      label: `${monta.numero_monta} - Hembra: ${monta.hembra?.arete || 'N/A'} ${monta.macho ? `- Macho: ${monta.macho?.arete}` : ''}`
     }))
 
   return (
@@ -204,17 +200,24 @@ const DiagnosticoForm = ({
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar monta"
-                        disabled={loading}
+                        disabled={loading || isEditing} // Deshabilitar en edición
                         className="w-full"
                       />
                     </FormControl>
                     <FormMessage>
                       {fieldErrors.monta_id || form.formState.errors.monta_id?.message}
                     </FormMessage>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {isEditing 
+                        ? "No se puede cambiar la monta en edición" 
+                        : "Solo se muestran montas activas sin diagnóstico previo"
+                      }
+                    </div>
                   </FormItem>
                 )}
               />
 
+              {/* Resto del formulario se mantiene igual */}
               <FormField
                 control={form.control}
                 name="metodo"
@@ -344,11 +347,11 @@ const DiagnosticoForm = ({
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
-             
               <Button 
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="reproduccion"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Diagnóstico' : 'Crear Diagnóstico'}

@@ -31,32 +31,6 @@ export const useDetalleCompraStore = create((set, get) => ({
     }
   },
 
-  fetchDetallesByCompraId: async (compraId) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await fetch(`http://localhost:3000/api/detalleCompra/compra/${compraId}`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        set({ detalles: result.data || [], loading: false });
-        return { success: true, data: result.data };
-      } else {
-        set({ error: result.msg || 'Error desconocido', loading: false });
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      set({ error: error.message || 'Error al cargar detalles', loading: false });
-      return { success: false, error: error.message };
-    }
-  },
-
   fetchDetallesByNumeroCompra: async (numeroCompra) => {
     set({ loading: true, error: null });
     try {
@@ -177,50 +151,6 @@ export const useDetalleCompraStore = create((set, get) => ({
       }
     } catch (error) {
       set({ error: error.message || 'Error al cargar detalle', loading: false });
-      return { success: false, error: error.message };
-    }
-  },
-
-  fetchTotalByCompraId: async (compraId) => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/detalleCompra/compra/${compraId}/total`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        return { success: true, data: result.data };
-      } else {
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  },
-
-  fetchTotalByNumeroCompra: async (numeroCompra) => {
-    try {
-      const response = await fetch(`http://localhost:3000/api/detalleCompra/numero/${numeroCompra}/total`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        return { success: true, data: result.data };
-      } else {
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
       return { success: false, error: error.message };
     }
   },

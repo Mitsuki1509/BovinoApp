@@ -235,6 +235,7 @@ const UsersPage = () => {
             onClick={handleCreate} 
             className="flex items-center gap-2 w-full sm:w-auto"
             type="button"
+            variant="finca"
           >
             <Plus className="h-4 w-4" />
             Crear Usuario
@@ -281,7 +282,7 @@ const UsersPage = () => {
                             <td className="py-3 font-medium">{userItem.nombre}</td>
                             <td className="py-3">{userItem.correo}</td>
                             <td className="py-3">
-                              <Badge variant={rolNombre === 'admin' ? 'default' : 'secondary'}>
+                              <Badge variant={rolNombre === 'admin' ? 'finca' : 'secondary'}>
                                 {rolNombre}
                               </Badge>
                             </td>
@@ -333,7 +334,7 @@ const UsersPage = () => {
                               <h3 className="font-semibold text-lg">{userItem.nombre}</h3>
                               <p className="text-gray-600 text-sm">{userItem.correo}</p>
                               <Badge 
-                                variant={rolNombre === 'admin' ? 'default' : 'secondary'}
+                                variant={rolNombre === 'admin' ? 'finca' : 'secondary'}
                                 className="mt-1"
                               >
                                 {rolNombre}
@@ -413,7 +414,6 @@ const UsersPage = () => {
           loading={deleteLoading}
           onConfirm={handleConfirmDelete}
         />
-
         <Toaster />
       </div>
     </MainLayout>

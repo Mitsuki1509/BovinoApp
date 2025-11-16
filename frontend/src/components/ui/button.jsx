@@ -19,6 +19,20 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        login:
+          "bg-green-800 text-white shadow hover:bg-green-900 focus-visible:ring-green-800",
+        finca:
+          "bg-emerald-800 text-white shadow hover:bg-emerald-900 focus-visible:ring-emerald-800",
+        inventario:
+          "bg-blue-800 text-white shadow hover:bg-blue-900 focus-visible:ring-blue-800",
+        ganado:
+          "bg-lime-900 text-white shadow hover:bg-lime-950 focus-visible:ring-lime-900",
+        sanidad:
+          "bg-red-800 text-white shadow hover:bg-red-900 focus-visible:ring-red-800",
+        produccion:
+          "bg-green-800 text-white shadow hover:bg-green-900 focus-visible:ring-green-800",
+        reproduccion:
+          "bg-purple-800 text-white shadow hover:bg-purple-900 focus-visible:ring-purple-800",
       },
       size: {
         default: "h-9 px-4 py-2",

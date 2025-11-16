@@ -2,6 +2,16 @@ import prisma from "../database.js";
 
 export default class PesajeController {
 
+  static async generarNumeroPesaje() {
+    try {
+      const totalPesajes = await prisma.pesajes.count();
+      return `PES-${(totalPesajes + 1).toString().padStart(4, '0')}`;
+    } catch (error) {
+      const timestamp = Date.now();
+      return `PES-${timestamp.toString().slice(-4)}`;
+    }
+  }
+
   static async getAll(req, res) {
     try {
       const pesajes = await prisma.pesajes.findMany({
@@ -19,7 +29,6 @@ export default class PesajeController {
             select: {
               unidad_id: true,
               nombre: true,
-
             }
           }
         },
@@ -170,6 +179,7 @@ export default class PesajeController {
           msg: "La unidad especificada no existe"
         });
       }
+
       const pesajeExistente = await prisma.pesajes.findFirst({
         where: { 
           animal_id: animalId,
@@ -185,12 +195,16 @@ export default class PesajeController {
         });
       }
 
+      const numeroPesaje = await PesajeController.generarNumeroPesaje();
+
       const data = {
         animal_id: animalId,
         unidad_id: unidadId,
+        numero_pesaje: numeroPesaje,
         peso: parseFloat(peso),
         fecha: new Date(fecha)
       };
+
       const nuevoPesaje = await prisma.pesajes.create({
         data: data,
         include: {
@@ -531,6 +545,58 @@ export default class PesajeController {
       return res.status(500).json({
         ok: false,
         msg: "Error al obtener las unidades"
+      });
+    }
+  }
+
+  static async getByNumeroPesaje(req, res) {
+    try {
+      const { numero } = req.params;
+      
+      if (!numero) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El número de pesaje es requerido"
+        });
+      }
+
+      const pesaje = await prisma.pesajes.findFirst({
+        where: {
+          numero_pesaje: numero,
+          deleted_at: null
+        },
+        include: {
+          animal: {
+            select: {
+              animal_id: true,
+              arete: true
+            }
+          },
+          unidad: {
+            select: {
+              unidad_id: true,
+              nombre: true,
+            }
+          }
+        }
+      });
+      
+      if(!pesaje){
+        return res.status(404).json({
+          ok: false,
+          msg: "Pesaje no encontrado"
+        });
+      }
+      
+      return res.json({
+        ok: true,
+        data: pesaje
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        msg: "Error al obtener el pesaje"
       });
     }
   }

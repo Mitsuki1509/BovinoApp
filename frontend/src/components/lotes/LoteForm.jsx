@@ -65,7 +65,7 @@ const LoteForm = ({
       const loteData = {
         codigo: data.codigo.trim(),
         descripcion: data.descripcion.trim(),
-        potrero_id: parseInt(data.potrero_id) // Siempre requerido
+        potrero_id: parseInt(data.potrero_id)
       }
 
       let result
@@ -220,6 +220,7 @@ const LoteForm = ({
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="ganado"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Lote' : 'Crear Lote'}
