@@ -11,7 +11,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarGroupContent
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -26,14 +25,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Home,
-  Settings,
   Users,
   Package,
   ShoppingCart,
   LogOut,
   Stethoscope,
-  User,
-  Heart,
   ChevronDown,
   HelpCircle, 
   Scale,
@@ -42,7 +38,7 @@ import {
   Tag,
   MapPin,
   Weight,
-  Bell 
+  Bell
 } from "lucide-react";
 import { FaCow, FaClipboardCheck } from 'react-icons/fa6';
 import { useAuthStore } from "@/store/authStore";
@@ -50,6 +46,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@radix-ui/r
 import { Badge } from "@/components/ui/badge"; 
 import { useNotificacionStore } from "@/store/notificacionStore"; 
 import ModalNotificaciones from "@/components/notificaciones/ModalNotificaciones"; 
+import Modal from "@/components/users/Modal";
 
 const navItems = [
   { title: "Dashboard", href: "/dashboard", icon: Home },
@@ -74,6 +71,7 @@ const ganado = [
 const sanidad = [
   { title: "Eventos Sanitarios", href: "/evento", icon: Stethoscope },
 ];
+
 const pesaje = [
   { title: "Registro de Pesajes", href: "/pesajes", icon: Weight },
 ];
@@ -417,17 +415,12 @@ export function MainLayout({ children }) {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/perfil" className="flex items-center cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Perfil</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/configuracion" className="flex items-center cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configuración</span>
-                  </Link>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Modal 
+                    usuario={user}
+                    onSuccess={(message) => {
+                    }}
+                  />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">

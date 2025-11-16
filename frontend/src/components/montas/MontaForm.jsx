@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { useMontaStore } from '@/store/montaStore' // ← AÑADE ESTA LÍNEA
+import { useMontaStore } from '@/store/montaStore' 
 import { useAnimalStore } from '@/store/animalStore'
 import { useTypeStore } from '@/store/typeStore'
 import { Button } from '@/components/ui/button'

@@ -66,37 +66,6 @@ export const useAlimentacionStore = create((set, get) => ({
     }
   },
 
-  updateAlimentacion: async (id, alimentacionData) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await fetch(`http://localhost:3000/api/alimentaciones/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(alimentacionData),
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        set({ loading: false });
-        get().fetchAlimentaciones();
-        return { success: true, data: result.data };
-      } else {
-        set({ error: result.msg || 'Error desconocido', loading: false });
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      set({ error: error.message || 'Error al actualizar alimentación', loading: false });
-      return { success: false, error: error.message };
-    }
-  },
 
   deleteAlimentacion: async (id) => {
     try {

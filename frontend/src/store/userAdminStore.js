@@ -142,6 +142,38 @@ export const useUserAdminStore = create((set, get) => ({
       return { success: false, error: error.message };
     }
   },
+  resetPassword: async (userId, newPassword) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch(`http://localhost:3000/api/users/${userId}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nueva_password: newPassword
+        }),
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      if (result.ok) {
+        set({ loading: false });
+        return { success: true, data: result.data };
+      } else {
+        set({ error: result.msg || 'Error desconocido', loading: false });
+        return { success: false, error: result.msg };
+      }
+    } catch (error) {
+      set({ error: error.message || 'Error al cambiar contraseña', loading: false });
+      return { success: false, error: error.message };
+    }
+  },
 
   clearError: () => set({ error: null })
 }));

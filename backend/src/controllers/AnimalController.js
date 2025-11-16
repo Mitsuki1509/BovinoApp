@@ -162,7 +162,7 @@ export default class AnimalController {
     }
   }
 
-  static async create(req, res) {
+static async create(req, res) {
     try {
       const rolesPermitidos = ['admin', 'veterinario', 'operario', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -254,6 +254,13 @@ export default class AnimalController {
             msg: "El animal especificado como madre debe ser hembra"
           });
         }
+
+        if (!this.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
+          return res.status(400).json({
+            ok: false,
+            msg: "La madre debe tener al menos 15 meses de edad para ser apta para reproducción"
+          });
+        }
       }
 
       if (animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== '') {
@@ -276,6 +283,13 @@ export default class AnimalController {
           return res.status(400).json({
             ok: false,
             msg: "El animal especificado como padre debe ser macho"
+          });
+        }
+
+        if (!this.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
+          return res.status(400).json({
+            ok: false,
+            msg: "El padre debe tener al menos 18 meses de edad para ser apto para reproducción"
           });
         }
       }
@@ -403,7 +417,8 @@ export default class AnimalController {
     }
   }
 
-  static async update(req, res) {
+
+static async update(req, res) {
     try {
       const rolesPermitidos = ['admin', 'veterinario', 'operario', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -514,6 +529,13 @@ export default class AnimalController {
               msg: "El animal especificado como madre debe ser hembra"
             });
           }
+
+          if (!this.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
+            return res.status(400).json({
+              ok: false,
+              msg: "La madre debe tener al menos 15 meses de edad para ser apta para reproducción"
+            });
+          }
         }
       }
 
@@ -539,6 +561,13 @@ export default class AnimalController {
             return res.status(400).json({
               ok: false,
               msg: "El animal especificado como padre debe ser macho"
+            });
+          }
+
+          if (!this.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
+            return res.status(400).json({
+              ok: false,
+              msg: "El padre debe tener al menos 18 meses de edad para ser apto para reproducción"
             });
           }
         }

@@ -50,6 +50,28 @@ const AnimalForm = ({
     fetchRazas
   } = useRazaStore();
 
+  const esAptoParaMonta = (animal) => {
+    if (!animal.fecha_nacimiento) return false;
+    
+    const fechaNacimiento = new Date(animal.fecha_nacimiento);
+    const fechaActual = new Date();
+    
+    let mesesDeEdad = (fechaActual.getFullYear() - fechaNacimiento.getFullYear()) * 12;
+    mesesDeEdad += fechaActual.getMonth() - fechaNacimiento.getMonth();
+    
+    if (fechaActual.getDate() < fechaNacimiento.getDate()) {
+      mesesDeEdad--;
+    }
+    
+    if (animal.sexo === 'H') {
+      return mesesDeEdad >= 15;
+    } else if (animal.sexo === 'M') {
+      return mesesDeEdad >= 18;
+    }
+    
+    return false;
+  };
+
   const form = useForm({
     defaultValues: {
       arete: '',
@@ -131,17 +153,21 @@ const AnimalForm = ({
   };
 
   const madreOptions = [
-    ...animales.filter(a => a.sexo === 'H').map(madre => ({
-      value: madre.animal_id.toString(),
-      label: `${madre.arete}${madre.raza ? ` - ${madre.raza.nombre}` : ''}`
-    }))
+    ...animales
+      .filter(a => a.sexo === 'H' && esAptoParaMonta(a))
+      .map(madre => ({
+        value: madre.animal_id.toString(),
+        label: `${madre.arete}${madre.raza ? ` - ${madre.raza.nombre}` : ''}`
+      }))
   ];
 
   const padreOptions = [
-    ...animales.filter(a => a.sexo === 'M').map(padre => ({
-      value: padre.animal_id.toString(),
-      label: `${padre.arete}${padre.raza ? ` - ${padre.raza.nombre}` : ''}`
-    }))
+    ...animales
+      .filter(a => a.sexo === 'M' && esAptoParaMonta(a))
+      .map(padre => ({
+        value: padre.animal_id.toString(),
+        label: `${padre.arete}${padre.raza ? ` - ${padre.raza.nombre}` : ''}`
+      }))
   ];
 
   const loteOptions = lotes.map(lote => ({
@@ -180,6 +206,20 @@ const AnimalForm = ({
 
       if (!data.raza_id || data.raza_id === '') {
         errors.raza_id = 'La raza es requerida';
+      }
+
+      if (data.animal_madre_id) {
+        const madreSeleccionada = animales.find(a => a.animal_id.toString() === data.animal_madre_id);
+        if (madreSeleccionada && !esAptoParaMonta(madreSeleccionada)) {
+          errors.animal_madre_id = 'La madre seleccionada no cumple con la edad mínima de 15 meses para reproducción';
+        }
+      }
+
+      if (data.animal_padre_id) {
+        const padreSeleccionado = animales.find(a => a.animal_id.toString() === data.animal_padre_id);
+        if (padreSeleccionado && !esAptoParaMonta(padreSeleccionado)) {
+          errors.animal_padre_id = 'El padre seleccionado no cumple con la edad mínima de 18 meses para reproducción';
+        }
       }
 
       if (Object.keys(errors).length > 0) {
@@ -235,8 +275,7 @@ const AnimalForm = ({
             </div>
           </div>
         )}
-
-
+        
           <CardContent className="space-y-4">
             <FormField
               control={form.control}
@@ -430,7 +469,7 @@ const AnimalForm = ({
                       />
                     </FormControl>
                     <FormMessage className="text-xs">
-                      {form.formState.errors.animal_madre_id?.message}
+                      {fieldErrors.animal_madre_id || form.formState.errors.animal_madre_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
@@ -453,7 +492,7 @@ const AnimalForm = ({
                       />
                     </FormControl>
                     <FormMessage className="text-xs">
-                      {form.formState.errors.animal_padre_id?.message}
+                      {fieldErrors.animal_padre_id || form.formState.errors.animal_padre_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
@@ -463,11 +502,10 @@ const AnimalForm = ({
 
         <Card>
           <CardHeader>
-           <CardTitle className="flex items-center gap-2 text-base">
-                <Upload className="h-4 w-4 text-indigo-600" />
-                Fotografía (opcional)
-              </CardTitle>
-            
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Upload className="h-4 w-4 text-indigo-600" />
+              Fotografía (opcional)
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Input

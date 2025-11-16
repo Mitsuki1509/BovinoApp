@@ -552,14 +552,33 @@ export default class UserController {
       const { id } = req.params;
       const { nueva_password } = req.body;
 
+      if (!nueva_password) {
+        return res.status(400).json({
+          ok: false,
+          msg: "La nueva contraseña es requerida"
+        });
+      }
+
       const usuarioId = req.usuario.rol === 'admin' ? parseInt(id) : req.usuario.usuario_id;
+
+      const usuario = await prisma.usuarios.findUnique({
+        where: { usuario_id: usuarioId }
+      });
+
+      if (!usuario) {
+        return res.status(404).json({
+          ok: false,
+          msg: "Usuario no encontrado"
+        });
+      }
 
       const hashedPassword = await bcrypt.hash(nueva_password, 10);
 
       await prisma.usuarios.update({
         where: { usuario_id: usuarioId },
         data: { 
-          contraseña: hashedPassword 
+          contraseña: hashedPassword,
+          google_oauth: false
         }
       });
 
@@ -571,7 +590,7 @@ export default class UserController {
     } catch (error) {
       return res.status(500).json({
         ok: false,
-        msg: "Error al actualizar información del usuario"
+        msg: "Error al actualizar la contraseña"
       });
     }
   }

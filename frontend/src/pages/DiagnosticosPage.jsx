@@ -377,10 +377,7 @@ const DiagnosticosPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(diagnosticoItem)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar diagnóstico
-                                </DropdownMenuItem>
+                               
                                 {user.rol === 'admin' && (
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(diagnosticoItem)}
@@ -445,10 +442,7 @@ const DiagnosticosPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(diagnosticoItem)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar diagnóstico
-                              </DropdownMenuItem>
+                            
                               {user.rol === 'admin' && (
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(diagnosticoItem)}

@@ -358,10 +358,7 @@ const GestionCarnePage = () => {
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleEdit(produccion)}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Editar
-                                      </DropdownMenuItem>
+                                    
                                       <DropdownMenuItem 
                                         onClick={() => handleDelete(produccion, 'produccion')}
                                         className="text-red-600 focus:text-red-600"
@@ -418,10 +415,7 @@ const GestionCarnePage = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleEdit(produccion)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Editar
-                                    </DropdownMenuItem>
+                                  
                                     <DropdownMenuItem 
                                       onClick={() => handleDelete(produccion, 'produccion')}
                                       className="text-red-600 focus:text-red-600"

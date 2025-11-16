@@ -447,10 +447,7 @@ const PartosPage = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(partoItem)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Editar parto
-                                  </DropdownMenuItem>
+                                 
                                   {user.rol === 'admin' && (
                                     <DropdownMenuItem 
                                       onClick={() => handleDeleteClick(partoItem)}
@@ -513,10 +510,7 @@ const PartosPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(partoItem)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar parto
-                                </DropdownMenuItem>
+                                
                                 {user.rol === 'admin' && (
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(partoItem)}
