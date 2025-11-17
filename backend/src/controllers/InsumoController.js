@@ -2,6 +2,7 @@ import prisma from "../database.js";
 import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
+import NotificacionController from "./NotificacionController.js";
 
 export default class InsumoController {
 

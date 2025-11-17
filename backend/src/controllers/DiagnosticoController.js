@@ -293,7 +293,6 @@ export default class DiagnosticoPrenezController {
                 }
             });
 
-            // NUEVA LÓGICA: Crear notificaciones para diagnóstico positivo
             if (nuevoDiagnostico.resultado === true) {
                 await DiagnosticoPrenezController.crearNotificacionDiagnosticoPositivo(nuevoDiagnostico, monta.hembra);
             } else {
@@ -553,7 +552,6 @@ export default class DiagnosticoPrenezController {
         }
     }
 
-
     static async crearNotificacionDiagnosticoPositivo(diagnostico, hembra) {
         try {
             const fechaParto = new Date(diagnostico.fecha_probable_parto);
@@ -573,35 +571,13 @@ export default class DiagnosticoPrenezController {
             const fechaParto = new Date(diagnostico.fecha_probable_parto);
             const mensaje = `Buenas noticias! ${hembra?.arete || 'Hembra'} está preñada. Parto probable en ${diffDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
 
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    rol: {
-                        nombre: { in: ['admin', 'veterinario'] }
-                    },
-                    deleted_at: null
-                },
-                select: {
-                    usuario_id: true
-                }
-            });
-
-            if (usuarios.length === 0) {
-                return;
-            }
-
-            const notificacionesData = usuarios.map(usuario => ({
-                usuario_id: usuario.usuario_id,
-                titulo: `Diagnóstico Positivo - ${hembra?.arete || 'Hembra'}`,
-                mensaje: mensaje,
-                tipo: 'success',
-                modulo: 'parto',
-                fecha: new Date(),
-                leida: false
-            }));
-
-            await prisma.notificaciones.createMany({
-                data: notificacionesData
-            });
+            await NotificacionController.crearNotificacionParaRol(
+                `Diagnóstico Positivo - ${hembra?.arete || 'Hembra'}`,
+                mensaje,
+                'success',
+                'parto',
+                ['admin', 'veterinario']
+            );
 
         } catch (error) {}
     }
@@ -678,35 +654,13 @@ export default class DiagnosticoPrenezController {
                 mensaje = `Recordatorio Parto: ${hembra?.arete || 'Hembra'} tiene parto estimado en ${diferenciaDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
             }
 
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    rol: {
-                        nombre: { in: ['admin', 'veterinario'] }
-                    },
-                    deleted_at: null
-                },
-                select: {
-                    usuario_id: true
-                }
-            });
-
-            if (usuarios.length === 0) {
-                return;
-            }
-
-            const notificacionesData = usuarios.map(usuario => ({
-                usuario_id: usuario.usuario_id,
-                titulo: `Recordatorio Parto - ${hembra?.arete || 'Hembra'}`,
-                mensaje: mensaje,
-                tipo: tipo,
-                modulo: 'parto',
-                fecha: new Date(),
-                leida: false
-            }));
-
-            await prisma.notificaciones.createMany({
-                data: notificacionesData
-            });
+            await NotificacionController.crearNotificacionParaRol(
+                `Recordatorio Parto - ${hembra?.arete || 'Hembra'}`,
+                mensaje,
+                tipo,
+                'parto',
+                ['admin', 'veterinario']
+            );
 
         } catch (error) {}
     }
@@ -715,35 +669,13 @@ export default class DiagnosticoPrenezController {
         try {
             const mensaje = `El diagnóstico para ${hembra?.arete || 'Hembra'} resultó negativo. No hay preñez.`;
 
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    rol: {
-                        nombre: { in: ['admin', 'veterinario'] }
-                    },
-                    deleted_at: null
-                },
-                select: {
-                    usuario_id: true
-                }
-            });
-
-            if (usuarios.length === 0) {
-                return;
-            }
-
-            const notificacionesData = usuarios.map(usuario => ({
-                usuario_id: usuario.usuario_id,
-                titulo: `Diagnóstico Negativo - ${hembra?.arete || 'Hembra'}`,
-                mensaje: mensaje,
-                tipo: 'info',
-                modulo: 'parto',
-                fecha: new Date(),
-                leida: false
-            }));
-
-            await prisma.notificaciones.createMany({
-                data: notificacionesData
-            });
+            await NotificacionController.crearNotificacionParaRol(
+                `Diagnóstico Negativo - ${hembra?.arete || 'Hembra'}`,
+                mensaje,
+                'info',
+                'parto',
+                ['admin', 'veterinario']
+            );
 
         } catch (error) {}
     }

@@ -355,7 +355,6 @@ export default class MontaController {
                 }
             });
 
-            // NUEVA LÓGICA: Crear notificaciones si la monta está pendiente
             if (!nuevaMonta.estado) {
                 await MontaController.crearNotificacionMontaPendiente(nuevaMonta);
             }
@@ -606,7 +605,6 @@ export default class MontaController {
             if (estado !== undefined) updateData.estado = Boolean(estado);
             if (fecha !== undefined) updateData.fecha = fechaMonta;
 
-            // Notificar cuando se completa una monta que estaba pendiente
             if (estado === true && !montaExistente.estado) {
                 const montaActualizada = await prisma.evento_monta.findFirst({
                     where: { 
@@ -742,7 +740,6 @@ export default class MontaController {
         }
     }
 
-
     static async crearNotificacionMontaPendiente(monta) {
         try {
             if (!monta.estado) {
@@ -756,35 +753,13 @@ export default class MontaController {
         try {
             const mensaje = `Se programó monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} con estado: Pendiente`;
 
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    rol: {
-                        nombre: { in: ['admin', 'veterinario'] }
-                    },
-                    deleted_at: null
-                },
-                select: {
-                    usuario_id: true
-                }
-            });
-
-            if (usuarios.length === 0) {
-                return;
-            }
-
-            const notificacionesData = usuarios.map(usuario => ({
-                usuario_id: usuario.usuario_id,
-                titulo: `Nueva Monta Programada - ${monta.hembra?.arete || 'Hembra'}`,
-                mensaje: mensaje,
-                tipo: 'info',
-                modulo: 'monta',
-                fecha: new Date(),
-                leida: false
-            }));
-
-            await prisma.notificaciones.createMany({
-                data: notificacionesData
-            });
+            await NotificacionController.crearNotificacionParaRol(
+                `Nueva Monta Programada - ${monta.hembra?.arete || 'Hembra'}`,
+                mensaje,
+                'info',
+                'monta',
+                ['admin', 'veterinario']
+            );
 
         } catch (error) {}
     }
@@ -828,35 +803,13 @@ export default class MontaController {
             const fechaMonta = new Date(monta.fecha);
             const mensaje = `Recordatorio: La monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} es para mañana (${fechaMonta.toLocaleDateString('es-ES')})`;
 
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    rol: {
-                        nombre: { in: ['admin', 'veterinario'] }
-                    },
-                    deleted_at: null
-                },
-                select: {
-                    usuario_id: true
-                }
-            });
-
-            if (usuarios.length === 0) {
-                return;
-            }
-
-            const notificacionesData = usuarios.map(usuario => ({
-                usuario_id: usuario.usuario_id,
-                titulo: `Recordatorio Monta - ${monta.hembra?.arete || 'Hembra'}`,
-                mensaje: mensaje,
-                tipo: 'warning',
-                modulo: 'monta',
-                fecha: new Date(),
-                leida: false
-            }));
-
-            await prisma.notificaciones.createMany({
-                data: notificacionesData
-            });
+            await NotificacionController.crearNotificacionParaRol(
+                `Recordatorio Monta - ${monta.hembra?.arete || 'Hembra'}`,
+                mensaje,
+                'warning',
+                'monta',
+                ['admin', 'veterinario']
+            );
 
         } catch (error) {}
     }
@@ -865,33 +818,13 @@ export default class MontaController {
         try {
             const mensaje = `La monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} ha sido completada`;
 
-            const usuarios = await prisma.usuarios.findMany({
-                where: {
-                    rol: {
-                        nombre: { in: ['admin', 'veterinario'] }
-                    },
-                    deleted_at: null
-                },
-                select: {
-                    usuario_id: true
-                }
-            });
-
-            if (usuarios.length === 0) return;
-
-            const notificacionesData = usuarios.map(usuario => ({
-                usuario_id: usuario.usuario_id,
-                titulo: `Monta Completada - ${monta.hembra?.arete || 'Hembra'}`,
-                mensaje: mensaje,
-                tipo: 'success',
-                modulo: 'monta',
-                fecha: new Date(),
-                leida: false
-            }));
-
-            await prisma.notificaciones.createMany({
-                data: notificacionesData
-            });
+            await NotificacionController.crearNotificacionParaRol(
+                `Monta Completada - ${monta.hembra?.arete || 'Hembra'}`,
+                mensaje,
+                'success',
+                'monta',
+                ['admin', 'veterinario']
+            );
             
         } catch (error) {}
     }

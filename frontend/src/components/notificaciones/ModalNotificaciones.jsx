@@ -222,194 +222,206 @@ const ModalNotificaciones = ({ open, onOpenChange }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-[95vw] sm:max-w-2xl lg:max-w-3xl max-h-[90vh] sm:max-h-[85vh] mx-auto p-0 sm:p-6 rounded-lg sm:rounded-xl border-0 shadow-lg">
-        <Card className="border-0 shadow-none">
-          <CardContent className="p-0">
-            <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
-                  <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+      <DialogContent className="max-w-[95vw] w-[95vw] sm:max-w-2xl lg:max-w-3xl h-[90vh] sm:h-[85vh] mx-auto p-0 sm:p-6 rounded-lg sm:rounded-xl border-0 shadow-lg flex flex-col">
+        <Card className="border-0 shadow-none h-full flex flex-col">
+          <CardContent className="p-0 flex flex-col h-full">
+            {/* Header fijo */}
+            <div className="flex-shrink-0">
+              <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+                    <Bell className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <DialogTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                      Notificaciones
+                      {notificacionesNoLeidas > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {notificacionesNoLeidas}
+                        </Badge>
+                      )}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs sm:text-sm text-gray-600">
+                      {user?.rol && `Rol: ${user.rol.charAt(0).toUpperCase() + user.rol.slice(1)}`}
+                    </DialogDescription>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <DialogTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                    Notificaciones
-                    {notificacionesNoLeidas > 0 && (
-                      <Badge variant="destructive" className="text-xs">
-                        {notificacionesNoLeidas}
-                      </Badge>
-                    )}
-                  </DialogTitle>
-                  <DialogDescription className="text-xs sm:text-sm text-gray-600">
-                    {user?.rol && `Rol: ${user.rol.charAt(0).toUpperCase() + user.rol.slice(1)}`}
-                  </DialogDescription>
-                </div>
-              </div>
-            </DialogHeader>
+              </DialogHeader>
 
-            <div className="px-4 sm:px-6 pb-3 space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Buscar en notificaciones..."
-                    value={filtroBusqueda}
-                    onChange={(e) => setFiltroBusqueda(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRecargar}
-                  disabled={loading}
-                  className="flex items-center gap-2 sm:w-auto w-full justify-center"
-                >
-                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                  <span>Actualizar</span>
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Filter className="h-4 w-4" />
-                  <span>
-                    {tieneNotificaciones 
-                      ? `${notificacionesFiltradas.length} notificaciones` 
-                      : 'Sin notificaciones'
-                    }
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="solo-no-leidas"
-                    checked={soloNoLeidas}
-                    onCheckedChange={setSoloNoLeidas}
+              {/* Filtros fijos */}
+              <div className="px-4 sm:px-6 pb-3 space-y-3 border-b">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Buscar en notificaciones..."
+                      value={filtroBusqueda}
+                      onChange={(e) => setFiltroBusqueda(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRecargar}
                     disabled={loading}
-                  />
-                  <Label htmlFor="solo-no-leidas" className="text-sm font-normal">
-                    Solo no leídas
-                  </Label>
+                    className="flex items-center gap-2 sm:w-auto w-full justify-center"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                    <span>Actualizar</span>
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Filter className="h-4 w-4" />
+                    <span>
+                      {tieneNotificaciones 
+                        ? `${notificacionesFiltradas.length} notificaciones` 
+                        : 'Sin notificaciones'
+                      }
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="solo-no-leidas"
+                      checked={soloNoLeidas}
+                      onCheckedChange={setSoloNoLeidas}
+                      disabled={loading}
+                    />
+                    <Label htmlFor="solo-no-leidas" className="text-sm font-normal">
+                      Solo no leídas
+                    </Label>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[50vh] sm:max-h-[400px]">
-              {loading && !tieneNotificaciones ? (
-                <div className="text-center py-12 text-gray-500">
-                  <RefreshCw className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm">Cargando notificaciones...</p>
-                </div>
-              ) : error && !tieneNotificaciones ? (
-                <div className="text-center py-12 px-4">
-                  {isConnectionError ? (
-                    <div className="text-amber-600">
-                      <WifiOff className="h-12 w-12 text-amber-400 mx-auto mb-4" />
-                      <p className="font-medium text-sm mb-1">Problema de conexión</p>
-                      <p className="text-xs text-amber-500 mb-4">
-                        No se puede conectar con el servidor
+            {/* Área de notificaciones con scroll - CORREGIDO */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="px-4 sm:px-6 py-4 space-y-4">
+                  {loading && !tieneNotificaciones ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <RefreshCw className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-3" />
+                      <p className="text-sm">Cargando notificaciones...</p>
+                    </div>
+                  ) : error && !tieneNotificaciones ? (
+                    <div className="text-center py-12">
+                      {isConnectionError ? (
+                        <div className="text-amber-600">
+                          <WifiOff className="h-12 w-12 text-amber-400 mx-auto mb-4" />
+                          <p className="font-medium text-sm mb-1">Problema de conexión</p>
+                          <p className="text-xs text-amber-500 mb-4">
+                            No se puede conectar con el servidor
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleRecargar}
+                            className="text-xs"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Reintentar
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-red-600">
+                          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+                          <p className="text-sm mb-1">Error al cargar</p>
+                          <p className="text-xs text-red-500 mb-4 max-w-sm mx-auto">{error}</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleRecargar}
+                            className="text-xs"
+                          >
+                            Reintentar
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : !tieneNotificaciones ? (
+                    <div className="text-center py-12 text-gray-500">
+                      <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-gray-600">No hay notificaciones</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {filtroBusqueda || soloNoLeidas 
+                          ? 'Prueba con otros filtros' 
+                          : 'Las notificaciones del sistema aparecerán aquí'
+                        }
                       </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleRecargar}
-                        className="text-xs"
-                      >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Reintentar
-                      </Button>
                     </div>
                   ) : (
-                    <div className="text-red-600">
-                      <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-                      <p className="text-sm mb-1">Error al cargar</p>
-                      <p className="text-xs text-red-500 mb-4 max-w-sm mx-auto">{error}</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleRecargar}
-                        className="text-xs"
-                      >
-                        Reintentar
-                      </Button>
+                    <div className="space-y-4">
+                      {Object.entries(notificacionesPorModulo)
+                        .filter(([modulo, notifs]) => notifs.length > 0)
+                        .map(([modulo, notifs]) => (
+                          <ModuloNotificaciones 
+                            key={modulo}
+                            titulo={getModuloDisplayName(modulo)}
+                            icono={getIconoPorModulo(modulo)}
+                            notificaciones={notifs}
+                            onMarcarLeida={handleMarcarComoLeida}
+                            getIconoPorTipo={getIconoPorTipo}
+                            getColorPorTipo={getColorPorTipo}
+                            formatFecha={formatFecha}
+                            isExpanded={modulosExpandidos[modulo] ?? true}
+                            onToggle={() => toggleModulo(modulo)}
+                          />
+                        ))}
                     </div>
                   )}
                 </div>
-              ) : !tieneNotificaciones ? (
-                <div className="text-center py-12 text-gray-500 px-4">
-                  <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-gray-600">No hay notificaciones</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {filtroBusqueda || soloNoLeidas 
-                      ? 'Prueba con otros filtros' 
-                      : 'Las notificaciones del sistema aparecerán aquí'
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3 px-4 sm:px-6 pb-4">
-                  {Object.entries(notificacionesPorModulo)
-                    .filter(([modulo, notifs]) => notifs.length > 0)
-                    .map(([modulo, notifs]) => (
-                      <ModuloNotificaciones 
-                        key={modulo}
-                        titulo={getModuloDisplayName(modulo)}
-                        icono={getIconoPorModulo(modulo)}
-                        notificaciones={notifs}
-                        onMarcarLeida={handleMarcarComoLeida}
-                        getIconoPorTipo={getIconoPorTipo}
-                        getColorPorTipo={getColorPorTipo}
-                        formatFecha={formatFecha}
-                        isExpanded={modulosExpandidos[modulo] ?? true}
-                        onToggle={() => toggleModulo(modulo)}
-                      />
-                    ))}
-                </div>
-              )}
-            </ScrollArea>
+              </ScrollArea>
+            </div>
 
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 border-t bg-gray-50/50">
-              <div className="text-xs text-gray-500 text-center sm:text-left">
-                {tieneNotificaciones ? (
-                  <>
-                    <span className="font-medium">{notificacionesFiltradas.length}</span> notificaciones
-                    {notificacionesNoLeidas > 0 && (
-                      <span className="text-blue-600 font-medium ml-1">
-                        ({notificacionesNoLeidas} sin leer)
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  "No hay notificaciones"
-                )}
-              </div>
-              
-              <div className="flex gap-2 flex-wrap justify-center sm:justify-end">
-                {tieneNotificacionesLeidas && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleLimpiarLeidas}
-                    className="flex items-center gap-2 text-xs h-8 px-3"
-                    disabled={loading}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    <span>Limpiar leídas</span>
-                  </Button>
-                )}
+            {/* Footer fijo */}
+            <div className="flex-shrink-0 border-t bg-gray-50/50">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4">
+                <div className="text-xs text-gray-500 text-center sm:text-left">
+                  {tieneNotificaciones ? (
+                    <>
+                      <span className="font-medium">{notificacionesFiltradas.length}</span> notificaciones
+                      {notificacionesNoLeidas > 0 && (
+                        <span className="text-blue-600 font-medium ml-1">
+                          ({notificacionesNoLeidas} sin leer)
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    "No hay notificaciones"
+                  )}
+                </div>
                 
-                {tieneNotificacionesNoLeidas && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleMarcarTodasComoLeidas}
-                    className="flex items-center gap-2 text-xs h-8 px-3"
-                    disabled={loading}
-                  >
-                    <Eye className="h-3 w-3" />
-                    <span>Marcar todas</span>
-                  </Button>
-                )}
+                <div className="flex gap-2 flex-wrap justify-center sm:justify-end">
+                  {tieneNotificacionesLeidas && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLimpiarLeidas}
+                      className="flex items-center gap-2 text-xs h-8 px-3"
+                      disabled={loading}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      <span>Limpiar leídas</span>
+                    </Button>
+                  )}
+                  
+                  {tieneNotificacionesNoLeidas && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleMarcarTodasComoLeidas}
+                      className="flex items-center gap-2 text-xs h-8 px-3"
+                      disabled={loading}
+                    >
+                      <Eye className="h-3 w-3" />
+                      <span>Marcar todas</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -433,9 +445,9 @@ const ModuloNotificaciones = ({
   const notificacionesNoLeidas = notificaciones.filter(n => !n.leida).length;
   
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden border">
       <div 
-        className="flex items-center justify-between p-3 bg-gray-50 border-b cursor-pointer sm:cursor-auto hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
         onClick={onToggle}
       >
         <div className="flex items-center gap-2">
@@ -453,17 +465,16 @@ const ModuloNotificaciones = ({
           </Badge>
           <ChevronDown 
             className={cn(
-              "h-4 w-4 text-gray-400 transition-transform sm:hidden",
+              "h-4 w-4 text-gray-400 transition-transform",
               isExpanded ? "rotate-180" : ""
             )} 
           />
         </div>
       </div>
       
-      {/* Contenido del módulo */}
       <div className={cn(
         "transition-all duration-200",
-        isExpanded ? "block" : "hidden sm:block"
+        isExpanded ? "block" : "hidden"
       )}>
         {notificaciones.map((notif) => (
           <NotificacionItem 
@@ -480,7 +491,6 @@ const ModuloNotificaciones = ({
   );
 };
 
-// Componente de item de notificación
 const NotificacionItem = ({ 
   notificacion, 
   onMarcarLeida, 
@@ -490,7 +500,7 @@ const NotificacionItem = ({
 }) => (
   <div
     className={cn(
-      "p-3 transition-all hover:bg-white cursor-pointer group border-b last:border-b-0",
+      "p-3 transition-all hover:bg-white cursor-pointer border-b last:border-b-0",
       getColorPorTipo(notificacion.tipo),
       "border-l-4"
     )}
@@ -546,7 +556,7 @@ const NotificacionItem = ({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 w-7 p-0 flex-shrink-0 opacity-70 group-hover:opacity-100 transition-all hover:bg-blue-100 hover:text-blue-700"
+          className="h-7 w-7 p-0 flex-shrink-0 opacity-70 hover:opacity-100 transition-all hover:bg-blue-100 hover:text-blue-700"
           onClick={(e) => onMarcarLeida(notificacion.notificacion_id, e)}
           title="Marcar como leída"
         >

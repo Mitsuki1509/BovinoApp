@@ -273,7 +273,7 @@ export default class EventoSanitarioController {
                             }
                         });
 
-                        await prisma.insumos.update({
+                        const insumoActualizado = await prisma.insumos.update({
                             where: { insumo_id: insumoId },
                             data: {
                                 cantidad: {
@@ -281,6 +281,11 @@ export default class EventoSanitarioController {
                                 }
                             }
                         });
+
+                        // 🔥 NUEVO: Verificar si el stock quedó bajo después del consumo
+                        if (insumoActualizado.cantidad < 10) {
+                            await EventoSanitarioController.crearNotificacionStockBajo(insumoActualizado);
+                        }
                     }
 
                     const eventoConInsumos = await prisma.evento_sanitario.findFirst({
@@ -338,6 +343,23 @@ export default class EventoSanitarioController {
                 msg: "Error al registrar el evento sanitario",
                 error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
+        }
+    }
+
+    static async crearNotificacionStockBajo(insumo) {
+        try {
+            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. Cantidad actual: ${insumo.cantidad}`;
+
+            await NotificacionController.crearNotificacionParaRol(
+                `Stock Bajo - ${insumo.nombre}`,
+                mensaje,
+                'warning',
+                'inventario',
+                ['admin', 'contable']
+            );
+
+        } catch (error) {
+            console.error("Error creando notificación de stock bajo:", error);
         }
     }
 
