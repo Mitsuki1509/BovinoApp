@@ -4,9 +4,11 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 import userRouter from "./routes/userRoutes.js";
-import typeRouter from "./routes/typeRoutes.js"; 
+import typeRouter from "./routes/typeRoutes.js";
 import potreroRouter from "./routes/potreroRoutes.js";
 import loteRouter from "./routes/loteRoutes.js";
 import razaRouter from "./routes/razaRoutes.js";
@@ -25,7 +27,7 @@ import pesajeRouter from "./routes/pesajeRoutes.js";
 import produccionLecheraRouter from "./routes/produccionLecheraRoutes.js";
 import mataderoRouter from "./routes/mataderoRoutes.js";
 import produccionCarneRouter from "./routes/produccionCarneRoutes.js";
-import notificacionesRouter from "./routes/notificacionesRoutes.js"
+import notificacionesRouter from "./routes/notificacionesRoutes.js";
 
 dotenv.config();
 
@@ -33,6 +35,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const server = createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }
+});
+
+export const usuariosConectados = new Map();
+
+io.on("connection", (socket) => {
+  socket.on("registrar-usuario", (usuarioId) => {
+    usuariosConectados.set(usuarioId.toString(), socket.id);
+  });
+
+  socket.on("disconnect", () => {
+    for (let [usuarioId, socketId] of usuariosConectados.entries()) {
+      if (socketId === socket.id) {
+        usuariosConectados.delete(usuarioId);
+        break;
+      }
+    }
+  });
+});
+
+export { io };
 
 app.use(express.json());
 app.use(cookieParser());
@@ -60,7 +89,7 @@ app.get("/", (_req, res) => {
     version: "1.0.0",
     endpoints: {
       users: "/api/users",
-      types: "/api/types", 
+      types: "/api/types",
       potreros: "/api/potreros",
       lotes: "/api/lotes",
       razas: "/api/razas",
@@ -69,7 +98,7 @@ app.get("/", (_req, res) => {
       compras: "/api/compras",
       tiposInsumo:"/api/tipoInsumo",
       insumos:"/api/insumos",
-      detalleCompra:"/api/detalleCompra", 
+      detalleCompra:"/api/detalleCompra",
       montas: "/api/montas",
       diagnosticos: "/api/diagnosticos",
       partos: "/api/partos",
@@ -86,26 +115,26 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/users", userRouter);
-app.use("/api/types", typeRouter); 
+app.use("/api/types", typeRouter);
 app.use("/api/potreros", potreroRouter);
 app.use("/api/lotes", loteRouter);
 app.use("/api/razas", razaRouter);
 app.use("/api/animales", animalRouter);
-app.use("/api/proveedores", proveedorRouter); 
-app.use("/api/compras", compraRouter)
-app.use("/api/tipoInsumo", tipoInsumoRouter)
-app.use("/api/insumos", insumoRouter)
-app.use("/api/detalleCompra", detalleCompraRouter) 
-app.use("/api/montas", montaRouter)
-app.use("/api/diagnosticos", diagnosticoRouter)
+app.use("/api/proveedores", proveedorRouter);
+app.use("/api/compras", compraRouter);
+app.use("/api/tipoInsumo", tipoInsumoRouter);
+app.use("/api/insumos", insumoRouter);
+app.use("/api/detalleCompra", detalleCompraRouter);
+app.use("/api/montas", montaRouter);
+app.use("/api/diagnosticos", diagnosticoRouter);
 app.use("/api/partos", partoRouter);
-app.use("/api/eventosSanitario", eventoSanitarioRouter)
-app.use("/api/alimentaciones", alimentacionRouter)
-app.use("/api/pesajes", pesajeRouter)
-app.use("/api/produccionLechera", produccionLecheraRouter)
-app.use("/api/mataderos", mataderoRouter)
-app.use("/api/produccionCarne", produccionCarneRouter)
-app.use("/api/notificaciones", notificacionesRouter)
+app.use("/api/eventosSanitario", eventoSanitarioRouter);
+app.use("/api/alimentaciones", alimentacionRouter);
+app.use("/api/pesajes", pesajeRouter);
+app.use("/api/produccionLechera", produccionLecheraRouter);
+app.use("/api/mataderos", mataderoRouter);
+app.use("/api/produccionCarne", produccionCarneRouter);
+app.use("/api/notificaciones", notificacionesRouter);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -123,4 +152,4 @@ app.use((error, req, res, next) => {
   });
 });
 
-export default app;
+export default server;

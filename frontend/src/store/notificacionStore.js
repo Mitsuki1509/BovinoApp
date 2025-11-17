@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { io } from 'socket.io-client';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const BASE_URL = API_BASE.replace(/\/api$/, '');
@@ -11,18 +12,54 @@ export const useNotificacionStore = create(
       notificacionesNoLeidas: 0,
       loading: false,
       error: null,
+      socket: null,
+
+      inicializarSocket: (usuarioId) => {
+        if (!usuarioId) return;
+
+        const socket = io(BASE_URL, {
+          withCredentials: true
+        });
+
+        socket.emit('registrar-usuario', usuarioId);
+
+        socket.on('nueva-notificacion', (nuevaNotif) => {
+          set(state => {
+            const updatedNotificaciones = [nuevaNotif, ...state.notificaciones];
+            const noLeidas = updatedNotificaciones.filter(n => !n.leida).length;
+            
+            return {
+              notificaciones: updatedNotificaciones,
+              notificacionesNoLeidas: noLeidas
+            };
+          });
+
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(nuevaNotif.titulo, {
+              body: nuevaNotif.mensaje
+            });
+          }
+        });
+
+        set({ socket });
+      },
+
+      solicitarPermisosNotificacion: () => {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      },
 
       fetchNotificaciones: async (usuarioId) => {
-        if (!usuarioId) {
-          return;
-        }
+        if (!usuarioId) return;
 
         set({ loading: true, error: null });
         try {
-          const response = await fetch(`/api/notificaciones/usuario/${usuarioId}`, {
+          const response = await fetch(`${BASE_URL}/api/notificaciones/usuario/${usuarioId}`, {
             headers: {
               'Content-Type': 'application/json',
             },
+            credentials: 'include'
           });
 
           if (!response.ok) {
@@ -38,6 +75,9 @@ export const useNotificacionStore = create(
               loading: false,
               error: null
             });
+
+            get().inicializarSocket(usuarioId);
+            get().solicitarPermisosNotificacion();
           } else {
             throw new Error(result.msg || 'Error del servidor');
           }
@@ -149,6 +189,12 @@ export const useNotificacionStore = create(
     }),
     {
       name: 'notificaciones-storage',
+      partialize: (state) => ({
+        notificaciones: state.notificaciones,
+        notificacionesNoLeidas: state.notificacionesNoLeidas,
+        loading: state.loading,
+        error: state.error
+      })
     }
   )
 );
@@ -159,6 +205,9 @@ export const useNotificaciones = () => {
     notificacionesNoLeidas,
     loading,
     error,
+    socket,
+    inicializarSocket,
+    solicitarPermisosNotificacion,
     fetchNotificaciones,
     marcarComoLeida,
     marcarTodasComoLeidas,
@@ -172,6 +221,9 @@ export const useNotificaciones = () => {
     notificacionesNoLeidas,
     loading,
     error,
+    socket,
+    inicializarSocket,
+    solicitarPermisosNotificacion,
     fetchNotificaciones,
     marcarComoLeida,
     marcarTodasComoLeidas,

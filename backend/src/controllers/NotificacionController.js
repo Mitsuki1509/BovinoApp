@@ -1,4 +1,5 @@
 import prisma from "../database.js";
+import { io, usuariosConectados } from "../app.js";
 
 export default class NotificacionController {
 
@@ -109,7 +110,55 @@ export default class NotificacionController {
                 data: notificacionesData
             });
 
+            usuarios.forEach(usuario => {
+                const socketId = usuariosConectados.get(usuario.usuario_id.toString());
+                if (socketId) {
+                    io.to(socketId).emit("nueva-notificacion", {
+                        titulo,
+                        mensaje,
+                        tipo,
+                        modulo,
+                        fecha: new Date(),
+                        leida: false
+                    });
+                }
+            });
+
             return resultado.count;
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async crearNotificacionIndividual(usuarioId, titulo, mensaje, tipo = "informativo", modulo = "sistema") {
+        try {
+            const notificacion = await prisma.notificaciones.create({
+                data: {
+                    usuario_id: usuarioId,
+                    titulo: titulo.trim(),
+                    mensaje: mensaje.trim(),
+                    tipo,
+                    modulo,
+                    fecha: new Date(),
+                    leida: false
+                }
+            });
+
+            const socketId = usuariosConectados.get(usuarioId.toString());
+            if (socketId) {
+                io.to(socketId).emit("nueva-notificacion", {
+                    notificacion_id: notificacion.notificacion_id,
+                    titulo,
+                    mensaje,
+                    tipo,
+                    modulo,
+                    fecha: notificacion.fecha,
+                    leida: false
+                });
+            }
+
+            return notificacion;
 
         } catch (error) {
             throw error;
