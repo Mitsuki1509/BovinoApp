@@ -193,11 +193,28 @@ const GestionCarnePage = () => {
     });
   }, [fetchMataderos, fetchProducciones, editingItem, activeTab, toast]);
 
+  // Función para formatear fechas sin problemas de zona horaria
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const [year, month, day] = dateString.split('-');
+        
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        if (isNaN(date.getTime())) return 'Fecha inválida';
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+  };
+
   const getItemName = () => {
     if (!itemToDelete) return '';
     return itemToDelete.type === 'matadero' 
       ? itemToDelete.item.ubicacion
-      : `Producción del ${format(new Date(itemToDelete.item.fecha), "dd/MM/yyyy", { locale: es })}`;
+      : `Producción del ${formatDateWithoutTZ(itemToDelete.item.fecha)}`;
   };
 
   const getItemType = () => {
@@ -340,7 +357,7 @@ const GestionCarnePage = () => {
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
                                   <span>
-                                    {format(new Date(produccion.fecha), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateWithoutTZ(produccion.fecha)}
                                   </span>
                                 </div>
                               </td>
@@ -398,7 +415,7 @@ const GestionCarnePage = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-gray-600">
-                                    {format(new Date(produccion.fecha), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateWithoutTZ(produccion.fecha)}
                                   </span>
                                 </div>
                               </div>
@@ -572,7 +589,7 @@ const GestionCarnePage = () => {
         </Tabs>
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">{getFormTitle()}</DialogTitle>
               <DialogDescription className="text-sm sm:text-base">{getFormDescription()}</DialogDescription>

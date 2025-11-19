@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAlimentacionStore } from '@/store/alimentacionStore';
 import { useAnimalStore } from '@/store/animalStore';
-import { useInsumoStore } from '@/store/insumoStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CalendarIcon } from 'lucide-react';
@@ -31,11 +30,16 @@ const AlimentacionForm = ({
   onSuccess,
   onCancel 
 }) => {
-  const { createAlimentacion, updateAlimentacion, loading } = useAlimentacionStore();
+  const { 
+    createAlimentacion, 
+    updateAlimentacion, 
+    loading
+  } = useAlimentacionStore();
+  
   const { animales, fetchAnimales } = useAnimalStore();
-  const { insumos, fetchInsumos, loading: loadingInsumos } = useInsumoStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState('');
+  const [insumos, setInsumos] = useState([]);
   const [insumoSeleccionado, setInsumoSeleccionado] = useState(null);
 
   const form = useForm({
@@ -49,8 +53,23 @@ const AlimentacionForm = ({
 
   useEffect(() => {
     fetchAnimales();
+    // Cargar insumos directamente desde la API
     fetchInsumos();
-  }, [fetchAnimales, fetchInsumos]);
+  }, []);
+
+  const fetchInsumos = async () => {
+    try {
+      const response = await fetch('/api/insumos');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ok) {
+          setInsumos(data.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando insumos:', error);
+    }
+  };
 
   useEffect(() => {
     if (alimentacion) {
@@ -61,7 +80,9 @@ const AlimentacionForm = ({
         cantidad: alimentacion.cantidad ? alimentacion.cantidad.toString() : '',
         fecha: alimentacion.fecha ? new Date(alimentacion.fecha) : new Date()
       });
-      setInsumoSeleccionado(alimentacion.insumo);
+      // Buscar el insumo seleccionado
+      const insumo = insumos.find(i => i.insumo_id === alimentacion.insumo_id);
+      setInsumoSeleccionado(insumo);
     } else {
       setIsEditing(false);
       form.reset({
@@ -72,20 +93,28 @@ const AlimentacionForm = ({
       });
       setInsumoSeleccionado(null);
     }
-  }, [alimentacion, form]);
+  }, [alimentacion, form, insumos]);
 
   const onSubmit = async (data) => {
     setFormError('');
     
     try {
+      console.log('Datos del formulario:', data);
+      
+      // Validación adicional
+      if (!data.animal_id || !data.insumo_id || !data.cantidad || !data.fecha) {
+        setFormError('Todos los campos son obligatorios');
+        return;
+      }
+
       const alimentacionData = {
         animal_id: parseInt(data.animal_id),
         insumo_id: parseInt(data.insumo_id),
         cantidad: parseInt(data.cantidad),
-        fecha: data.fecha.toISOString().split('T')[0]
+        fecha: data.fecha.toISOString().split('T')[0] // Formato YYYY-MM-DD
       };
 
-      console.log('Enviando datos:', alimentacionData);
+      console.log('Datos a enviar:', alimentacionData);
 
       let result;
       if (isEditing) {
@@ -95,7 +124,12 @@ const AlimentacionForm = ({
       }
 
       if (result?.success) {
-        form.reset();
+        form.reset({
+          animal_id: '',
+          insumo_id: '',
+          cantidad: '',
+          fecha: new Date()
+        });
         setInsumoSeleccionado(null);
         onSuccess?.();
       } else {
@@ -121,11 +155,20 @@ const AlimentacionForm = ({
           value: insumo.insumo_id.toString(),
           label: `${insumo.nombre} - Stock: ${insumo.cantidad} ${insumo.unidad?.nombre || ''}`
         }))
-    : [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
+    : [];
 
   const handleInsumoChange = (insumoId) => {
     const insumo = insumos.find(i => i.insumo_id.toString() === insumoId);
     setInsumoSeleccionado(insumo);
+  };
+
+  // Función corregida para deshabilitar solo fechas futuras
+  const isDateDisabled = (date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
+    return compareDate > today;
   };
 
   return (
@@ -146,7 +189,7 @@ const AlimentacionForm = ({
                 rules={{ required: "El animal es obligatorio" }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Animal</FormLabel>
+                    <FormLabel>Animal *</FormLabel>
                     <FormControl>
                       <Combobox
                         options={animalesOptions}
@@ -168,7 +211,7 @@ const AlimentacionForm = ({
                 rules={{ required: "El insumo es obligatorio" }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Insumo</FormLabel>
+                    <FormLabel>Insumo *</FormLabel>
                     <FormControl>
                       <Combobox
                         options={insumosOptions}
@@ -177,12 +220,8 @@ const AlimentacionForm = ({
                           field.onChange(value);
                           handleInsumoChange(value);
                         }}
-                        placeholder={
-                          loadingInsumos 
-                            ? "Cargando insumos..." 
-                            : "Seleccionar insumo"
-                        }
-                        disabled={loading || loadingInsumos}
+                        placeholder="Seleccionar insumo"
+                        disabled={loading || insumos.length === 0}
                         className="w-full"
                       />
                     </FormControl>
@@ -196,11 +235,17 @@ const AlimentacionForm = ({
                 name="cantidad"
                 rules={{ 
                   required: "La cantidad es obligatoria",
-                  min: { value: 1, message: "La cantidad debe ser mayor a 0" }
+                  min: { value: 1, message: "La cantidad debe ser mayor a 0" },
+                  validate: (value) => {
+                    if (insumoSeleccionado && parseInt(value) > insumoSeleccionado.cantidad) {
+                      return `La cantidad no puede ser mayor al stock disponible (${insumoSeleccionado.cantidad})`;
+                    }
+                    return true;
+                  }
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cantidad</FormLabel>
+                    <FormLabel>Cantidad *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -228,7 +273,7 @@ const AlimentacionForm = ({
                 rules={{ required: "La fecha es requerida" }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Fecha de Alimentación</FormLabel>
+                    <FormLabel>Fecha de Alimentación *</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -239,6 +284,7 @@ const AlimentacionForm = ({
                               !field.value && "text-muted-foreground"
                             )}
                             disabled={loading}
+                            type="button"
                           >
                             {field.value ? (
                               format(field.value, "PPP", { locale: es })
@@ -256,6 +302,7 @@ const AlimentacionForm = ({
                           onSelect={field.onChange}
                           initialFocus
                           locale={es}
+                          disabled={isDateDisabled}
                         />
                       </PopoverContent>
                     </Popover>
@@ -266,7 +313,6 @@ const AlimentacionForm = ({
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
-             
               <Button 
                 type="submit" 
                 disabled={loading}
@@ -276,6 +322,17 @@ const AlimentacionForm = ({
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Alimentación' : 'Registrar Alimentación'}
               </Button>
+              
+              {onCancel && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={onCancel}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+              )}
             </div>
           </form>
         </Form>

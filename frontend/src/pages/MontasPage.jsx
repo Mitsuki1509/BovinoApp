@@ -34,7 +34,6 @@ import MontaForm from '@/components/montas/MontaForm';
 import Modal from '@/components/ui/modal';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { FaCow } from 'react-icons/fa6';
 
 const MontasPage = () => {
   const navigate = useNavigate();

@@ -27,6 +27,7 @@ import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+
 const MontaForm = ({ 
   monta = null, 
   onSuccess,
@@ -88,17 +89,15 @@ const MontaForm = ({
     setFieldErrors({})
     
     try {
-      // SOLUCIÓN FECHAS: Formatear manualmente sin problemas de huso horario
       const fechaSeleccionada = new Date(data.fecha);
       const year = fechaSeleccionada.getFullYear();
       const month = String(fechaSeleccionada.getMonth() + 1).padStart(2, '0');
       const day = String(fechaSeleccionada.getDate()).padStart(2, '0');
       const fechaFormateada = `${year}-${month}-${day}`;
 
-      // EN MODO EDICIÓN: Solo enviar el estado
       const montaData = isEditing 
         ? {
-            estado: estadoMonta === 1 // true para Completada, false para Pendiente
+            estado: estadoMonta === 1
           }
         : {
             animal_hembra_id: parseInt(data.animal_hembra_id),
@@ -185,10 +184,8 @@ const MontaForm = ({
             )}
 
             <div className="space-y-4">
-              {/* SOLO MOSTRAR CAMPOS COMPLETOS EN CREACIÓN */}
               {!isEditing && (
                 <>
-                  {/* Campo de Fecha con Calendario */}
                   <FormField
                     control={form.control}
                     name="fecha"
@@ -226,11 +223,12 @@ const MontaForm = ({
                               disabled={(date) => {
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
-                                return date < today;
+                                const tomorrow = new Date(today);
+                                tomorrow.setDate(today.getDate() + 1);
+                                return date < tomorrow;
                               }}
                               initialFocus
                               locale={es}
-                              fromDate={new Date()}
                             />
                           </PopoverContent>
                         </Popover>
@@ -238,7 +236,7 @@ const MontaForm = ({
                           {form.formState.errors.fecha?.message}
                         </FormMessage>
                         <div className="text-xs text-muted-foreground mt-1">
-                          Seleccione la fecha programada para la monta (desde hoy en adelante)
+                          Seleccione la fecha programada para la monta (desde mañana en adelante)
                         </div>
                       </FormItem>
                     )}

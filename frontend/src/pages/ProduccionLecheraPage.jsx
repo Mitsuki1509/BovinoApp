@@ -176,6 +176,35 @@ const ProduccionLecheraPage = () => {
     setEditingProduccion(null);
   }, []);
 
+  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
+  const convertirAFechaLocal = (fecha) => {
+    try {
+      if (!fecha) return null;
+      
+      let date;
+      
+      // Si es string YYYY-MM-DD, convertir directamente
+      if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = fecha.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Para otros formatos, crear fecha
+        date = new Date(fecha);
+      }
+      
+      if (isNaN(date.getTime())) return null;
+      
+      // Usar UTC para evitar problemas de zona horaria
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const filteredProducciones = producciones.filter(produccionItem => {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
@@ -190,16 +219,37 @@ const ProduccionLecheraPage = () => {
     }
 
     if (fechaFiltro) {
-      const fechaProduccion = new Date(produccionItem.fecha);
-      const fechaFiltroDate = new Date(fechaFiltro);
+      const fechaProduccion = convertirAFechaLocal(produccionItem.fecha);
+      const fechaFiltroComparable = convertirAFechaLocal(fechaFiltro);
       
-      if (fechaProduccion.toDateString() !== fechaFiltroDate.toDateString()) {
+      if (!fechaProduccion || !fechaFiltroComparable) {
+        return false;
+      }
+      
+      if (fechaProduccion !== fechaFiltroComparable) {
         return false;
       }
     }
     
     return true;
   });
+
+  // Función para formatear fechas sin problemas de zona horaria
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const fechaLocal = convertirAFechaLocal(dateString);
+        if (!fechaLocal) return 'Fecha inválida';
+        
+        const [year, month, day] = fechaLocal.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+  };
 
   const getItemName = () => {
     if (!itemToDelete) return '';
@@ -295,6 +345,9 @@ const ProduccionLecheraPage = () => {
             <CardTitle>Lista de Producciones Lecheras</CardTitle>
             <CardDescription>
               {filteredProducciones.length} de {producciones.length} producción(es) encontrada(s)
+              {fechaFiltro && (
+                <span> - Filtrado por: {format(fechaFiltro, "dd/MM/yyyy", { locale: es })}</span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -336,7 +389,7 @@ const ProduccionLecheraPage = () => {
                           <td className="py-3">
                             <div className="flex items-center gap-2">
                               <span>
-                                {format(new Date(produccionItem.fecha), "dd/MM/yyyy", { locale: es })}
+                                {formatDateWithoutTZ(produccionItem.fecha)}
                               </span>
                             </div>
                           </td>
@@ -399,7 +452,7 @@ const ProduccionLecheraPage = () => {
                             <div className="mt-3 space-y-2">
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-600">
-                                  {format(new Date(produccionItem.fecha), "dd/MM/yyyy", { locale: es })}
+                                  {formatDateWithoutTZ(produccionItem.fecha)}
                                 </span>
                               </div>
                               {produccionItem.descripcion && (

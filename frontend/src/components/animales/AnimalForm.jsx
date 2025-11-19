@@ -76,7 +76,7 @@ const AnimalForm = ({
     defaultValues: {
       arete: '',
       sexo: '',
-      fecha_nacimiento: null,
+      fecha_nacimiento: new Date(),
       fecha_destete: null,
       lote_id: '',
       raza_id: '',
@@ -100,7 +100,7 @@ const AnimalForm = ({
           form.reset({
             arete: animal.arete || '',
             sexo: animal.sexo || '',
-            fecha_nacimiento: animal.fecha_nacimiento ? new Date(animal.fecha_nacimiento) : null,
+            fecha_nacimiento: animal.fecha_nacimiento ? new Date(animal.fecha_nacimiento) : new Date(),
             fecha_destete: animal.fecha_destete ? new Date(animal.fecha_destete) : null,
             lote_id: animal.lote_id ? animal.lote_id.toString() : '',
             raza_id: animal.raza_id ? animal.raza_id.toString() : '',
@@ -117,7 +117,7 @@ const AnimalForm = ({
           form.reset({
             arete: '',
             sexo: '',
-            fecha_nacimiento: null,
+            fecha_nacimiento: new Date(),
             fecha_destete: null,
             lote_id: '',
             raza_id: '',

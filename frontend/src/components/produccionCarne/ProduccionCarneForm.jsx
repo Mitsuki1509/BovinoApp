@@ -6,7 +6,7 @@ import { useMataderoStore } from '@/store/mataderoStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CalendarIcon } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
@@ -16,6 +16,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const ProduccionCarneForm = ({ 
   produccion = null, 
@@ -43,17 +52,15 @@ const ProduccionCarneForm = ({
       matadero_id: '',
       unidad_id: '',
       peso_canal: '',
-      fecha: new Date().toISOString().split('T')[0]
+      fecha: new Date()
     }
   });
 
-  // Cargar datos necesarios usando stores
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoadingData(true);
         
-        // Cargar datos en paralelo
         await Promise.all([
           fetchAnimales(),
           fetchMataderos(),
@@ -71,7 +78,6 @@ const ProduccionCarneForm = ({
     fetchData();
   }, [fetchAnimales, fetchMataderos, fetchUnidades]);
 
-  // Establecer valores iniciales si es edición
   useEffect(() => {
     if (produccion) {
       setIsEditing(true);
@@ -80,7 +86,7 @@ const ProduccionCarneForm = ({
         matadero_id: produccion.matadero_id?.toString() || '',
         unidad_id: produccion.unidad_id?.toString() || '',
         peso_canal: produccion.peso_canal || '',
-        fecha: produccion.fecha ? new Date(produccion.fecha).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+        fecha: produccion.fecha ? new Date(produccion.fecha) : new Date()
       });
     } else {
       setIsEditing(false);
@@ -89,7 +95,7 @@ const ProduccionCarneForm = ({
         matadero_id: '',
         unidad_id: '',
         peso_canal: '',
-        fecha: new Date().toISOString().split('T')[0]
+        fecha: new Date()
       });
     }
   }, [produccion, form]);
@@ -100,18 +106,16 @@ const ProduccionCarneForm = ({
     setLoading(true);
     
     try {
-      // Validar que los campos requeridos no estén vacíos
       if (!data.animal_id || !data.matadero_id || !data.unidad_id || !data.peso_canal || !data.fecha) {
         throw new Error('Todos los campos marcados con * son requeridos');
       }
 
-      // Preparar datos para enviar
       const formData = {
         animal_id: parseInt(data.animal_id),
         matadero_id: parseInt(data.matadero_id),
         unidad_id: parseInt(data.unidad_id),
         peso_canal: parseFloat(data.peso_canal),
-        fecha: new Date(data.fecha).toISOString()
+        fecha: data.fecha.toISOString().split('T')[0]
       };
 
       let result;
@@ -134,7 +138,6 @@ const ProduccionCarneForm = ({
     }
   };
 
-  // Preparar opciones para los combobox
   const animalOptions = (animales || [])
     .filter(animal => animal && animal.animal_id && animal.animal_id.toString().trim() !== '')
     .map(animal => ({
@@ -298,16 +301,39 @@ const ProduccionCarneForm = ({
                   required: "La fecha es obligatoria"
                 }}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Fecha de Producción</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="date"
-                        {...field} 
-                        disabled={loading}
-                        className="w-full"
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                            disabled={loading}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: es })
+                            ) : (
+                              <span>Seleccionar fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                          locale={es}
+                          disabled={(date) => date > new Date()}
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage>
                       {fieldErrors.fecha || form.formState.errors.fecha?.message}
                     </FormMessage>

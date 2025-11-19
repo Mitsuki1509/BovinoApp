@@ -123,56 +123,73 @@ export default class EventoSanitarioController {
         }
     }
 
-    static async create(req, res) {
-        try {
-            const rolesPermitidos = ['admin', 'veterinario', 'operario'];
-            if (!rolesPermitidos.includes(req.usuario.rol)) {
-                return res.status(403).json({
-                    ok: false,
-                    msg: "No tienes permisos para crear eventos sanitarios"
-                });
-            }
-
-            const {
-                animal_id,
-                tipo_evento_id,
-                estado,
-                diagnostico,
-                tratamiento,
-                fecha,
-                insumos 
-            } = req.body;
-
-            if (!animal_id || !tipo_evento_id || !estado || !fecha) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Los campos animal_id, tipo_evento_id, estado y fecha son obligatorios"
-                });
-            }
-
-            const animalId = parseInt(animal_id);
-            const tipoEventoId = parseInt(tipo_evento_id);
-
-            if (isNaN(animalId) || isNaN(tipoEventoId)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Los IDs deben ser números válidos"
-                });
-            }
-
-            const animal = await prisma.animales.findFirst({
-                where: { 
-                    animal_id: animalId,
-                    deleted_at: null 
-                }
+   static async create(req, res) {
+    try {
+        const rolesPermitidos = ['admin', 'veterinario', 'operario'];
+        if (!rolesPermitidos.includes(req.usuario.rol)) {
+            return res.status(403).json({
+                ok: false,
+                msg: "No tienes permisos para crear eventos sanitarios"
             });
+        }
 
-            if (!animal) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El animal especificado no existe"
-                });
+        const {
+            animal_id,
+            tipo_evento_id,
+            estado,
+            diagnostico,
+            tratamiento,
+            fecha,
+            insumos 
+        } = req.body;
+
+        if (!animal_id || !tipo_evento_id || !estado || !fecha) {
+            return res.status(400).json({
+                ok: false,
+                msg: "Los campos animal_id, tipo_evento_id, estado y fecha son obligatorios"
+            });
+        }
+
+        const animalId = parseInt(animal_id);
+        const tipoEventoId = parseInt(tipo_evento_id);
+
+        if (isNaN(animalId) || isNaN(tipoEventoId)) {
+            return res.status(400).json({
+                ok: false,
+                msg: "Los IDs deben ser números válidos"
+            });
+        }
+
+        // ✅ VERIFICACIÓN DE DUPLICADO - Agregar esta parte
+        const eventoDuplicado = await prisma.evento_sanitario.findFirst({
+            where: {
+                animal_id: animalId,
+                tipo_evento_id: tipoEventoId,
+                fecha: new Date(fecha),
+                deleted_at: null
             }
+        });
+
+        if (eventoDuplicado) {
+            return res.status(400).json({
+                ok: false,
+                msg: "Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada"
+            });
+        }
+
+        const animal = await prisma.animales.findFirst({
+            where: { 
+                animal_id: animalId,
+                deleted_at: null 
+            }
+        });
+
+        if (!animal) {
+            return res.status(400).json({
+                ok: false,
+                msg: "El animal especificado no existe"
+            });
+        }
 
             const tipoEvento = await prisma.tipo_evento.findFirst({
                 where: { 
@@ -282,7 +299,6 @@ export default class EventoSanitarioController {
                             }
                         });
 
-                        // 🔥 NUEVO: Verificar si el stock quedó bajo después del consumo
                         if (insumoActualizado.cantidad < 10) {
                             await EventoSanitarioController.crearNotificacionStockBajo(insumoActualizado);
                         }
@@ -742,4 +758,36 @@ export default class EventoSanitarioController {
             
         } catch (error) {}
     }
+static async checkDuplicado(req, res) {
+    try {
+        const { animal_id, tipo_evento_id, fecha } = req.query;
+
+        if (!animal_id || !tipo_evento_id || !fecha) {
+            return res.status(400).json({
+                ok: false,
+                msg: "Los parámetros animal_id, tipo_evento_id y fecha son requeridos"
+            });
+        }
+
+        const eventoExistente = await prisma.evento_sanitario.findFirst({
+            where: {
+                animal_id: parseInt(animal_id),
+                tipo_evento_id: parseInt(tipo_evento_id),
+                fecha: new Date(fecha),
+                deleted_at: null
+            }
+        });
+
+        return res.json({ 
+            ok: true,
+            duplicado: !!eventoExistente 
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            msg: "Error verificando duplicado"
+        });
+    }
+}
 }

@@ -19,5 +19,8 @@
   "homepage": "https://github.com/Mitsuki1509/BovinoApp#readme",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "recharts": "^3.4.1"
   }
 }

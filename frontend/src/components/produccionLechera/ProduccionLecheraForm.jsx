@@ -140,6 +140,13 @@ const ProduccionLecheraForm = ({
     }
   };
 
+  // Función corregida para deshabilitar solo fechas futuras
+  const isDateDisabled = (date) => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Fin del día de hoy
+    return date > today;
+  };
+
   const animalesOptions = animales
     .filter(animal => !animal.deleted_at && animal.sexo === 'H')
     .map(animal => ({
@@ -278,6 +285,7 @@ const ProduccionLecheraForm = ({
                               !field.value && "text-muted-foreground"
                             )}
                             disabled={loading}
+                            type="button"
                           >
                             {field.value ? (
                               format(field.value, "PPP", { locale: es })
@@ -293,10 +301,9 @@ const ProduccionLecheraForm = ({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date > new Date()}
+                          disabled={isDateDisabled}
                           initialFocus
                           locale={es}
-                          toDate={new Date()}
                         />
                       </PopoverContent>
                     </Popover>

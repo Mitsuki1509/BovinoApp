@@ -105,26 +105,24 @@ const EventoSanitarioForm = ({
       const fechaSeleccionada = new Date(data.fecha);
       const fechaFormateada = fechaSeleccionada.toISOString().split('T')[0];
       
-      const eventoSanitarioData = isEditing 
-        ? {
-            estado: estadoEvento === 1 ? 'Completado' : 'Pendiente'
-          }
-        : {
-            animal_id: parseInt(data.animal_id),
-            tipo_evento_id: parseInt(data.tipo_evento_id),
-            estado: estadoEvento === 1 ? 'Completado' : 'Pendiente',
-            diagnostico: data.diagnostico || null,
-            tratamiento: data.tratamiento || null,
-            fecha: fechaFormateada,
-            insumos: insumosSeleccionados.map(insumo => ({
-              insumo_id: parseInt(insumo.insumo_id),
-              cantidad: parseInt(insumo.cantidad)
-            }))
-          };
+      const eventoSanitarioData = {
+        animal_id: parseInt(data.animal_id),
+        tipo_evento_id: parseInt(data.tipo_evento_id),
+        estado: estadoEvento === 1 ? 'Completado' : 'Pendiente',
+        diagnostico: data.diagnostico || null,
+        tratamiento: data.tratamiento || null,
+        fecha: fechaFormateada,
+        insumos: insumosSeleccionados.map(insumo => ({
+          insumo_id: parseInt(insumo.insumo_id),
+          cantidad: parseInt(insumo.cantidad)
+        }))
+      };
 
       let result;
       if (isEditing) {
-        result = await updateEventoSanitario(eventoSanitario.evento_sanitario_id, eventoSanitarioData);
+        result = await updateEventoSanitario(eventoSanitario.evento_sanitario_id, {
+          estado: estadoEvento === 1 ? 'Completado' : 'Pendiente'
+        });
       } else {
         result = await createEventoSanitario(eventoSanitarioData);
       }
@@ -135,7 +133,16 @@ const EventoSanitarioForm = ({
         setEstadoEvento(1);
         onSuccess?.();
       } else {
-        setFormError(result?.error || 'Error al procesar la solicitud');
+        // ✅ MEJOR DETECCIÓN DE ERRORES DE DUPLICADO
+        const errorMsg = result?.error || '';
+        if (errorMsg.includes('duplicado') || 
+            errorMsg.includes('duplicate') || 
+            errorMsg.includes('ya existe') ||
+            errorMsg.includes('mismo tipo')) {
+          setFormError('Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada.');
+        } else {
+          setFormError(errorMsg || 'Error al procesar la solicitud');
+        }
       }
     } catch (error) {
       setFormError('Error de conexión. Por favor, intente nuevamente.');
@@ -153,6 +160,16 @@ const EventoSanitarioForm = ({
   const actualizarInsumo = (index, field, value) => {
     const nuevosInsumos = [...insumosSeleccionados];
     nuevosInsumos[index][field] = value;
+    
+    // Si se selecciona un insumo, verificar stock
+    if (field === 'insumo_id' && value) {
+      const insumoSeleccionado = insumos.find(i => i.insumo_id.toString() === value);
+      if (insumoSeleccionado) {
+        nuevosInsumos[index].stock = insumoSeleccionado.cantidad;
+        nuevosInsumos[index].nombre = insumoSeleccionado.nombre;
+      }
+    }
+    
     setInsumosSeleccionados(nuevosInsumos);
   };
 
@@ -177,18 +194,12 @@ const EventoSanitarioForm = ({
 
   const insumosOptions = insumos && insumos.length > 0 
     ? insumos
-        .filter(insumo => !insumo.deleted_at)
+        .filter(insumo => !insumo.deleted_at && insumo.cantidad > 0)
         .map(insumo => ({
           value: insumo.insumo_id.toString(),
-          label: `${insumo.nombre}` 
+          label: `${insumo.nombre} (Stock: ${insumo.cantidad})` 
         }))
     : [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
-
-  const getMinDate = () => {
-    const today = new Date();
-    today.setDate(today.getDate() + 1);
-    return today;
-  };
 
   return (
     <Card className="w-full border-0 shadow-none">
@@ -416,24 +427,31 @@ const EventoSanitarioForm = ({
                             options={insumosOptions}
                             value={insumo.insumo_id}
                             onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
-                            placeholder={
-                              loadingInsumos 
-                                ? "Cargando insumos..." 
-                                : "Seleccionar insumo"
-                            }
+                            placeholder="Seleccionar insumo"
                             disabled={loading || loadingInsumos}
                           />
+                          {insumo.nombre && (
+                            <p className="text-xs text-muted-foreground">
+                              Stock disponible: {insumo.stock || 0}
+                            </p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <label className="text-xs font-medium">Cantidad</label>
                           <Input
                             type="number"
                             min="1"
+                            max={insumo.stock || 1}
                             value={insumo.cantidad}
                             onChange={(e) => actualizarInsumo(index, 'cantidad', e.target.value)}
                             placeholder="Cantidad"
                             disabled={loading}
                           />
+                          {insumo.stock && insumo.cantidad > insumo.stock && (
+                            <p className="text-xs text-red-500">
+                              Cantidad excede el stock disponible
+                            </p>
+                          )}
                         </div>
                       </div>
                       <Button

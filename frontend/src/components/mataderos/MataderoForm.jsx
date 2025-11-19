@@ -137,6 +137,7 @@ const MataderoForm = ({
                 type="submit" 
                 disabled={loading}
                 className="flex-1"
+                variant="produccion"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Matadero' : 'Crear Matadero'}

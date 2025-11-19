@@ -230,6 +230,23 @@ const GestionComprasPage = () => {
     });
   }, [fetchDetalles, toast]);
 
+  // Función para formatear fechas sin problemas de zona horaria
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const [year, month, day] = dateString.split('-');
+        
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        if (isNaN(date.getTime())) return 'Fecha inválida';
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+  };
+
   const getItemName = () => {
     if (!itemToDelete) return '';
     return itemToDelete.type === 'compra' 
@@ -386,7 +403,7 @@ const GestionComprasPage = () => {
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
                                   <span>
-                                    {format(new Date(compra.fecha), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateWithoutTZ(compra.fecha)}
                                   </span>
                                 </div>
                               </td>
@@ -451,7 +468,7 @@ const GestionComprasPage = () => {
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
                                   <span>
-                                    {format(new Date(compra.fecha), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateWithoutTZ(compra.fecha)}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">

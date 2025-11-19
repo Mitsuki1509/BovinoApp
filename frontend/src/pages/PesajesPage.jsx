@@ -176,6 +176,35 @@ const PesajesPage = () => {
     setEditingPesaje(null);
   }, []);
 
+  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
+  const convertirAFechaLocal = (fecha) => {
+    try {
+      if (!fecha) return null;
+      
+      let date;
+      
+      // Si es string YYYY-MM-DD, convertir directamente
+      if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = fecha.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Para otros formatos, crear fecha
+        date = new Date(fecha);
+      }
+      
+      if (isNaN(date.getTime())) return null;
+      
+      // Usar UTC para evitar problemas de zona horaria
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const filteredPesajes = pesajes.filter(pesajeItem => {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
@@ -184,22 +213,43 @@ const PesajesPage = () => {
         pesajeItem.animal?.nombre?.toLowerCase().includes(searchLower) ||
         pesajeItem.unidad?.nombre?.toLowerCase().includes(searchLower) ||
         pesajeItem.peso?.toString().includes(searchTerm) ||
-        pesajeItem.numero_pesaje?.toLowerCase().includes(searchLower) // Agregar búsqueda por número de pesaje
+        pesajeItem.numero_pesaje?.toLowerCase().includes(searchLower)
       );
       if (!coincide) return false;
     }
 
     if (fechaFiltro) {
-      const fechaPesaje = new Date(pesajeItem.fecha);
-      const fechaFiltroDate = new Date(fechaFiltro);
+      const fechaPesaje = convertirAFechaLocal(pesajeItem.fecha);
+      const fechaFiltroComparable = convertirAFechaLocal(fechaFiltro);
       
-      if (fechaPesaje.toDateString() !== fechaFiltroDate.toDateString()) {
+      if (!fechaPesaje || !fechaFiltroComparable) {
+        return false;
+      }
+      
+      if (fechaPesaje !== fechaFiltroComparable) {
         return false;
       }
     }
     
     return true;
   });
+
+  // Función para formatear fechas sin problemas de zona horaria
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const fechaLocal = convertirAFechaLocal(dateString);
+        if (!fechaLocal) return 'Fecha inválida';
+        
+        const [year, month, day] = fechaLocal.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+  };
 
   const getItemName = () => {
     if (!itemToDelete) return '';
@@ -295,6 +345,9 @@ const PesajesPage = () => {
             <CardTitle>Lista de Pesajes</CardTitle>
             <CardDescription>
               {filteredPesajes.length} de {pesajes.length} pesaje(s) encontrado(s)
+              {fechaFiltro && (
+                <span> - Filtrado por: {format(fechaFiltro, "dd/MM/yyyy", { locale: es })}</span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -338,7 +391,7 @@ const PesajesPage = () => {
                           <td className="py-3">
                             <div className="flex items-center gap-2">
                               <span className="text-sm">
-                                {format(new Date(pesajeItem.fecha), "dd/MM/yyyy", { locale: es })}
+                                {formatDateWithoutTZ(pesajeItem.fecha)}
                               </span>
                             </div>
                           </td>
@@ -399,7 +452,7 @@ const PesajesPage = () => {
                             <div className="mt-3 space-y-2">
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-600">
-                                  {format(new Date(pesajeItem.fecha), "dd/MM/yyyy", { locale: es })}
+                                  {formatDateWithoutTZ(pesajeItem.fecha)}
                                 </span>
                               </div>
                               {pesajeItem.animal?.nombre && (

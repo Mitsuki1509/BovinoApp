@@ -6,33 +6,56 @@ export const useEventoSanitarioStore = create((set, get) => ({
   error: null,
 
   fetchEventosSanitarios: async () => {
-  const currentState = get();
-  if (currentState.loading) return;
-  
-  set({ loading: true, error: null });
-  try {
-    const response = await fetch('http://localhost:3000/api/eventosSanitario', {
-      credentials: 'include'
-    });
-   
-    const result = await response.json();
+    const currentState = get();
+    if (currentState.loading) return;
     
-    if (!response.ok) {
-      throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch('http://localhost:3000/api/eventosSanitario', {
+        credentials: 'include'
+      });
+     
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      if (result.ok) {
+        set({ eventosSanitarios: result.data || [], loading: false });
+      } else {
+        set({ error: result.msg || 'Error desconocido', loading: false });
+      }
+    } catch (error) {
+      set({ 
+        error: error.message || 'Error al cargar eventos sanitarios', 
+        loading: false 
+      });
     }
-    
-    if (result.ok) {
-      set({ eventosSanitarios: result.data || [], loading: false });
-    } else {
-      set({ error: result.msg || 'Error desconocido', loading: false });
+  },
+
+  checkEventoDuplicado: async (animal_id, tipo_evento_id, fecha) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/eventos-sanitarios/check/duplicado?animal_id=${animal_id}&tipo_evento_id=${tipo_evento_id}&fecha=${fecha}`, {
+        credentials: 'include'
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
+      }
+      
+      if (result.ok) {
+        return result.duplicado;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.error('Error verificando duplicado:', error);
+      return false;
     }
-  } catch (error) {
-    set({ 
-      error: error.message || 'Error al cargar eventos sanitarios', 
-      loading: false 
-    });
-  }
-},
+  },
 
   createEventoSanitario: async (eventoData) => {
     set({ loading: true, error: null });

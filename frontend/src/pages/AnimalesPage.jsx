@@ -169,7 +169,6 @@ const AnimalesPage = () => {
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Animales</h1>
@@ -188,7 +187,6 @@ const AnimalesPage = () => {
           )}
         </div>
 
-        {/* Estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
@@ -227,7 +225,6 @@ const AnimalesPage = () => {
           </Card>
         </div>
 
-        {/* Filtros y Búsqueda */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row md:items-center gap-4">

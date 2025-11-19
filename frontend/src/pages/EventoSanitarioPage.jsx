@@ -176,6 +176,34 @@ const EventosSanitariosPage = () => {
     setEditingEvento(null);
   }, []);
 
+  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
+  const convertirAFechaLocal = (fecha) => {
+    try {
+      if (!fecha) return null;
+      
+      let date;
+      
+      // Si es string YYYY-MM-DD, convertir directamente
+      if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = fecha.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Para otros formatos, crear fecha
+        date = new Date(fecha);
+      }
+      
+      if (isNaN(date.getTime())) return null;
+      
+      // Usar UTC para evitar problemas de zona horaria
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return null;
+    }
+  };
 
   const filteredEventos = eventosSanitarios.filter(eventoItem => {
     if (searchTerm.trim()) {
@@ -191,10 +219,14 @@ const EventosSanitariosPage = () => {
     }
    
     if (fechaFiltro) {
-      const fechaEvento = new Date(eventoItem.fecha);
-      const fechaFiltroDate = new Date(fechaFiltro);
+      const fechaEvento = convertirAFechaLocal(eventoItem.fecha);
+      const fechaFiltroComparable = convertirAFechaLocal(fechaFiltro);
       
-      if (fechaEvento.toDateString() !== fechaFiltroDate.toDateString()) {
+      if (!fechaEvento || !fechaFiltroComparable) {
+        return false;
+      }
+      
+      if (fechaEvento !== fechaFiltroComparable) {
         return false;
       }
     }
@@ -248,11 +280,11 @@ const EventosSanitariosPage = () => {
     try {
         if (!dateString) return 'Fecha inválida';
         
-        const [year, month, day] = dateString.split('-');
+        const fechaLocal = convertirAFechaLocal(dateString);
+        if (!fechaLocal) return 'Fecha inválida';
         
+        const [year, month, day] = fechaLocal.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
-        if (isNaN(date.getTime())) return 'Fecha inválida';
         
         return format(date, "dd/MM/yyyy", { locale: es });
     } catch (error) {
@@ -327,6 +359,9 @@ const EventosSanitariosPage = () => {
             <CardTitle>Lista de Eventos Sanitarios</CardTitle>
             <CardDescription>
               {filteredEventos.length} de {eventosSanitarios.length} evento(s) encontrado(s)
+              {fechaFiltro && (
+                <span> - Filtrado por: {format(fechaFiltro, "dd/MM/yyyy", { locale: es })}</span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>

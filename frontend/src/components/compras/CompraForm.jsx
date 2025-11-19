@@ -107,7 +107,7 @@ const CompraForm = ({
     }
   }
 
-  // Función para comparar fechas sin considerar la hora
+  // Función para comparar fechas - ahora permite la fecha de hoy
   const isDateFuture = (date) => {
     const today = new Date();
     const selectedDate = new Date(date);
@@ -116,6 +116,7 @@ const CompraForm = ({
     today.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);
     
+    // Ahora solo bloquea fechas que sean mayores que hoy (no incluye hoy)
     return selectedDate > today;
   };
 
