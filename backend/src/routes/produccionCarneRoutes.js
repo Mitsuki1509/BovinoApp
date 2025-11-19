@@ -12,5 +12,6 @@ produccionCarneRouter.delete('/:id', authenticate, ProduccionCarneController.del
 produccionCarneRouter.get('/animal/:animalId', authenticate, ProduccionCarneController.getByAnimal);
 produccionCarneRouter.get('/unidades/list', authenticate, ProduccionCarneController.getUnidades);
 produccionCarneRouter.get('/mataderos/list', authenticate, ProduccionCarneController.getMataderos);
+produccionCarneRouter.get('/pesajes/disponibles', authenticate, ProduccionCarneController.getPesajesDisponibles); // AÑADE ESTA LÍNEA
 
 export default produccionCarneRouter;

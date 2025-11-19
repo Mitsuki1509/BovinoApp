@@ -319,22 +319,11 @@ const AnimalesPage = () => {
               </>
             ) : (
               <div className="text-center py-8">
-                <FaCow className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg text-gray-500 ">
                   {busqueda ? 'No se encontraron animales' : 'No hay animales registrados'}
                 </h3>
-                <p className="text-gray-500">
-                  {busqueda 
-                    ? 'Intenta con otros términos de búsqueda' 
-                    : 'Comienza agregando el primer animal al sistema'
-                  }
-                </p>
-                {canManage && !busqueda && (
-                  <Button onClick={handleCreate} className="mt-4">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Crear Primer Animal
-                  </Button>
-                )}
+              
+               
               </div>
             )}
           </CardContent>

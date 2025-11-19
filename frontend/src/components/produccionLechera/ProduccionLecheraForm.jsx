@@ -22,7 +22,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -38,12 +38,39 @@ const ProduccionLecheraForm = ({
   const [formError, setFormError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
+  // Función para obtener la fecha local sin hora
+  const getLocalDate = (date = null) => {
+    if (date) {
+      // Si se proporciona una fecha, convertirla a fecha local sin hora
+      const localDate = new Date(date);
+      return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
+    }
+    // Si no se proporciona fecha, usar la fecha actual local
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  };
+
+  // Función para convertir fecha de la BD a fecha local
+  const parseFechaFromDB = (fechaString) => {
+    if (!fechaString) return getLocalDate();
+    
+    try {
+      // Parsear la fecha desde la BD (formato YYYY-MM-DD)
+      const [year, month, day] = fechaString.split('-').map(Number);
+      // Crear fecha local sin problemas de zona horaria
+      return new Date(year, month - 1, day);
+    } catch (error) {
+      console.error('Error parsing date from DB:', error);
+      return getLocalDate();
+    }
+  };
+
   const form = useForm({
     defaultValues: {
       animal_id: '',
       unidad_id: '',
       cantidad: '',
-      fecha: new Date(),
+      fecha: getLocalDate(), 
       descripcion: ''
     }
   });
@@ -64,11 +91,15 @@ const ProduccionLecheraForm = ({
   useEffect(() => {
     if (produccion) {
       setIsEditing(true);
+      
+      // Usar la fecha guardada en la BD, convertida a fecha local
+      const fechaProduccion = parseFechaFromDB(produccion.fecha);
+      
       form.reset({
         animal_id: produccion.animal_id ? produccion.animal_id.toString() : '',
         unidad_id: produccion.unidad_id ? produccion.unidad_id.toString() : '',
         cantidad: produccion.cantidad ? parseInt(produccion.cantidad).toString() : '',
-        fecha: produccion.fecha ? new Date(produccion.fecha) : new Date(),
+        fecha: fechaProduccion,
         descripcion: produccion.descripcion || ''
       });
     } else {
@@ -77,11 +108,49 @@ const ProduccionLecheraForm = ({
         animal_id: '',
         unidad_id: '',
         cantidad: '',
-        fecha: new Date(),
+        fecha: getLocalDate(), 
         descripcion: ''
       });
     }
   }, [produccion, form]);
+
+  // Función para formatear fecha a YYYY-MM-DD para la BD
+  const formatDateToLocalISO = (date) => {
+    if (!date || !isValid(date)) return '';
+    
+    const localDate = new Date(date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateSelect = (date, onChange) => {
+    if (date && isValid(date)) {
+      // Convertir a fecha local sin hora
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      onChange(localDate);
+    }
+  };
+
+  const isDateDisabled = (date) => {
+    const today = getLocalDate();
+    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return compareDate > today;
+  };
+
+  // Función segura para formatear fechas en la UI
+  const formatDateForDisplay = (date) => {
+    try {
+      if (!date || !isValid(date)) {
+        return 'Seleccionar fecha';
+      }
+      return format(date, "PPP", { locale: es });
+    } catch (error) {
+      return 'Seleccionar fecha';
+    }
+  };
 
   const onSubmit = async (data) => {
     setFormError('');
@@ -95,15 +164,21 @@ const ProduccionLecheraForm = ({
         return;
       }
 
+      // Validar que la fecha sea válida
+      if (!isValid(data.fecha)) {
+        setFormError('La fecha seleccionada no es válida');
+        return;
+      }
+
       const produccionData = {
         animal_id: parseInt(data.animal_id),
         unidad_id: parseInt(data.unidad_id),
         cantidad: parseInt(data.cantidad),
-        fecha: data.fecha.toISOString().split('T')[0],
+        fecha: formatDateToLocalISO(data.fecha),
         descripcion: data.descripcion || null
       };
 
-      console.log('Enviando datos al servidor:', produccionData);
+      console.log('Datos a enviar a la BD:', produccionData);
 
       let result;
       if (isEditing) {
@@ -113,7 +188,13 @@ const ProduccionLecheraForm = ({
       }
 
       if (result?.success) {
-        form.reset();
+        form.reset({
+          animal_id: '',
+          unidad_id: '',
+          cantidad: '',
+          fecha: getLocalDate(),
+          descripcion: ''
+        });
         onSuccess?.();
       } else {
         const errorMsg = result?.error || 'Error al procesar la solicitud';
@@ -136,15 +217,9 @@ const ProduccionLecheraForm = ({
         }
       }
     } catch (error) {
+      console.error('Error en onSubmit:', error);
       setFormError('Error de conexión. Por favor, intente nuevamente.');
     }
-  };
-
-  // Función corregida para deshabilitar solo fechas futuras
-  const isDateDisabled = (date) => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999); // Fin del día de hoy
-    return date > today;
   };
 
   const animalesOptions = animales
@@ -270,7 +345,13 @@ const ProduccionLecheraForm = ({
                 control={form.control}
                 name="fecha"
                 rules={{ 
-                  required: "La fecha de producción es requerida"
+                  required: "La fecha de producción es requerida",
+                  validate: {
+                    notFuture: (value) => {
+                      if (!value || !isValid(value)) return "Fecha inválida";
+                      return !isDateDisabled(value) || "La fecha no puede ser futura"
+                    }
+                  }
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
@@ -287,11 +368,7 @@ const ProduccionLecheraForm = ({
                             disabled={loading}
                             type="button"
                           >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
+                            {formatDateForDisplay(field.value)}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -300,7 +377,7 @@ const ProduccionLecheraForm = ({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => handleDateSelect(date, field.onChange)}
                           disabled={isDateDisabled}
                           initialFocus
                           locale={es}
@@ -344,6 +421,8 @@ const ProduccionLecheraForm = ({
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Producción' : 'Registrar Producción'}
               </Button>
+              
+              
             </div>
           </form>
         </Form>

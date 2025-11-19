@@ -176,25 +176,21 @@ const PesajesPage = () => {
     setEditingPesaje(null);
   }, []);
 
-  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
   const convertirAFechaLocal = (fecha) => {
     try {
       if (!fecha) return null;
       
       let date;
       
-      // Si es string YYYY-MM-DD, convertir directamente
       if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [year, month, day] = fecha.split('-').map(Number);
         date = new Date(year, month - 1, day);
       } else {
-        // Para otros formatos, crear fecha
         date = new Date(fecha);
       }
       
       if (isNaN(date.getTime())) return null;
       
-      // Usar UTC para evitar problemas de zona horaria
       const year = date.getUTCFullYear();
       const month = String(date.getUTCMonth() + 1).padStart(2, '0');
       const day = String(date.getUTCDate()).padStart(2, '0');
@@ -234,7 +230,6 @@ const PesajesPage = () => {
     return true;
   });
 
-  // Función para formatear fechas sin problemas de zona horaria
   const formatDateWithoutTZ = (dateString) => {
     try {
         if (!dateString) return 'Fecha inválida';
@@ -351,117 +346,50 @@ const PesajesPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(
-              <div className="overflow-x-auto">
-                <div className="hidden sm:block">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 font-medium">Número</th>
-                        <th className="text-left py-3 font-medium">Animal</th>
-                        <th className="text-left py-3 font-medium">Peso</th>
-                        <th className="text-left py-3 font-medium">Fecha</th>
-                        <th className="text-left py-3 font-medium">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPesajes.map((pesajeItem) => (                        
-                        <tr key={pesajeItem.pesaje_id} className="border-b hover:bg-gray-50">
-                          <td className='py-3'>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {pesajeItem.numero_pesaje || `PES-${pesajeItem.pesaje_id.toString().padStart(4, '0')}`}
-                              </Badge>                   
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {pesajeItem.animal?.arete}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                                <Badge variant="outline">
-                                {parseFloat(pesajeItem.peso).toFixed(2)} {pesajeItem.unidad?.abreviatura || pesajeItem.unidad?.nombre}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">
-                                {formatDateWithoutTZ(pesajeItem.fecha)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  className="h-8 w-8 p-0"
-                                  type="button"
-                                >
-                                  <span className="sr-only">Abrir menú</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(pesajeItem)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar pesaje
-                                </DropdownMenuItem>
-                                {canDelete && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(pesajeItem)}
-                                    className="text-red-600 focus:text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar pesaje
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="sm:hidden space-y-4">
-                  {filteredPesajes.map((pesajeItem) => (
-                    <Card key={pesajeItem.pesaje_id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                               <Badge variant="secondary" className="font-mono">
-                                {pesajeItem.numero_pesaje || `PES-${pesajeItem.pesaje_id.toString().padStart(4, '0')}`}
-                              </Badge> 
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {pesajeItem.animal?.arete}
-                              </Badge>
-                              <Badge variant="outline">
-                                {parseFloat(pesajeItem.peso).toFixed(2)} {pesajeItem.unidad?.abreviatura || pesajeItem.unidad?.nombre}
-                              </Badge>
-                            </div>
-                            <div className="mt-3 space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">
-                                  {formatDateWithoutTZ(pesajeItem.fecha)}
-                                </span>
-                              </div>
-                              {pesajeItem.animal?.nombre && (
-                                <div className="text-sm text-gray-600">
-                                  Animal: {pesajeItem.animal.nombre}
-                                </div>
-                              )}
-                            </div>
+            <div className="overflow-x-auto">
+              <div className="hidden sm:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 font-medium">Número</th>
+                      <th className="text-left py-3 font-medium">Animal</th>
+                      <th className="text-left py-3 font-medium">Peso</th>
+                      <th className="text-left py-3 font-medium">Fecha</th>
+                      <th className="text-left py-3 font-medium">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPesajes.map((pesajeItem) => (                        
+                      <tr key={pesajeItem.pesaje_id} className="border-b hover:bg-gray-50">
+                        <td className='py-3'>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {pesajeItem.numero_pesaje || `PES-${pesajeItem.pesaje_id.toString().padStart(4, '0')}`}
+                            </Badge>                   
                           </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {pesajeItem.animal?.arete}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                              {parseFloat(pesajeItem.peso).toFixed(2)} {pesajeItem.unidad?.abreviatura || pesajeItem.unidad?.nombre}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">
+                              {formatDateWithoutTZ(pesajeItem.fecha)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
@@ -489,13 +417,78 @@ const PesajesPage = () => {
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+
+              <div className="sm:hidden space-y-4">
+                {filteredPesajes.map((pesajeItem) => (
+                  <Card key={pesajeItem.pesaje_id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                             <Badge variant="secondary" className="font-mono">
+                              {pesajeItem.numero_pesaje || `PES-${pesajeItem.pesaje_id.toString().padStart(4, '0')}`}
+                            </Badge> 
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {pesajeItem.animal?.arete}
+                            </Badge>
+                            <Badge variant="outline">
+                              {parseFloat(pesajeItem.peso).toFixed(2)} {pesajeItem.unidad?.abreviatura || pesajeItem.unidad?.nombre}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-gray-600">
+                                {formatDateWithoutTZ(pesajeItem.fecha)}
+                              </span>
+                            </div>
+                            {pesajeItem.animal?.nombre && (
+                              <div className="text-sm text-gray-600">
+                                Animal: {pesajeItem.animal.nombre}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              type="button"
+                            >
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(pesajeItem)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar pesaje
+                            </DropdownMenuItem>
+                            {canDelete && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteClick(pesajeItem)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar pesaje
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
 
             {filteredPesajes.length === 0 && !loading && (
               <div className="text-center py-8 text-gray-500">

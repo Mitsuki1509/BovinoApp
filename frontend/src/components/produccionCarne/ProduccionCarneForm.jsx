@@ -32,6 +32,7 @@ const ProduccionCarneForm = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [unidades, setUnidades] = useState([]);
+  const [pesajes, setPesajes] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState('');
@@ -40,7 +41,8 @@ const ProduccionCarneForm = ({
   const { 
     createProduccion, 
     updateProduccion,
-    fetchUnidades
+    fetchUnidades,
+    fetchPesajesDisponibles
   } = useProduccionCarneStore();
 
   const { animales, fetchAnimales } = useAnimalStore();
@@ -50,33 +52,81 @@ const ProduccionCarneForm = ({
     defaultValues: {
       animal_id: '',
       matadero_id: '',
+      pesaje_id: '',
       unidad_id: '',
       peso_canal: '',
       fecha: new Date()
     }
   });
 
+  const getLocalDate = () => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  };
+
+  const formatDateToLocalISO = (date) => {
+    if (!date) return '';
+    const localDate = new Date(date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateSelect = (date, onChange) => {
+    if (date) {
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      onChange(localDate);
+    }
+  };
+
+  const isDateDisabled = (date) => {
+    const today = getLocalDate();
+    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return compareDate > today;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoadingData(true);
+        setFormError('');
         
-        await Promise.all([
-          fetchAnimales(),
-          fetchMataderos(),
-          fetchUnidades().then(setUnidades)
+        const [animalesData, mataderosData, unidadesData] = await Promise.all([
+          fetchAnimales().catch(error => {
+            console.error('Error cargando animales:', error);
+            return [];
+          }),
+          fetchMataderos().catch(error => {
+            console.error('Error cargando mataderos:', error);
+            return [];
+          }),
+          fetchUnidades().catch(error => {
+            console.error('Error cargando unidades:', error);
+            return [];
+          })
         ]);
 
+        setUnidades(unidadesData);
+
+        try {
+          const pesajesData = await fetchPesajesDisponibles();
+          setPesajes(pesajesData);
+        } catch (error) {
+          console.warn('No se pudieron cargar los pesajes disponibles:', error.message);
+          setPesajes([]);
+        }
+
       } catch (error) {
-        console.error('Error al cargar datos:', error);
-        setFormError('Error al cargar los datos necesarios');
+        console.error('Error crítico al cargar datos:', error);
+        setFormError('Error al cargar algunos datos necesarios. Puede continuar sin pesajes disponibles.');
       } finally {
         setLoadingData(false);
       }
     };
 
     fetchData();
-  }, [fetchAnimales, fetchMataderos, fetchUnidades]);
+  }, [fetchAnimales, fetchMataderos, fetchUnidades, fetchPesajesDisponibles]);
 
   useEffect(() => {
     if (produccion) {
@@ -84,18 +134,20 @@ const ProduccionCarneForm = ({
       form.reset({
         animal_id: produccion.animal_id?.toString() || '',
         matadero_id: produccion.matadero_id?.toString() || '',
+        pesaje_id: produccion.pesaje_id?.toString() || '',
         unidad_id: produccion.unidad_id?.toString() || '',
         peso_canal: produccion.peso_canal || '',
-        fecha: produccion.fecha ? new Date(produccion.fecha) : new Date()
+        fecha: produccion.fecha ? new Date(produccion.fecha) : getLocalDate()
       });
     } else {
       setIsEditing(false);
       form.reset({
         animal_id: '',
         matadero_id: '',
+        pesaje_id: '',
         unidad_id: '',
         peso_canal: '',
-        fecha: new Date()
+        fecha: getLocalDate()
       });
     }
   }, [produccion, form]);
@@ -113,10 +165,13 @@ const ProduccionCarneForm = ({
       const formData = {
         animal_id: parseInt(data.animal_id),
         matadero_id: parseInt(data.matadero_id),
+        pesaje_id: data.pesaje_id ? parseInt(data.pesaje_id) : null,
         unidad_id: parseInt(data.unidad_id),
         peso_canal: parseFloat(data.peso_canal),
-        fecha: data.fecha.toISOString().split('T')[0]
+        fecha: formatDateToLocalISO(data.fecha)
       };
+
+      console.log('Datos a enviar:', formData);
 
       let result;
       if (isEditing) {
@@ -126,7 +181,14 @@ const ProduccionCarneForm = ({
       }
 
       if (result?.success) {
-        form.reset();
+        form.reset({
+          animal_id: '',
+          matadero_id: '',
+          pesaje_id: '',
+          unidad_id: '',
+          peso_canal: '',
+          fecha: getLocalDate()
+        });
         onSuccess?.();
       } else {
         throw new Error(result?.error || 'Error desconocido al procesar la solicitud');
@@ -159,16 +221,13 @@ const ProduccionCarneForm = ({
       label: unidad.nombre
     }));
 
-  if (loadingData) {
-    return (
-      <Card className="w-full border-0 shadow-none">
-        <CardContent className="flex justify-center items-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Cargando datos...</span>
-        </CardContent>
-      </Card>
-    );
-  }
+  const pesajeOptions = (pesajes || [])
+    .filter(pesaje => pesaje && pesaje.pesaje_id && pesaje.pesaje_id.toString().trim() !== '')
+    .map(pesaje => ({
+      value: pesaje.pesaje_id.toString(),
+      label: `${pesaje.numero_pesaje || `PES-${pesaje.pesaje_id}`} - ${pesaje.animal?.arete} - ${parseFloat(pesaje.peso).toFixed(2)} ${pesaje.unidad?.abreviatura || pesaje.unidad?.nombre || ''}`
+    }));
+
 
   return (
     <Card className="w-full border-0 shadow-none">
@@ -190,7 +249,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Animal</FormLabel>
+                    <FormLabel>Animal *</FormLabel>
                     <FormControl>
                       <Combobox
                         options={animalOptions}
@@ -216,7 +275,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Matadero</FormLabel>
+                    <FormLabel>Matadero *</FormLabel>
                     <FormControl>
                       <Combobox
                         options={mataderoOptions}
@@ -236,13 +295,46 @@ const ProduccionCarneForm = ({
 
               <FormField
                 control={form.control}
+                name="pesaje_id"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Pesaje (Opcional)</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={pesajeOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder={
+                          pesajes.length === 0 
+                            ? "No hay pesajes disponibles" 
+                            : "Seleccionar pesaje existente"
+                        }
+                        disabled={loading || pesajes.length === 0}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <div className="text-sm text-gray-500">
+                      {pesajes.length === 0 
+                        ? "No hay pesajes disponibles. Se creará uno automáticamente."
+                        : "Si no selecciona un pesaje, se creará uno automáticamente"
+                      }
+                    </div>
+                    <FormMessage>
+                      {fieldErrors.pesaje_id || form.formState.errors.pesaje_id?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="unidad_id"
                 rules={{ 
                   required: "La unidad de medida es obligatoria"
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Unidad de Medida</FormLabel>
+                    <FormLabel>Unidad de Medida *</FormLabel>
                     <FormControl>
                       <Combobox
                         options={unidadOptions}
@@ -276,7 +368,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Peso de Canal (kg)</FormLabel>
+                    <FormLabel>Peso de Canal (kg) *</FormLabel>
                     <FormControl>
                       <Input 
                         type="number"
@@ -298,11 +390,16 @@ const ProduccionCarneForm = ({
                 control={form.control}
                 name="fecha"
                 rules={{ 
-                  required: "La fecha es obligatoria"
+                  required: "La fecha es obligatoria",
+                  validate: {
+                    notFuture: (value) => {
+                      return !isDateDisabled(value) || "La fecha no puede ser futura"
+                    }
+                  }
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Fecha de Producción</FormLabel>
+                    <FormLabel>Fecha de Producción *</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -313,6 +410,7 @@ const ProduccionCarneForm = ({
                               !field.value && "text-muted-foreground"
                             )}
                             disabled={loading}
+                            type="button"
                           >
                             {field.value ? (
                               format(field.value, "PPP", { locale: es })
@@ -327,10 +425,10 @@ const ProduccionCarneForm = ({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => handleDateSelect(date, field.onChange)}
+                          disabled={isDateDisabled}
                           initialFocus
                           locale={es}
-                          disabled={(date) => date > new Date()}
                         />
                       </PopoverContent>
                     </Popover>

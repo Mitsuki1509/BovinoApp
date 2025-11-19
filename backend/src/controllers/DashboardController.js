@@ -24,32 +24,46 @@ function convertBigInt(obj) {
   return obj;
 }
 
+const getStartOfDay = (date) => {
+  const localDate = new Date(date);
+  return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
+};
+
+const getEndOfDay = (date) => {
+  const localDate = new Date(date);
+  return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 23, 59, 59, 999);
+};
+
 export default class DashboardController {
 
     static async getKPIsPrincipales(req, res) {
         try {
-            console.log('📊 Iniciando getKPIsPrincipales...');
             
             const hoy = new Date();
             const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-            const hace30Dias = new Date();
-            hace30Dias.setDate(hoy.getDate() - 30);
+            const hace30Dias = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-            // Consultas optimizadas con datos reales
-            const [totalAnimales, produccionHoy, animalesEnTratamiento, montasEsteMes] = await Promise.all([
-                // Total de animales activos
+            const inicioHoy = getStartOfDay(hoy);
+            const finHoy = getEndOfDay(hoy);
+
+            const [
+                totalAnimales, 
+                produccionHoy, 
+                animalesEnTratamiento, 
+                montasEsteMes
+            ] = await Promise.all([
                 prisma.animales.count({ 
                     where: { 
                         deleted_at: null 
                     } 
                 }),
                 
-                // Producción de hoy - SUM real de produccion_lechera
                 prisma.produccion_lechera.aggregate({
                     where: {
                         deleted_at: null,
                         fecha: {
-                            gte: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
+                            gte: inicioHoy,
+                            lte: finHoy
                         }
                     },
                     _sum: { 
@@ -57,19 +71,17 @@ export default class DashboardController {
                     }
                 }),
                 
-                // Animales con eventos sanitarios pendientes (últimos 30 días)
-                prisma.evento_sanitario.count({
+                prisma.evento_sanitario.groupBy({
+                    by: ['animal_id'],
                     where: {
                         deleted_at: null,
                         estado: 'Pendiente',
                         fecha: { 
                             gte: hace30Dias 
                         }
-                    },
-                    distinct: ['animal_id']
-                }),
+                    }
+                }).then(results => results.length), 
                 
-                // Montas este mes - datos reales de evento_monta
                 prisma.evento_monta.count({
                     where: {
                         deleted_at: null,
@@ -80,20 +92,19 @@ export default class DashboardController {
                 })
             ]);
 
-            console.log('✅ KPIs calculados con datos reales');
+            const responseData = {
+                totalAnimales: Number(totalAnimales) || 0,
+                produccionHoy: Number(produccionHoy._sum?.cantidad) || 0,
+                animalesEnTratamiento: Number(animalesEnTratamiento) || 0,
+                montasEsteMes: Number(montasEsteMes) || 0
+            };
 
             return res.json({
                 ok: true,
-                data: {
-                    totalAnimales: Number(totalAnimales) || 0,
-                    produccionHoy: Number(produccionHoy._sum?.cantidad) || 0,
-                    animalesEnTratamiento: Number(animalesEnTratamiento) || 0,
-                    montasEsteMes: Number(montasEsteMes) || 0
-                }
+                data: responseData
             });
 
         } catch (error) {
-            console.error('❌ Error en getKPIsPrincipales:', error);
             return res.status(500).json({
                 ok: false,
                 msg: "Error interno al cargar KPIs principales",
@@ -101,24 +112,25 @@ export default class DashboardController {
             });
         }
     }
+static async getTendenciaProduccion(req, res) {
+    try {
+        const { dias = 30 } = req.query;
+        
+        const fechaInicio = new Date();
+        fechaInicio.setDate(fechaInicio.getDate() - parseInt(dias));
+        const fechaInicioAjustada = getStartOfDay(fechaInicio);
 
-    static async getTendenciaProduccion(req, res) {
-        try {
-            console.log('📈 Iniciando getTendenciaProduccion...');
-            const { dias = 30 } = req.query;
-            
-            const fechaInicio = new Date();
-            fechaInicio.setDate(fechaInicio.getDate() - parseInt(dias));
-            fechaInicio.setHours(0, 0, 0, 0);
-
-            console.log('📅 Fecha inicio:', fechaInicio, 'Días:', dias);
-
-            // 1. Producción lechera REAL por día
-            const produccionPorDia = await prisma.produccion_lechera.groupBy({
+        const [
+            produccionPorDia, 
+            eventosReproductivos, 
+            eventosSanitarios, 
+            produccionPorRaza
+        ] = await Promise.all([
+            prisma.produccion_lechera.groupBy({
                 by: ['fecha'],
                 where: {
                     deleted_at: null,
-                    fecha: { gte: fechaInicio }
+                    fecha: { gte: fechaInicioAjustada }
                 },
                 _sum: {
                     cantidad: true
@@ -126,14 +138,13 @@ export default class DashboardController {
                 orderBy: {
                     fecha: 'asc'
                 }
-            });
+            }),
 
-            // 2. Eventos reproductivos REALES (montas)
-            const eventosReproductivos = await prisma.evento_monta.groupBy({
+            prisma.evento_monta.groupBy({
                 by: ['fecha'],
                 where: {
                     deleted_at: null,
-                    fecha: { gte: fechaInicio }
+                    fecha: { gte: fechaInicioAjustada }
                 },
                 _count: {
                     monta_id: true
@@ -141,14 +152,13 @@ export default class DashboardController {
                 orderBy: {
                     fecha: 'asc'
                 }
-            });
+            }),
 
-            // 3. Eventos sanitarios REALES
-            const eventosSanitarios = await prisma.evento_sanitario.groupBy({
+            prisma.evento_sanitario.groupBy({
                 by: ['fecha'],
                 where: {
                     deleted_at: null,
-                    fecha: { gte: fechaInicio }
+                    fecha: { gte: fechaInicioAjustada }
                 },
                 _count: {
                     evento_sanitario_id: true
@@ -156,128 +166,126 @@ export default class DashboardController {
                 orderBy: {
                     fecha: 'asc'
                 }
-            });
+            }),
 
-            // 4. Producción lechera por raza REAL
-            const produccionPorRaza = await prisma.$queryRaw`
+            prisma.$queryRaw`
                 SELECT 
                     r.nombre as raza,
-                    SUM(pl.cantidad) as total_produccion,
+                    COALESCE(SUM(pl.cantidad), 0) as total_produccion,
                     COUNT(DISTINCT pl.animal_id) as total_vacas
                 FROM produccion_lechera pl
-                JOIN animales a ON pl.animal_id = a.animal_id
-                JOIN razas r ON a.raza_id = r.raza_id
+                INNER JOIN animales a ON pl.animal_id = a.animal_id AND a.deleted_at IS NULL
+                INNER JOIN razas r ON a.raza_id = r.raza_id AND r.deleted_at IS NULL
                 WHERE pl.deleted_at IS NULL 
-                    AND pl.fecha >= ${fechaInicio}
-                    AND a.deleted_at IS NULL
-                GROUP BY r.nombre
+                    AND pl.fecha >= ${fechaInicioAjustada}
+                GROUP BY r.raza_id, r.nombre
                 ORDER BY total_produccion DESC
-            `;
+            `
+        ]);
 
-            console.log('✅ Datos reales cargados para tendencias');
+        // SOLUCIÓN: Devolver las fechas tal cual vienen de la base de datos
+        const responseData = {
+            produccion: produccionPorDia.map(item => ({
+                fecha: item.fecha.toISOString().split('T')[0], // Sin ajustes
+                cantidad: Number(item._sum?.cantidad) || 0
+            })),
+            reproduccion: eventosReproductivos.map(item => ({
+                fecha: item.fecha.toISOString().split('T')[0], // Sin ajustes
+                cantidad: Number(item._count?.monta_id) || 0
+            })),
+            salud: eventosSanitarios.map(item => ({
+                fecha: item.fecha.toISOString().split('T')[0], // Sin ajustes
+                cantidad: Number(item._count?.evento_sanitario_id) || 0
+            })),
+            produccionPorRaza: convertBigInt(produccionPorRaza)
+        };
 
-            return res.json({
-                ok: true,
-                data: {
-                    produccion: produccionPorDia.map(item => ({
-                        fecha: item.fecha,
-                        cantidad: Number(item._sum?.cantidad) || 0
-                    })),
-                    reproduccion: eventosReproductivos.map(item => ({
-                        fecha: item.fecha,
-                        cantidad: Number(item._count?.monta_id) || 0
-                    })),
-                    salud: eventosSanitarios.map(item => ({
-                        fecha: item.fecha,
-                        cantidad: Number(item._count?.evento_sanitario_id) || 0
-                    })),
-                    produccionPorRaza: convertBigInt(produccionPorRaza)
-                }
-            });
+        // Agregar console.log para debug
+        console.log('Datos de producción enviados:', responseData.produccion);
 
-        } catch (error) {
-            console.error('❌ Error en getTendenciaProduccion:', error);
-            return res.status(500).json({
-                ok: false,
-                msg: "Error interno al cargar tendencias",
-                error: error.message
-            });
-        }
+        return res.json({
+            ok: true,
+            data: responseData
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            ok: false,
+            msg: "Error interno al cargar tendencias",
+            error: error.message
+        });
     }
+}
 
     static async getDistribucionAnimales(req, res) {
         try {
-            console.log('🐄 Iniciando getDistribucionAnimales...');
+            const [distribucionCategoria, distribucionRaza, distribucionLote] = await Promise.all([
+                prisma.$queryRaw`
+                    SELECT 
+                        CASE 
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) < 1 THEN 'Ternero'
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) BETWEEN 1 AND 2 AND sexo = 'H' THEN 'Vaquilla'
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) > 2 AND sexo = 'H' THEN 'Vaca'
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) > 2 AND sexo = 'M' THEN 'Toro'
+                            ELSE 'Otro'
+                        END as categoria,
+                        COUNT(*) as cantidad
+                    FROM animales 
+                    WHERE deleted_at IS NULL
+                    GROUP BY 
+                        CASE 
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) < 1 THEN 'Ternero'
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) BETWEEN 1 AND 2 AND sexo = 'H' THEN 'Vaquilla'
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) > 2 AND sexo = 'H' THEN 'Vaca'
+                            WHEN EXTRACT(YEAR FROM AGE(fecha_nacimiento)) > 2 AND sexo = 'M' THEN 'Toro'
+                            ELSE 'Otro'
+                        END
+                    ORDER BY cantidad DESC
+                `,
 
-            // Distribución por categoría REAL basada en edad y sexo
-            const distribucionCategoria = await prisma.$queryRaw`
-                SELECT 
-                    CASE 
-                        WHEN DATE_PART('year', AGE(fecha_nacimiento)) < 1 THEN 'Ternero'
-                        WHEN DATE_PART('year', AGE(fecha_nacimiento)) BETWEEN 1 AND 2 AND sexo = 'H' THEN 'Vaquilla'
-                        WHEN DATE_PART('year', AGE(fecha_nacimiento)) > 2 AND sexo = 'H' THEN 'Vaca'
-                        WHEN DATE_PART('year', AGE(fecha_nacimiento)) > 2 AND sexo = 'M' THEN 'Toro'
-                        ELSE 'Otro'
-                    END as categoria,
-                    COUNT(*) as cantidad
-                FROM animales 
-                WHERE deleted_at IS NULL
-                GROUP BY categoria
-                ORDER BY cantidad DESC
-            `;
+                prisma.razas.findMany({
+                    where: { deleted_at: null },
+                    include: {
+                        animales: {
+                            where: { deleted_at: null },
+                            select: { animal_id: true }
+                        }
+                    }
+                }).then(razas => 
+                    razas.map(raza => ({
+                        categoria: raza.nombre,
+                        cantidad: raza.animales.length
+                    }))
+                ),
 
-            // Distribución por raza REAL
-            const distribucionRaza = await prisma.animales.groupBy({
-                by: ['raza_id'],
-                where: { deleted_at: null },
-                _count: { animal_id: true }
-            });
+                prisma.lotes.findMany({
+                    where: { deleted_at: null },
+                    include: {
+                        animales: {
+                            where: { deleted_at: null },
+                            select: { animal_id: true }
+                        }
+                    }
+                }).then(lotes => 
+                    lotes.map(lote => ({
+                        categoria: lote.codigo || lote.descripcion || 'Sin lote',
+                        cantidad: lote.animales.length
+                    }))
+                )
+            ]);
 
-            // Enriquecer con nombres de razas
-            const razasConNombres = await Promise.all(
-                distribucionRaza.map(async (item) => {
-                    const raza = await prisma.razas.findUnique({
-                        where: { raza_id: item.raza_id }
-                    });
-                    return {
-                        categoria: raza?.nombre || 'Sin raza',
-                        cantidad: Number(item._count.animal_id)
-                    };
-                })
-            );
-
-            // Distribución por lote REAL
-            const distribucionLote = await prisma.animales.groupBy({
-                by: ['lote_id'],
-                where: { deleted_at: null },
-                _count: { animal_id: true }
-            });
-
-            const lotesConNombres = await Promise.all(
-                distribucionLote.map(async (item) => {
-                    const lote = await prisma.lotes.findUnique({
-                        where: { lote_id: item.lote_id }
-                    });
-                    return {
-                        categoria: lote?.codigo || 'Sin lote',
-                        cantidad: Number(item._count.animal_id)
-                    };
-                })
-            );
-
-            console.log('✅ Distribución real calculada');
+            const responseData = {
+                porRaza: distribucionRaza,
+                porCategoria: convertBigInt(distribucionCategoria),
+                porLote: distribucionLote
+            };
 
             return res.json({
                 ok: true,
-                data: {
-                    porRaza: razasConNombres,
-                    porCategoria: convertBigInt(distribucionCategoria),
-                    porLote: lotesConNombres
-                }
+                data: responseData
             });
 
         } catch (error) {
-            console.error('❌ Error en getDistribucionAnimales:', error);
             return res.status(500).json({
                 ok: false,
                 msg: "Error interno al cargar distribución",
@@ -288,86 +296,98 @@ export default class DashboardController {
 
     static async getMetricasReproduccion(req, res) {
         try {
-            console.log('🔬 Iniciando getMetricasReproduccion...');
-            
             const ultimos30Dias = new Date();
             ultimos30Dias.setDate(ultimos30Dias.getDate() - 30);
+            const inicio30Dias = getStartOfDay(ultimos30Dias);
 
-            // Métricas REALES de reproducción
-            const [montasRecientes, diagnosticosRecientes, partosRecientes, vacasPreñadas] = await Promise.all([
-                // Montas últimos 30 días
+            const [
+                montasRecientes, 
+                diagnosticosRecientes, 
+                partosRecientes, 
+                vacasPreñadas
+            ] = await Promise.all([
                 prisma.evento_monta.count({
                     where: {
                         deleted_at: null,
-                        fecha: { gte: ultimos30Dias }
+                        fecha: { gte: inicio30Dias }
                     }
                 }),
                 
-                // Diagnósticos de preñez últimos 30 días
                 prisma.diagnostico_prenez.findMany({
                     where: {
                         deleted_at: null,
-                        fecha: { gte: ultimos30Dias }
+
+                        monta: {
+                            fecha: { gte: inicio30Dias }
+                        }
                     },
                     select: {
-                        resultado: true
+                        resultado: true,
+                        monta: {
+                            select: {
+                                fecha: true
+                            }
+                        }
                     }
                 }),
                 
-                // Partos últimos 30 días
                 prisma.evento_parto.count({
                     where: {
                         deleted_at: null,
-                        fecha: { gte: ultimos30Dias }
+                        fecha: { gte: inicio30Dias }
                     }
                 }),
                 
-                // Vacas con diagnóstico positivo sin parto (preñadas actualmente)
-                prisma.diagnostico_prenez.count({
+                prisma.diagnostico_prenez.findMany({
                     where: {
                         deleted_at: null,
                         resultado: true,
-                        fecha: { gte: ultimos30Dias },
+                        monta: {
+                            fecha: { gte: inicio30Dias }
+                        },
                         partos: {
                             none: {
                                 deleted_at: null
                             }
                         }
+                    },
+                    select: {
+                        prenez_id: true
                     }
-                })
+                }).then(results => results.length) 
             ]);
 
-            // Calcular métricas REALES
+
+
             let positivas = 0;
             let negativas = 0;
             
-            if (Array.isArray(diagnosticosRecientes)) {
-                diagnosticosRecientes.forEach(diagnostico => {
-                    if (diagnostico.resultado === true) positivas++;
-                    else if (diagnostico.resultado === false) negativas++;
-                });
-            }
+            diagnosticosRecientes.forEach(diagnostico => {
+                if (diagnostico.resultado === true) positivas++;
+                else if (diagnostico.resultado === false) negativas++;
+            });
 
             const totalDiagnosticos = positivas + negativas;
             const tasaPreñez = totalDiagnosticos > 0 ? (positivas / totalDiagnosticos) * 100 : 0;
+            const eficienciaReproductiva = montasRecientes > 0 ? (positivas / montasRecientes) * 100 : 0;
 
-            console.log('✅ Métricas reproducción reales calculadas');
+            const responseData = {
+                montasUltimos30Dias: Number(montasRecientes) || 0,
+                partosUltimos30Dias: Number(partosRecientes) || 0,
+                tasaPreñez: Math.round(tasaPreñez) || 0,
+                diagnosticosPositivos: Number(positivas) || 0,
+                diagnosticosNegativos: Number(negativas) || 0,
+                vacasPreñadasActuales: Number(vacasPreñadas) || 0,
+                eficienciaReproductiva: Math.round(eficienciaReproductiva) || 0
+            };
+
 
             return res.json({
                 ok: true,
-                data: {
-                    montasUltimos30Dias: Number(montasRecientes) || 0,
-                    partosUltimos30Dias: Number(partosRecientes) || 0,
-                    tasaPreñez: Math.round(tasaPreñez) || 0,
-                    diagnosticosPositivos: Number(positivas) || 0,
-                    diagnosticosNegativos: Number(negativas) || 0,
-                    vacasPreñadasActuales: Number(vacasPreñadas) || 0,
-                    eficienciaReproductiva: montasRecientes > 0 ? Math.round((positivas / montasRecientes) * 100) : 0
-                }
+                data: responseData
             });
 
         } catch (error) {
-            console.error('❌ Error en getMetricasReproduccion:', error);
             return res.status(500).json({
                 ok: false,
                 msg: "Error interno al cargar métricas de reproducción",
@@ -378,20 +398,23 @@ export default class DashboardController {
 
     static async getAlertasSistema(req, res) {
         try {
-            console.log('🚨 Iniciando getAlertasSistema...');
-
+            
             const hoy = new Date();
-            const hace7Dias = new Date();
-            hace7Dias.setDate(hoy.getDate() - 7);
+            const inicioHoy = getStartOfDay(hoy);
+            const hace7Dias = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
+            const inicio7Dias = getStartOfDay(hace7Dias);
 
-            // Alertas REALES del sistema
-            const [eventosPendientes, partosProximos, stockBajo, vacasSinProduccion] = await Promise.all([
-                // Eventos sanitarios pendientes
+            const [
+                eventosPendientes, 
+                partosProximos, 
+                stockBajo, 
+                vacasSinProduccion
+            ] = await Promise.all([
                 prisma.evento_sanitario.findMany({
                     where: {
                         deleted_at: null,
                         estado: 'Pendiente',
-                        fecha: { lte: hoy } // Eventos que ya deberían haberse realizado
+                        fecha: { lte: hoy }
                     },
                     include: {
                         animal: {
@@ -408,13 +431,12 @@ export default class DashboardController {
                     take: 10
                 }),
 
-                // Partos próximos (próximos 7 días)
                 prisma.diagnostico_prenez.findMany({
                     where: {
                         deleted_at: null,
                         resultado: true,
                         fecha_probable_parto: {
-                            gte: hoy,
+                            gte: inicioHoy,
                             lte: new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000)
                         },
                         partos: {
@@ -437,7 +459,6 @@ export default class DashboardController {
                     take: 10
                 }),
 
-                // Insumos con stock bajo (< 10 unidades)
                 prisma.insumos.findMany({
                     where: {
                         deleted_at: null,
@@ -446,7 +467,6 @@ export default class DashboardController {
                     take: 10
                 }),
 
-                // Vacas que no han producido en los últimos 7 días
                 prisma.$queryRaw`
                     SELECT a.animal_id, a.arete
                     FROM animales a
@@ -456,7 +476,7 @@ export default class DashboardController {
                         SELECT DISTINCT pl.animal_id 
                         FROM produccion_lechera pl 
                         WHERE pl.deleted_at IS NULL 
-                        AND pl.fecha >= ${hace7Dias}
+                        AND pl.fecha >= ${inicio7Dias}
                     )
                     LIMIT 10
                 `
@@ -464,57 +484,51 @@ export default class DashboardController {
 
             const alertas = [];
 
-            // Alertas por eventos pendientes
             eventosPendientes.forEach(evento => {
                 alertas.push({
                     id: `evento-${evento.evento_sanitario_id}`,
                     tipo: 'salud',
-                    titulo: `Evento pendiente: ${evento.tipo_evento.nombre}`,
-                    descripcion: `Animal ${evento.animal.arete} - Fecha: ${new Date(evento.fecha).toLocaleDateString('es-ES')}`,
+                    titulo: `Evento pendiente: ${evento.tipo_evento?.nombre || 'Sin nombre'}`,
+                    descripcion: `Animal ${evento.animal?.arete || 'Desconocido'}`,
                     severidad: 'alta',
                     fecha: evento.fecha
                 });
             });
 
-            // Alertas por partos próximos
             partosProximos.forEach(diagnostico => {
                 const diasRestantes = Math.ceil((new Date(diagnostico.fecha_probable_parto) - hoy) / (1000 * 60 * 60 * 24));
                 alertas.push({
                     id: `parto-${diagnostico.prenez_id}`,
                     tipo: 'reproduccion',
-                    titulo: `Parto próximo: ${diagnostico.monta.hembra.arete}`,
-                    descripcion: `Fecha estimada: ${new Date(diagnostico.fecha_probable_parto).toLocaleDateString('es-ES')} (${diasRestantes} días)`,
+                    titulo: `Parto próximo: ${diagnostico.monta?.hembra?.arete || 'Desconocido'}`,
+                    descripcion: `${diasRestantes} días restantes`,
                     severidad: diasRestantes <= 3 ? 'alta' : 'media',
                     fecha: diagnostico.fecha_probable_parto
                 });
             });
 
-            // Alertas por stock bajo
             stockBajo.forEach(insumo => {
                 alertas.push({
                     id: `stock-${insumo.insumo_id}`,
                     tipo: 'inventario',
                     titulo: `Stock bajo: ${insumo.nombre}`,
-                    descripcion: `Cantidad actual: ${insumo.cantidad} unidades`,
+                    descripcion: `Cantidad: ${insumo.cantidad} unidades`,
                     severidad: insumo.cantidad < 5 ? 'alta' : 'media',
                     fecha: hoy
                 });
             });
 
-            // Alertas por vacas sin producción
             const vacasSinProd = convertBigInt(vacasSinProduccion);
             vacasSinProd.forEach(vaca => {
                 alertas.push({
                     id: `produccion-${vaca.animal_id}`,
                     tipo: 'produccion',
                     titulo: `Vaca sin producción: ${vaca.arete}`,
-                    descripcion: `Sin registro de producción en los últimos 7 días`,
+                    descripcion: `Sin producción en 7 días`,
                     severidad: 'media',
                     fecha: hoy
                 });
             });
-
-            console.log('✅ Alertas reales generadas:', alertas.length);
 
             return res.json({
                 ok: true,
@@ -522,45 +536,9 @@ export default class DashboardController {
             });
 
         } catch (error) {
-            console.error('❌ Error en getAlertasSistema:', error);
             return res.status(500).json({
                 ok: false,
                 msg: "Error interno al cargar alertas",
-                error: error.message
-            });
-        }
-    }
-
-    static async getDashboardCompleto(req, res) {
-        try {
-            console.log('🏠 Iniciando getDashboardCompleto...');
-
-            const [kpis, tendencia, distribucion, metricasReproduccion, alertas] = await Promise.all([
-                this.getKPIsPrincipales(req, res).then(r => r.data).catch(() => null),
-                this.getTendenciaProduccion(req, res).then(r => r.data).catch(() => null),
-                this.getDistribucionAnimales(req, res).then(r => r.data).catch(() => null),
-                this.getMetricasReproduccion(req, res).then(r => r.data).catch(() => null),
-                this.getAlertasSistema(req, res).then(r => r.data).catch(() => [])
-            ]);
-
-            console.log('✅ Dashboard completo cargado');
-
-            return res.json({
-                ok: true,
-                data: {
-                    kpis,
-                    tendencia,
-                    distribucion,
-                    metricasReproduccion,
-                    alertas
-                }
-            });
-
-        } catch (error) {
-            console.error('❌ Error en getDashboardCompleto:', error);
-            return res.status(500).json({
-                ok: false,
-                msg: "Error interno al cargar dashboard completo",
                 error: error.message
             });
         }

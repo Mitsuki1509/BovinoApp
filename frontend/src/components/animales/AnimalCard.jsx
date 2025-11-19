@@ -1,15 +1,48 @@
+import { Button } from '@/components/ui/button';
+
 const FALLBACK_IMG = "/placeholder-animal.jpg";
-import { Button } from '@/components/ui/button'
+
 const AnimalCard = ({ animal, onVerDetalles }) => {
   const imgSrc = animal?.imagen || FALLBACK_IMG;
 
   const getSexoText = (sexo) => sexo === 'M' ? 'Macho' : 'Hembra';
   const getSexoColor = (sexo) => sexo === 'M' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800';
 
+  const convertirAFechaLocal = (fecha) => {
+    if (!fecha) return null;
+    
+    if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = fecha.split('-').map(Number);
+      return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+    }
+    
+    try {
+      const date = new Date(fecha);
+      if (isNaN(date.getTime())) return null;
+      
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+      
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
+      
+      return `${day}/${month}/${year}`;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const calculateEdad = (fechaNacimiento) => {
     if (!fechaNacimiento) return 'Edad no disponible';
-    const nacimiento = new Date(fechaNacimiento);
+    
+    const fechaFormateada = convertirAFechaLocal(fechaNacimiento);
+    if (!fechaFormateada) return 'Edad no disponible';
+    
+    const [day, month, year] = fechaFormateada.split('/').map(Number);
+    const nacimiento = new Date(year, month - 1, day);
     const hoy = new Date();
+    
     let años = hoy.getFullYear() - nacimiento.getFullYear();
     let meses = hoy.getMonth() - nacimiento.getMonth();
     

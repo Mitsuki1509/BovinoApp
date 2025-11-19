@@ -1,8 +1,6 @@
-// store/dashboardStore.js - VERSIÓN MEJORADA
 import { create } from 'zustand';
 
 export const useDashboardStore = create((set, get) => ({
-  // Estado inicial
   kpis: null,
   tendenciaProduccion: null,
   distribucionAnimales: null,
@@ -11,7 +9,6 @@ export const useDashboardStore = create((set, get) => ({
   loading: false,
   error: null,
 
-  // Acción para cargar KPIs principales
   fetchKPIs: async () => {
     set({ error: null });
     try {
@@ -41,7 +38,6 @@ export const useDashboardStore = create((set, get) => ({
     }
   },
 
-  // Acción para cargar tendencia de producción
   fetchTendenciaProduccion: async (dias = 30) => {
     set({ error: null });
     try {
@@ -71,7 +67,6 @@ export const useDashboardStore = create((set, get) => ({
     }
   },
 
-  // Acción para cargar distribución de animales
   fetchDistribucionAnimales: async () => {
     set({ error: null });
     try {
@@ -101,7 +96,6 @@ export const useDashboardStore = create((set, get) => ({
     }
   },
 
-  // Acción para cargar métricas de reproducción
   fetchMetricasReproduccion: async () => {
     set({ error: null });
     try {
@@ -131,7 +125,6 @@ export const useDashboardStore = create((set, get) => ({
     }
   },
 
-  // Acción para cargar alertas del sistema
   fetchAlertasSistema: async () => {
     set({ error: null });
     try {
@@ -161,28 +154,24 @@ export const useDashboardStore = create((set, get) => ({
     }
   },
 
-  // Acción para cargar el dashboard completo
   fetchDashboardCompleto: async () => {
     set({ loading: true, error: null });
     
     try {
-      // Usar Promise.allSettled para manejar errores individuales sin romper todo
       const results = await Promise.allSettled([
         get().fetchKPIs(),
-        get().fetchTendenciaProduccion(30), // 30 días por defecto
+        get().fetchTendenciaProduccion(30),
         get().fetchDistribucionAnimales(),
         get().fetchMetricasReproduccion(),
         get().fetchAlertasSistema()
       ]);
 
-      // Verificar si hubo errores en alguna de las peticiones
       const errors = results
         .filter(result => result.status === 'rejected')
         .map(result => result.reason.message);
 
       if (errors.length > 0) {
         console.warn('Algunas peticiones fallaron:', errors);
-        // No lanzar error aquí, solo mostrar advertencia
       }
 
       set({ loading: false });
@@ -196,10 +185,8 @@ export const useDashboardStore = create((set, get) => ({
     }
   },
 
-  // Acción para limpiar errores
   clearError: () => set({ error: null }),
 
-  // Acción para resetear el store
   reset: () => set({
     kpis: null,
     tendenciaProduccion: null,

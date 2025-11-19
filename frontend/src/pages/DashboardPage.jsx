@@ -15,20 +15,13 @@ import {
   Syringe,
   PieChart,
   ArrowUpIcon,
-  ArrowDownIcon,
-  Utensils,
-  AlertTriangle,
-  Baby,
-  Cow
+  ArrowDownIcon
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { MainLayout } from '@/components/layout/MainLayout';
-
-// Importar Recharts para gráficos interactivos
+import { FaCow } from 'react-icons/fa6';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -44,8 +37,7 @@ import {
   Area
 } from 'recharts';
 
-// Componente de gráfico de área para producción REAL
-const ProductionAreaChart = ({ data, title, color = "#3b82f6" }) => {
+const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
   if (!data || data.length === 0) {
     return (
       <div className="h-80 flex items-center justify-center text-gray-500">
@@ -53,20 +45,65 @@ const ProductionAreaChart = ({ data, title, color = "#3b82f6" }) => {
       </div>
     );
   }
+const formatDateForChart = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        // Si ya está formateada, devolverla tal cual
+        if (typeof dateString === 'string' && dateString.includes('/')) {
+            return dateString;
+        }
+        
+        // SOLUCIÓN: Crear la fecha en UTC para evitar problemas de zona horaria
+        // Asumir que la fecha viene en formato YYYY-MM-DD (sin hora)
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        
+        if (isNaN(date.getTime())) {
+            console.warn('Fecha inválida:', dateString);
+            return 'Fecha inválida';
+        }
+        
+        // Formatear en UTC para mantener la fecha correcta
+        return date.toLocaleDateString('es-ES', { 
+            day: 'numeric', 
+            month: 'short',
+            timeZone: 'UTC' // Forzar UTC para mantener la fecha original
+        });
+    } catch (error) {
+        console.error('Error formateando fecha:', error);
+        return 'Fecha inválida';
+    }
+};
+
+  const safeData = data.map((item, index) => ({
+    ...item,
+    cantidad: Number(item.cantidad) || 0,
+    fechaFormatted: formatDateForChart(item.fecha) || `Día ${index + 1}`,
+    fechaOriginal: item.fecha
+  }));
 
   return (
-    <div className="h-80">
+    <div className="h-80 w-full" style={{ minWidth: '300px' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <AreaChart 
+          data={safeData} 
+          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+        >
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
           <XAxis 
-            dataKey="fecha"
+            dataKey="fechaFormatted"
             tick={{ fontSize: 12 }}
-            tickFormatter={(value) => new Date(value).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
           />
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip 
-            labelFormatter={(value) => `Fecha: ${new Date(value).toLocaleDateString('es-ES')}`}
+            labelFormatter={(value, payload) => {
+              if (payload && payload[0] && payload[0].payload) {
+                const item = payload[0].payload;
+                return `Fecha: ${item.fechaFormatted}`;
+              }
+              return `Fecha: ${value}`;
+            }}
             formatter={(value) => [`${value} L`, 'Producción']}
             contentStyle={{ 
               backgroundColor: 'white',
@@ -78,12 +115,18 @@ const ProductionAreaChart = ({ data, title, color = "#3b82f6" }) => {
             type="monotone" 
             dataKey="cantidad" 
             stroke={color}
-            fill={`url(#colorUv)`}
+            fill={`url(#colorUv-${color.replace('#', '')})`}
             strokeWidth={2}
             fillOpacity={0.3}
           />
           <defs>
-            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient 
+              id={`colorUv-${color.replace('#', '')}`} 
+              x1="0" 
+              y1="0" 
+              x2="0" 
+              y2="1"
+            >
               <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
               <stop offset="95%" stopColor={color} stopOpacity={0}/>
             </linearGradient>
@@ -94,7 +137,6 @@ const ProductionAreaChart = ({ data, title, color = "#3b82f6" }) => {
   );
 };
 
-// Componente para tarjetas KPI con datos REALES
 const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle }) => {
   const colorClasses = {
     blue: { 
@@ -134,7 +176,9 @@ const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle })
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
             {subtitle && <p className="text-xs text-gray-500 mb-2">{subtitle}</p>}
-            <p className="text-3xl font-bold text-gray-900 mb-2">{value}</p>
+            <p className="text-3xl font-bold text-gray-900 mb-2">
+              {value !== null && value !== undefined ? value : "0"}
+            </p>
             {change !== undefined && (
               <div className={`flex items-center text-sm font-medium ${changeColor}`}>
                 {ChangeIcon && <ChangeIcon className="h-4 w-4 mr-1" />}
@@ -152,7 +196,6 @@ const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle })
   );
 };
 
-// Componente principal del Dashboard con Datos Reales
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { checkAuth } = useAuthStore();
@@ -162,10 +205,10 @@ const DashboardPage = () => {
     tendenciaProduccion, 
     distribucionAnimales, 
     metricasReproduccion,
-    alertas,
     loading,
     fetchDashboardCompleto,
-    fetchTendenciaProduccion
+    fetchTendenciaProduccion,
+    error
   } = useDashboardStore();
   
   const [timeRange, setTimeRange] = useState('30d');
@@ -181,6 +224,7 @@ const DashboardPage = () => {
           navigate('/login', { replace: true });
         }
       } catch (error) {
+        console.error('Error verificando autenticación:', error);
         setAuthStatus('unauthenticated');
         navigate('/login', { replace: true });
       }
@@ -202,41 +246,35 @@ const DashboardPage = () => {
     }
   }, [timeRange, fetchTendenciaProduccion, authStatus]);
 
-  // Datos REALES para gráficos
-  const produccionData = tendenciaProduccion?.produccion || [];
-  const reproduccionData = tendenciaProduccion?.reproduccion || [];
-  const saludData = tendenciaProduccion?.salud || [];
+  const getSafeChartData = (data) => {
+    if (!data || !Array.isArray(data)) return [];
+    
+    return data.map(item => ({
+      ...item,
+      cantidad: Number(item.cantidad) || 0,
+      fecha: item.fecha
+    }));
+  };
 
-  // Datos REALES para gráfico de pastel - Distribución por categoría
+  const produccionData = getSafeChartData(tendenciaProduccion?.produccion);
+  const reproduccionData = getSafeChartData(tendenciaProduccion?.reproduccion);
+  const saludData = getSafeChartData(tendenciaProduccion?.salud);
+
   const distribucionCategorias = distribucionAnimales?.porCategoria?.map(item => ({
-    name: item.categoria,
-    value: item.cantidad
+    name: item.categoria || 'Sin categoría',
+    value: Number(item.cantidad) || 0
   })) || [];
 
-  // Datos REALES para producción por raza
   const produccionPorRaza = tendenciaProduccion?.produccionPorRaza?.map(item => ({
-    name: item.raza,
-    value: Number(item.total_produccion),
-    vacas: Number(item.total_vacas)
+    name: item.raza || 'Sin raza',
+    value: Number(item.total_produccion) || 0,
+    vacas: Number(item.total_vacas) || 0
   })) || [];
 
-  if (authStatus === 'checking') {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">Verificando autenticación...</p>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
       <div className="flex-1 space-y-6 p-6">
-        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard Ganadero</h1>
@@ -248,11 +286,7 @@ const DashboardPage = () => {
             <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-lg">
               <Calendar className="h-4 w-4 text-gray-600" />
               <Badge variant="secondary" className="text-sm bg-transparent">
-                {new Date().toLocaleDateString('es-ES', { 
-                  day: 'numeric',
-                  month: 'long', 
-                  year: 'numeric'
-                })}
+                {new Date().toLocaleDateString('es-ES')}
               </Badge>
             </div>
             <select 
@@ -266,7 +300,7 @@ const DashboardPage = () => {
               <option value="1y">Último año</option>
             </select>
             <Button 
-              onClick={fetchDashboardCompleto} 
+              onClick={() => fetchDashboardCompleto()} 
               disabled={loading}
               variant="outline"
               size="sm"
@@ -278,11 +312,27 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* KPIs Principales con Datos Reales */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-red-800">
+              <span className="font-medium">Error al cargar datos:</span>
+              <span>{error}</span>
+            </div>
+            <Button 
+              onClick={() => fetchDashboardCompleto()} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+            >
+              Reintentar
+            </Button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <KPICard
             title="Total Hato"
-            value={kpis?.totalAnimales?.toLocaleString() || "0"}
+            value={kpis?.totalAnimales?.toLocaleString()}
             change={2.1}
             icon={Users}
             color="blue"
@@ -290,7 +340,7 @@ const DashboardPage = () => {
           />
           <KPICard
             title="Producción Hoy"
-            value={`${kpis?.produccionHoy?.toLocaleString() || "0"} L`}
+            value={kpis?.produccionHoy ? `${kpis.produccionHoy.toLocaleString()} L` : "0 L"}
             change={5.2}
             icon={Milk}
             color="green"
@@ -298,7 +348,7 @@ const DashboardPage = () => {
           />
           <KPICard
             title="En Tratamiento"
-            value={kpis?.animalesEnTratamiento?.toLocaleString() || "0"}
+            value={kpis?.animalesEnTratamiento?.toLocaleString()}
             change={-3.1}
             icon={Syringe}
             color="red"
@@ -306,7 +356,7 @@ const DashboardPage = () => {
           />
           <KPICard
             title="Montas Este Mes"
-            value={kpis?.montasEsteMes?.toLocaleString() || "0"}
+            value={kpis?.montasEsteMes?.toLocaleString()}
             change={8.7}
             icon={Heart}
             color="purple"
@@ -314,7 +364,6 @@ const DashboardPage = () => {
           />
         </div>
 
-        {/* Gráficos y Métricas con Datos Reales */}
         <Tabs defaultValue="production" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex bg-gray-100 p-1 rounded-lg">
             <TabsTrigger 
@@ -328,7 +377,7 @@ const DashboardPage = () => {
               value="reproduction" 
               className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
             >
-              <Cow className="h-4 w-4" />
+              <FaCow className="h-4 w-4" />
               Reproducción
             </TabsTrigger>
             <TabsTrigger 
@@ -340,7 +389,6 @@ const DashboardPage = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Pestaña de Producción con Datos Reales */}
           <TabsContent value="production" className="space-y-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
@@ -372,9 +420,12 @@ const DashboardPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
+                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={produccionPorRaza} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                      <BarChart 
+                        data={produccionPorRaza} 
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis 
                           dataKey="name"
@@ -404,29 +455,30 @@ const DashboardPage = () => {
             </div>
           </TabsContent>
 
-          {/* Pestaña de Reproducción con Datos Reales */}
           <TabsContent value="reproduction" className="space-y-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Actividad Reproductiva</CardTitle>
                   <CardDescription>
-                    Montas realizadas por día (datos reales)
+                    Montas realizadas por día
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
+                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={reproduccionData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                      <BarChart 
+                        data={reproduccionData} 
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis 
                           dataKey="fecha"
                           tick={{ fontSize: 12 }}
-                          tickFormatter={(value) => new Date(value).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                         />
                         <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip 
-                          labelFormatter={(value) => `Fecha: ${new Date(value).toLocaleDateString('es-ES')}`}
+                          labelFormatter={(value) => `Fecha: ${value}`}
                           formatter={(value) => [value, 'Montas']}
                         />
                         <Bar 
@@ -444,7 +496,7 @@ const DashboardPage = () => {
                 <CardHeader>
                   <CardTitle>Métricas de Reproducción</CardTitle>
                   <CardDescription>
-                    Indicadores reales de eficiencia reproductiva
+                    Indicadores de eficiencia reproductiva
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -489,18 +541,17 @@ const DashboardPage = () => {
             </div>
           </TabsContent>
 
-          {/* Pestaña de Salud & Distribución con Datos Reales */}
           <TabsContent value="health" className="space-y-6">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Distribución del Hato</CardTitle>
                   <CardDescription>
-                    Composición real por categorías de edad y sexo
+                    Composición por categorías de edad y sexo
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
+                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsPieChart>
                         <Pie
@@ -514,7 +565,10 @@ const DashboardPage = () => {
                           dataKey="value"
                         >
                           {distribucionCategorias.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
+                            />
                           ))}
                         </Pie>
                         <Tooltip formatter={(value) => [value, 'Animales']} />
@@ -529,33 +583,32 @@ const DashboardPage = () => {
                 <CardHeader>
                   <CardTitle>Eventos Sanitarios</CardTitle>
                   <CardDescription>
-                    Tratamientos y consultas veterinarias (datos reales)
+                    Tratamientos y consultas veterinarias
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
+                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={saludData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                      <BarChart 
+                        data={saludData} 
+                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis 
                           dataKey="fecha"
                           tick={{ fontSize: 12 }}
-                          tickFormatter={(value) => new Date(value).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
                         />
                         <YAxis tick={{ fontSize: 12 }} />
                         <Tooltip 
-                          labelFormatter={(value) => `Fecha: ${new Date(value).toLocaleDateString('es-ES')}`}
+                          labelFormatter={(value) => `Fecha: ${value}`}
                           formatter={(value) => [value, 'Eventos']}
                         />
-                        <Line 
-                          type="monotone" 
+                        <Bar 
                           dataKey="cantidad" 
-                          stroke="#ef4444"
-                          strokeWidth={2}
-                          dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, fill: '#ef4444' }}
+                          fill="#ef4444"
+                          radius={[4, 4, 0, 0]}
                         />
-                      </LineChart>
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
@@ -563,62 +616,6 @@ const DashboardPage = () => {
             </div>
           </TabsContent>
         </Tabs>
-
-        {/* Alertas del Sistema con Datos Reales */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              Alertas del Sistema
-            </CardTitle>
-            <CardDescription>
-              Alertas generadas automáticamente basadas en datos reales
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {alertas && alertas.length > 0 ? (
-                alertas.map((alerta) => (
-                  <div 
-                    key={alerta.id}
-                    className={`flex items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer ${
-                      alerta.severidad === 'alta' 
-                        ? 'bg-red-50 border-red-200 hover:bg-red-100' 
-                        : alerta.severidad === 'media'
-                        ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
-                        : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        alerta.severidad === 'alta' ? 'bg-red-500 animate-pulse' :
-                        alerta.severidad === 'media' ? 'bg-yellow-500' : 'bg-blue-500'
-                      }`}></div>
-                      <div>
-                        <span className="text-sm font-medium">{alerta.titulo}</span>
-                        <p className="text-xs text-gray-600 mt-1">{alerta.descripcion}</p>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className={
-                      alerta.severidad === 'alta' ? 'bg-red-100 text-red-800 border-red-300' :
-                      alerta.severidad === 'media' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                      'bg-blue-100 text-blue-800 border-blue-300'
-                    }>
-                      {alerta.severidad === 'alta' ? 'Urgente' : 
-                       alerta.severidad === 'media' ? 'Alerta' : 'Informativo'}
-                    </Badge>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Baby className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                  <p>No hay alertas críticas en este momento</p>
-                  <p className="text-sm">El sistema está funcionando normalmente</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </MainLayout>
   );

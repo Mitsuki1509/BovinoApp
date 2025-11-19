@@ -176,25 +176,21 @@ const AlimentacionesPage = () => {
     setEditingAlimentacion(null);
   }, []);
 
-  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
   const convertirAFechaLocal = (fecha) => {
     try {
       if (!fecha) return null;
       
       let date;
       
-      // Si es string YYYY-MM-DD, convertir directamente
       if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [year, month, day] = fecha.split('-').map(Number);
         date = new Date(year, month - 1, day);
       } else {
-        // Para otros formatos, crear fecha
         date = new Date(fecha);
       }
       
       if (isNaN(date.getTime())) return null;
       
-      // Usar UTC para evitar problemas de zona horaria
       const year = date.getUTCFullYear();
       const month = String(date.getUTCMonth() + 1).padStart(2, '0');
       const day = String(date.getUTCDate()).padStart(2, '0');
@@ -232,7 +228,6 @@ const AlimentacionesPage = () => {
     return true;
   });
 
-  // Función para formatear fechas sin problemas de zona horaria
   const formatDateWithoutTZ = (dateString) => {
     try {
         if (!dateString) return 'Fecha inválida';
@@ -350,116 +345,51 @@ const AlimentacionesPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(
-              <div className="overflow-x-auto">
-                <div className="hidden sm:block">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 font-medium">Animal</th>
-                        <th className="text-left py-3 font-medium">Insumo</th>
-                        <th className="text-left py-3 font-medium">Cantidad</th>
-                        <th className="text-left py-3 font-medium">Fecha</th>
-                        <th className="text-left py-3 font-medium">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredAlimentaciones.map((alimentacionItem) => (                        
-                        <tr key={alimentacionItem.alimentacion_id} className="border-b hover:bg-gray-50">
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {alimentacionItem.animal?.arete}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex flex-col">
-                              <span className="font-medium">{alimentacionItem.insumo?.nombre}</span>
-                              {alimentacionItem.insumo?.descripcion && (
-                                <span className="text-sm text-gray-600">
-                                  {alimentacionItem.insumo.descripcion}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <Badge variant="outline">
-                              {alimentacionItem.cantidad} {alimentacionItem.insumo?.unidad?.nombre || ''}
+            <div className="overflow-x-auto">
+              <div className="hidden sm:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 font-medium">Animal</th>
+                      <th className="text-left py-3 font-medium">Insumo</th>
+                      <th className="text-left py-3 font-medium">Cantidad</th>
+                      <th className="text-left py-3 font-medium">Fecha</th>
+                      <th className="text-left py-3 font-medium">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAlimentaciones.map((alimentacionItem) => (                        
+                      <tr key={alimentacionItem.alimentacion_id} className="border-b hover:bg-gray-50">
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {alimentacionItem.animal?.arete}
                             </Badge>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <span>
-                                {formatDateWithoutTZ(alimentacionItem.fecha)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  className="h-8 w-8 p-0"
-                                  type="button"
-                                >
-                                  <span className="sr-only">Abrir menú</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEdit(alimentacionItem)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar alimentación
-                                </DropdownMenuItem>
-                                {canDelete && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(alimentacionItem)}
-                                    className="text-red-600 focus:text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar alimentación
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="sm:hidden space-y-4">
-                  {filteredAlimentaciones.map((alimentacionItem) => (
-                    <Card key={alimentacionItem.alimentacion_id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {alimentacionItem.animal?.arete}
-                              </Badge>
-                              <Badge variant="outline">
-                                {alimentacionItem.cantidad} {alimentacionItem.insumo?.unidad?.nombre || ''}
-                              </Badge>
-                            </div>
-                            <div className="mt-3 space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">{alimentacionItem.insumo?.nombre}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">
-                                  {formatDateWithoutTZ(alimentacionItem.fecha)}
-                                </span>
-                              </div>
-                              {alimentacionItem.insumo?.descripcion && (
-                                <div className="text-sm text-gray-600">
-                                  {alimentacionItem.insumo.descripcion}
-                                </div>
-                              )}
-                            </div>
                           </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{alimentacionItem.insumo?.nombre}</span>
+                            {alimentacionItem.insumo?.descripcion && (
+                              <span className="text-sm text-gray-600">
+                                {alimentacionItem.insumo.descripcion}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <Badge variant="outline">
+                            {alimentacionItem.cantidad} {alimentacionItem.insumo?.unidad?.nombre || ''}
+                          </Badge>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {formatDateWithoutTZ(alimentacionItem.fecha)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
@@ -472,10 +402,7 @@ const AlimentacionesPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(alimentacionItem)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar alimentación
-                              </DropdownMenuItem>
+                              
                               {canDelete && (
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(alimentacionItem)}
@@ -487,13 +414,73 @@ const AlimentacionesPage = () => {
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+
+              <div className="sm:hidden space-y-4">
+                {filteredAlimentaciones.map((alimentacionItem) => (
+                  <Card key={alimentacionItem.alimentacion_id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {alimentacionItem.animal?.arete}
+                            </Badge>
+                            <Badge variant="outline">
+                              {alimentacionItem.cantidad} {alimentacionItem.insumo?.unidad?.nombre || ''}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="font-medium">{alimentacionItem.insumo?.nombre}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-gray-600">
+                                {formatDateWithoutTZ(alimentacionItem.fecha)}
+                              </span>
+                            </div>
+                            {alimentacionItem.insumo?.descripcion && (
+                              <div className="text-sm text-gray-600">
+                                {alimentacionItem.insumo.descripcion}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              type="button"
+                            >
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                         
+                            {canDelete && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteClick(alimentacionItem)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar alimentación
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
 
             {filteredAlimentaciones.length === 0 && !loading && (
               <div className="text-center py-8 text-gray-500">

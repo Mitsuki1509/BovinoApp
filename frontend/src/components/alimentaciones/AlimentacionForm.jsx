@@ -53,7 +53,6 @@ const AlimentacionForm = ({
 
   useEffect(() => {
     fetchAnimales();
-    // Cargar insumos directamente desde la API
     fetchInsumos();
   }, []);
 
@@ -95,25 +94,36 @@ const AlimentacionForm = ({
     }
   }, [alimentacion, form, insumos]);
 
+  const formatDateToLocalISO = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const onSubmit = async (data) => {
     setFormError('');
     
     try {
       console.log('Datos del formulario:', data);
       
-      // Validación adicional
       if (!data.animal_id || !data.insumo_id || !data.cantidad || !data.fecha) {
         setFormError('Todos los campos son obligatorios');
         return;
       }
+ const fechaSeleccionada = data.fecha;
+    const fechaLocal = new Date(
+      fechaSeleccionada.getFullYear(),
+      fechaSeleccionada.getMonth(),
+      fechaSeleccionada.getDate()
+    );
 
-      const alimentacionData = {
-        animal_id: parseInt(data.animal_id),
-        insumo_id: parseInt(data.insumo_id),
-        cantidad: parseInt(data.cantidad),
-        fecha: data.fecha.toISOString().split('T')[0] // Formato YYYY-MM-DD
-      };
-
+    const alimentacionData = {
+      animal_id: parseInt(data.animal_id),
+      insumo_id: parseInt(data.insumo_id),
+      cantidad: parseInt(data.cantidad),
+      fecha: format(fechaLocal, 'yyyy-MM-dd')
+    };
       console.log('Datos a enviar:', alimentacionData);
 
       let result;
@@ -162,7 +172,6 @@ const AlimentacionForm = ({
     setInsumoSeleccionado(insumo);
   };
 
-  // Función corregida para deshabilitar solo fechas futuras
   const isDateDisabled = (date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -270,7 +279,14 @@ const AlimentacionForm = ({
               <FormField
                 control={form.control}
                 name="fecha"
-                rules={{ required: "La fecha es requerida" }}
+                rules={{ 
+                  required: "La fecha es requerida",
+                  validate: {
+                    notFuture: (value) => {
+                      return !isDateDisabled(value) || "La fecha no puede ser futura"
+                    }
+                  }
+                }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Fecha de Alimentación *</FormLabel>
