@@ -26,6 +26,7 @@ export default class ProduccionCarneController {
           pesaje: {
             select: {
               pesaje_id: true,
+              numero_pesaje: true,
               peso: true,
               fecha: true
             }

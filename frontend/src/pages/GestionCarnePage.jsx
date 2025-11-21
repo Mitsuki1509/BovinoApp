@@ -356,7 +356,7 @@ const GestionCarnePage = () => {
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
                                   <Badge variant="secondary" className="text-xs">
-                                    {produccion.pesaje?.numero_pesaje || 'Auto-generado'}
+                                    {produccion.pesaje?.numero_pesajes || 'Auto-generado'}
                                   </Badge>
                                 </div>
                               </td>

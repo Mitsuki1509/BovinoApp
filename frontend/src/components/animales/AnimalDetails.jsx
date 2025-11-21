@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Edit, Trash2 } from 'lucide-react';
+import { MapPin,  Calendar, Tag, Edit, Trash2, Clock } from 'lucide-react';
 
 const FALLBACK_IMG = "/placeholder-animal.jpg";
 
@@ -11,41 +11,10 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
   const getSexoText = (sexo) => sexo === 'M' ? 'Macho' : 'Hembra';
   const getSexoColor = (sexo) => sexo === 'M' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800';
 
-  const convertirAFechaLocal = (fecha) => {
-    if (!fecha) return null;
-    
-    if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = fecha.split('-').map(Number);
-      return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
-    }
-    
-    try {
-      const date = new Date(fecha);
-      if (isNaN(date.getTime())) return null;
-      
-      const offset = date.getTimezoneOffset();
-      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
-      
-      const year = localDate.getFullYear();
-      const month = String(localDate.getMonth() + 1).padStart(2, '0');
-      const day = String(localDate.getDate()).padStart(2, '0');
-      
-      return `${day}/${month}/${year}`;
-    } catch (error) {
-      return null;
-    }
-  };
-
   const calculateEdad = (fechaNacimiento) => {
     if (!fechaNacimiento) return 'No disponible';
-    
-    const fechaFormateada = convertirAFechaLocal(fechaNacimiento);
-    if (!fechaFormateada) return 'No disponible';
-    
-    const [day, month, year] = fechaFormateada.split('/').map(Number);
-    const nacimiento = new Date(year, month - 1, day);
+    const nacimiento = new Date(fechaNacimiento);
     const hoy = new Date();
-    
     let años = hoy.getFullYear() - nacimiento.getFullYear();
     let meses = hoy.getMonth() - nacimiento.getMonth();
     
@@ -63,9 +32,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
 
   const formatFecha = (fecha) => {
     if (!fecha) return 'No especificada';
-    
-    const fechaFormateada = convertirAFechaLocal(fecha);
-    return fechaFormateada || 'No especificada';
+    return new Date(fecha).toLocaleDateString('es-ES');
   };
 
   const handleDeleteClick = () => {
