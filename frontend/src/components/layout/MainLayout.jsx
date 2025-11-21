@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -31,14 +31,14 @@ import {
   LogOut,
   Stethoscope,
   ChevronDown,
-  HelpCircle, 
   Scale,
   Utensils,
   Calendar,
   Tag,
   MapPin,
   Weight,
-  Bell
+  Bell,
+  Milk
 } from "lucide-react";
 import { FaCow, FaClipboardCheck } from 'react-icons/fa6';
 import { useAuthStore } from "@/store/authStore";
@@ -77,8 +77,8 @@ const pesaje = [
 ];
 
 const produccion = [
-  { title: "Producción Lechera", href: "/produccionLechera", icon: HelpCircle },
-  { title: "Producción Cárnica", href: "/produccionCarne", icon: Package },
+  { title: "Producción Lechera", href: "/produccionLechera", icon: Milk },
+  { title: "Producción Cárnica", href: "/produccionCarne", icon: FaCow },
 ];
 
 const reproduccion = [
@@ -93,7 +93,53 @@ export function MainLayout({ children }) {
   const { user, logout, checkAuth } = useAuthStore();
   const { notificacionesNoLeidas } = useNotificacionStore(); 
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [modalNotificacionesAbierto, setModalNotificacionesAbierto] = useState(false); 
+  const [modalNotificacionesAbierto, setModalNotificacionesAbierto] = useState(false);
+  const sidebarContentRef = useRef(null);
+
+  const [expandedSections, setExpandedSections] = useState({
+    inventario: true,
+    ganado: true,
+    sanidad: true,
+    produccion: true,
+    reproduccion: true
+  });
+
+  useEffect(() => {
+    const sidebarContent = sidebarContentRef.current;
+    if (!sidebarContent) return;
+
+    const handleScroll = () => {
+      if (sidebarContent.scrollTop > 0) {
+        sidebarContent.classList.add('scrolling');
+      } else {
+        sidebarContent.classList.remove('scrolling');
+      }
+    };
+
+    sidebarContent.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      sidebarContent.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarExpandedState');
+    if (savedState) {
+      setExpandedSections(JSON.parse(savedState));
+    }
+  }, []);
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => {
+      const newState = {
+        ...prev,
+        [section]: !prev[section]
+      };
+      localStorage.setItem('sidebarExpandedState', JSON.stringify(newState));
+      return newState;
+    });
+  };
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -191,7 +237,10 @@ export function MainLayout({ children }) {
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="flex-1 overflow-auto">
+          <SidebarContent 
+            ref={sidebarContentRef}
+            className="flex-1 overflow-auto custom-scrollbar"
+          >
             <div className="p-3">
               <div className="px-2 py-2 text-xs font-medium text-slate-600 uppercase tracking-wide">
                 Navegación Principal
@@ -216,7 +265,11 @@ export function MainLayout({ children }) {
             </div>
 
             <div className="p-3">
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible 
+                open={expandedSections.inventario} 
+                onOpenChange={() => toggleSection('inventario')}
+                className="group/collapsible"
+              >
                 <SidebarGroup>
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
                     <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
@@ -250,7 +303,11 @@ export function MainLayout({ children }) {
             </div>
 
             <div className="p-3">
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible 
+                open={expandedSections.ganado} 
+                onOpenChange={() => toggleSection('ganado')}
+                className="group/collapsible"
+              >
                 <SidebarGroup>
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
                     <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
@@ -284,7 +341,11 @@ export function MainLayout({ children }) {
             </div>
 
             <div className="p-3">
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible 
+                open={expandedSections.sanidad} 
+                onOpenChange={() => toggleSection('sanidad')}
+                className="group/collapsible"
+              >
                 <SidebarGroup>
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
                     <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
@@ -318,7 +379,11 @@ export function MainLayout({ children }) {
             </div>
 
             <div className="p-3">
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible 
+                open={expandedSections.produccion} 
+                onOpenChange={() => toggleSection('produccion')}
+                className="group/collapsible"
+              >
                 <SidebarGroup>
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
                     <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
@@ -352,7 +417,11 @@ export function MainLayout({ children }) {
             </div>
 
             <div className="p-3">
-              <Collapsible defaultOpen className="group/collapsible">
+              <Collapsible 
+                open={expandedSections.reproduccion} 
+                onOpenChange={() => toggleSection('reproduccion')}
+                className="group/collapsible"
+              >
                 <SidebarGroup>
                   <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
                     <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
@@ -466,6 +535,35 @@ export function MainLayout({ children }) {
           onOpenChange={setModalNotificacionesAbierto} 
         />
       </div>
+
+      <style jsx>{`
+        .custom-scrollbar {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          display: none;
+        }
+        
+        .custom-scrollbar.scrolling::-webkit-scrollbar {
+          display: block;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
     </SidebarProvider>
   );
 }

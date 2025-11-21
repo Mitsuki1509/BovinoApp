@@ -5,6 +5,31 @@ import crypto from "crypto";
 
 export default class AnimalController {
 
+  // AGREGAR ESTE MÉTODO A LA CLASE
+  static validarEdadParaMonta(fechaNacimiento, sexo) {
+    if (!fechaNacimiento) return false;
+    
+    const fechaNac = new Date(fechaNacimiento);
+    const fechaActual = new Date();
+    
+    // Calcular meses de edad
+    let mesesDeEdad = (fechaActual.getFullYear() - fechaNac.getFullYear()) * 12;
+    mesesDeEdad += fechaActual.getMonth() - fechaNac.getMonth();
+    
+    // Ajustar si el día actual es menor al día de nacimiento
+    if (fechaActual.getDate() < fechaNac.getDate()) {
+      mesesDeEdad--;
+    }
+    
+    if (sexo === 'H') {
+      return mesesDeEdad >= 15; // Hembras: 15 meses mínimo
+    } else if (sexo === 'M') {
+      return mesesDeEdad >= 18; // Machos: 18 meses mínimo
+    }
+    
+    return false;
+  }
+
   static async getAll(req, res) {
     try {
       const { sexo, fecha_limite, para_monta } = req.query;
@@ -162,7 +187,7 @@ export default class AnimalController {
     }
   }
 
-static async create(req, res) {
+  static async create(req, res) {
     try {
       const rolesPermitidos = ['admin', 'veterinario', 'operario', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -255,7 +280,8 @@ static async create(req, res) {
           });
         }
 
-        if (!this.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
+        // CORREGIDO: Ahora el método existe
+        if (!AnimalController.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
           return res.status(400).json({
             ok: false,
             msg: "La madre debe tener al menos 15 meses de edad para ser apta para reproducción"
@@ -286,7 +312,8 @@ static async create(req, res) {
           });
         }
 
-        if (!this.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
+        // CORREGIDO: Ahora el método existe
+        if (!AnimalController.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
           return res.status(400).json({
             ok: false,
             msg: "El padre debe tener al menos 18 meses de edad para ser apto para reproducción"
@@ -417,8 +444,7 @@ static async create(req, res) {
     }
   }
 
-
-static async update(req, res) {
+  static async update(req, res) {
     try {
       const rolesPermitidos = ['admin', 'veterinario', 'operario', 'contable'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -507,6 +533,7 @@ static async update(req, res) {
 
       if (animal_madre_id !== undefined) {
         if (animal_madre_id === '' || animal_madre_id === 'null') {
+          // Permitir eliminar la madre
         } else if (animal_madre_id) {
           const madreId = parseInt(animal_madre_id);
           const madre = await prisma.animales.findFirst({
@@ -530,7 +557,8 @@ static async update(req, res) {
             });
           }
 
-          if (!this.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
+          // CORREGIDO: Ahora el método existe
+          if (!AnimalController.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
             return res.status(400).json({
               ok: false,
               msg: "La madre debe tener al menos 15 meses de edad para ser apta para reproducción"
@@ -541,6 +569,7 @@ static async update(req, res) {
 
       if (animal_padre_id !== undefined) {
         if (animal_padre_id === '' || animal_padre_id === 'null') {
+          // Permitir eliminar el padre
         } else if (animal_padre_id) {
           const padreId = parseInt(animal_padre_id);
           const padre = await prisma.animales.findFirst({
@@ -564,7 +593,8 @@ static async update(req, res) {
             });
           }
 
-          if (!this.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
+          // CORREGIDO: Ahora el método existe
+          if (!AnimalController.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
             return res.status(400).json({
               ok: false,
               msg: "El padre debe tener al menos 18 meses de edad para ser apto para reproducción"

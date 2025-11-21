@@ -225,7 +225,6 @@ const ModalNotificaciones = ({ open, onOpenChange }) => {
       <DialogContent className="max-w-[95vw] w-[95vw] sm:max-w-2xl lg:max-w-3xl h-[90vh] sm:h-[85vh] mx-auto p-0 sm:p-6 rounded-lg sm:rounded-xl border-0 shadow-lg flex flex-col">
         <Card className="border-0 shadow-none h-full flex flex-col">
           <CardContent className="p-0 flex flex-col h-full">
-            {/* Header fijo */}
             <div className="flex-shrink-0">
               <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
                 <div className="flex items-center gap-3">
@@ -248,7 +247,6 @@ const ModalNotificaciones = ({ open, onOpenChange }) => {
                 </div>
               </DialogHeader>
 
-              {/* Filtros fijos */}
               <div className="px-4 sm:px-6 pb-3 space-y-3 border-b">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="flex-1 relative">
@@ -298,7 +296,6 @@ const ModalNotificaciones = ({ open, onOpenChange }) => {
               </div>
             </div>
 
-            {/* Área de notificaciones con scroll - CORREGIDO */}
             <div className="flex-1 min-h-0 overflow-hidden">
               <ScrollArea className="h-full">
                 <div className="px-4 sm:px-6 py-4 space-y-4">
@@ -377,7 +374,6 @@ const ModalNotificaciones = ({ open, onOpenChange }) => {
               </ScrollArea>
             </div>
 
-            {/* Footer fijo */}
             <div className="flex-shrink-0 border-t bg-gray-50/50">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4">
                 <div className="text-xs text-gray-500 text-center sm:text-left">

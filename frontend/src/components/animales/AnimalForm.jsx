@@ -86,6 +86,8 @@ const AnimalForm = ({
     }
   });
 
+  const fechaNacimiento = form.watch('fecha_nacimiento');
+
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -200,6 +202,16 @@ const AnimalForm = ({
         errors.fecha_nacimiento = 'La fecha de nacimiento es requerida';
       }
 
+      // Validar que la fecha de destete no sea más antigua que la fecha de nacimiento
+      if (data.fecha_destete && data.fecha_nacimiento) {
+        const fechaDestete = new Date(data.fecha_destete);
+        const fechaNacimiento = new Date(data.fecha_nacimiento);
+        
+        if (fechaDestete < fechaNacimiento) {
+          errors.fecha_destete = 'La fecha de destete no puede ser anterior a la fecha de nacimiento';
+        }
+      }
+
       if (!data.lote_id || data.lote_id === '') {
         errors.lote_id = 'El lote es requerido';
       }
@@ -276,6 +288,7 @@ const AnimalForm = ({
           </div>
         )}
         
+        <Card>
           <CardContent className="space-y-4">
             <FormField
               control={form.control}
@@ -416,12 +429,18 @@ const AnimalForm = ({
                         onSelect={field.onChange}
                         initialFocus
                         locale={es}
-                        disabled={(date) => date > new Date()}
+                        disabled={(date) => {
+                          if (date > new Date()) return true;
+                          
+                          if (fechaNacimiento && date < fechaNacimiento) return true;
+                          
+                          return false;
+                        }}
                       />
                     </PopoverContent>
                   </Popover>
                   <FormMessage className="text-xs">
-                    {form.formState.errors.fecha_destete?.message}
+                    {fieldErrors.fecha_destete || form.formState.errors.fecha_destete?.message}
                   </FormMessage>
                 </FormItem>
               )}
@@ -499,6 +518,7 @@ const AnimalForm = ({
               />
             </div>
           </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

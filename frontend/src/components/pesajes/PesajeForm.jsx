@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -36,12 +36,38 @@ const PesajeForm = ({
   const [formError, setFormError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
+  // Función para obtener fecha local sin hora
+  const getLocalDate = (date = null) => {
+    if (date && isValid(date)) {
+      // Si se proporciona una fecha, convertirla a fecha local sin hora
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+    // Si no se proporciona fecha, usar la fecha actual local
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  };
+
+  // Función para convertir fecha de la BD a fecha local
+  const parseFechaFromDB = (fechaString) => {
+    if (!fechaString) return getLocalDate();
+    
+    try {
+      // Parsear la fecha desde la BD (formato YYYY-MM-DD)
+      const [year, month, day] = fechaString.split('-').map(Number);
+      // Crear fecha local sin problemas de zona horaria
+      return new Date(year, month - 1, day);
+    } catch (error) {
+      console.error('Error parsing date from DB:', error);
+      return getLocalDate();
+    }
+  };
+
   const form = useForm({
     defaultValues: {
       animal_id: '',
       unidad_id: '',
       peso: '',
-      fecha: new Date()
+      fecha: getLocalDate()
     }
   });
 
@@ -61,11 +87,18 @@ const PesajeForm = ({
   useEffect(() => {
     if (pesaje) {
       setIsEditing(true);
+      
+      // SOLUCIÓN CORREGIDA: Usar la fecha guardada en la BD, convertida a fecha local
+      const fechaPesaje = parseFechaFromDB(pesaje.fecha);
+      
+      console.log('📅 Fecha original de BD:', pesaje.fecha);
+      console.log('📅 Fecha convertida a local:', fechaPesaje);
+      
       form.reset({
         animal_id: pesaje.animal_id ? pesaje.animal_id.toString() : '',
         unidad_id: pesaje.unidad_id ? pesaje.unidad_id.toString() : '',
         peso: pesaje.peso ? parseFloat(pesaje.peso).toString() : '',
-        fecha: pesaje.fecha ? new Date(pesaje.fecha) : new Date()
+        fecha: fechaPesaje
       });
     } else {
       setIsEditing(false);
@@ -73,10 +106,48 @@ const PesajeForm = ({
         animal_id: '',
         unidad_id: '',
         peso: '',
-        fecha: new Date()
+        fecha: getLocalDate()
       });
     }
   }, [pesaje, form]);
+
+  // Función para formatear fecha a YYYY-MM-DD para la BD
+  const formatDateToLocalISO = (date) => {
+    if (!date || !isValid(date)) return '';
+    
+    const localDate = new Date(date);
+    const year = localDate.getFullYear();
+    const month = String(localDate.getMonth() + 1).padStart(2, '0');
+    const day = String(localDate.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDateSelect = (date, onChange) => {
+    if (date && isValid(date)) {
+      // Convertir a fecha local sin hora
+      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      onChange(localDate);
+    }
+  };
+
+  const isDateDisabled = (date) => {
+    const today = getLocalDate();
+    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return compareDate > today;
+  };
+
+  // Función segura para formatear fechas en la UI
+  const formatDateForDisplay = (date) => {
+    try {
+      if (!date || !isValid(date)) {
+        return 'Seleccionar fecha';
+      }
+      return format(date, "PPP", { locale: es });
+    } catch (error) {
+      return 'Seleccionar fecha';
+    }
+  };
 
   const onSubmit = async (data) => {
     setFormError('');
@@ -91,11 +162,17 @@ const PesajeForm = ({
         return;
       }
 
+      // Validar que la fecha sea válida
+      if (!isValid(data.fecha)) {
+        setFormError('La fecha seleccionada no es válida');
+        return;
+      }
+
       const pesajeData = {
         animal_id: parseInt(data.animal_id),
         unidad_id: parseInt(data.unidad_id),
         peso: parseFloat(data.peso),
-        fecha: data.fecha.toISOString().split('T')[0]
+        fecha: formatDateToLocalISO(data.fecha)
       };
 
       console.log('Enviando datos al servidor:', pesajeData);
@@ -110,7 +187,12 @@ const PesajeForm = ({
       console.log('Respuesta del servidor:', result);
 
       if (result?.success) {
-        form.reset();
+        form.reset({
+          animal_id: '',
+          unidad_id: '',
+          peso: '',
+          fecha: getLocalDate()
+        });
         onSuccess?.();
       } else {
         const errorMsg = result?.error || 'Error al procesar la solicitud';
@@ -140,7 +222,7 @@ const PesajeForm = ({
     .filter(animal => !animal.deleted_at)
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete} - ${animal.sexo || 'Sin nombre'}`
+      label: `${animal.arete} `
     }));
 
   const unidadesOptions = unidades
@@ -215,7 +297,7 @@ const PesajeForm = ({
                             min="0.01"
                             placeholder="0.00"
                             disabled={loading}
-                            className="w-full "
+                            className="w-full"
                           />
                         </div>
                       </FormControl>
@@ -259,7 +341,13 @@ const PesajeForm = ({
                 control={form.control}
                 name="fecha"
                 rules={{ 
-                  required: "La fecha del pesaje es requerida"
+                  required: "La fecha del pesaje es requerida",
+                  validate: {
+                    notFuture: (value) => {
+                      if (!value || !isValid(value)) return "Fecha inválida";
+                      return !isDateDisabled(value) || "La fecha no puede ser futura"
+                    }
+                  }
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
@@ -274,12 +362,9 @@ const PesajeForm = ({
                               !field.value && "text-muted-foreground"
                             )}
                             disabled={loading}
+                            type="button"
                           >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
+                            {formatDateForDisplay(field.value)}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -288,11 +373,10 @@ const PesajeForm = ({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date > new Date()}
+                          onSelect={(date) => handleDateSelect(date, field.onChange)}
+                          disabled={isDateDisabled}
                           initialFocus
                           locale={es}
-                          toDate={new Date()}
                         />
                       </PopoverContent>
                     </Popover>
@@ -305,7 +389,6 @@ const PesajeForm = ({
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
-            
               <Button 
                 type="submit" 
                 disabled={loading}

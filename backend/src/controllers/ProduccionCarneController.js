@@ -26,6 +26,7 @@ export default class ProduccionCarneController {
           pesaje: {
             select: {
               pesaje_id: true,
+              numero_pesaje: true,
               peso: true,
               fecha: true
             }
@@ -771,4 +772,60 @@ export default class ProduccionCarneController {
       });
     }
   }
+static async getPesajesDisponibles(req, res) {
+  try {
+    console.log('🔍 Buscando pesajes disponibles...');
+    
+    // Primero obtener todos los pesajes activos
+    const todosPesajes = await prisma.pesajes.findMany({
+      where: { 
+        deleted_at: null
+      },
+      include: {
+        animal: {
+          select: {
+            animal_id: true,
+            arete: true,
+          }
+        },
+        unidad: {
+          select: {
+            nombre: true,
+          }
+        },
+        producciones_carne: {
+          where: {
+            deleted_at: null
+          },
+          select: {
+            produccion_id: true
+          }
+        }
+      },
+      orderBy: {
+        fecha: 'desc'
+      }
+    });
+
+    // Filtrar en JavaScript los pesajes que NO tienen producción de carne asociada
+    const pesajesDisponibles = todosPesajes.filter(pesaje => 
+      pesaje.producciones_carne.length === 0
+    );
+
+    console.log(`🔍 Se encontraron ${pesajesDisponibles.length} pesajes disponibles de ${todosPesajes.length} totales`);
+
+    return res.json({
+      ok: true,
+      data: pesajesDisponibles
+    });
+
+  } catch (error) {
+    console.error('❌ ERROR en getPesajesDisponibles:', error);
+    return res.status(500).json({
+      ok: false,
+      msg: "Error al obtener los pesajes disponibles",
+      error: error.message
+    });
+  }
+}
 }

@@ -206,6 +206,28 @@ createProduccion: async (produccionData) => {
       throw error;
     }
   },
+  // En useProduccionCarneStore.js - agrega este método
+fetchPesajesDisponibles: async () => {
+  try {
+    const response = await fetch('http://localhost:3000/api/produccionCarne/pesajes/disponibles', {
+      credentials: 'include'
+    });
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.msg || 'Error al cargar pesajes disponibles');
+    }
+    
+    if (result.ok) {
+      return result.data || [];
+    } else {
+      throw new Error(result.msg || 'Error desconocido');
+    }
+  } catch (error) {
+    console.error('Error fetching pesajes disponibles:', error);
+    throw error;
+  }
+},
 
   clearError: () => set({ error: null })
 }));

@@ -169,7 +169,6 @@ const AnimalesPage = () => {
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Animales</h1>
@@ -188,7 +187,6 @@ const AnimalesPage = () => {
           )}
         </div>
 
-        {/* Estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="pt-6">
@@ -227,7 +225,6 @@ const AnimalesPage = () => {
           </Card>
         </div>
 
-        {/* Filtros y Búsqueda */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -322,22 +319,11 @@ const AnimalesPage = () => {
               </>
             ) : (
               <div className="text-center py-8">
-                <FaCow className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <h3 className="text-lg text-gray-500 ">
                   {busqueda ? 'No se encontraron animales' : 'No hay animales registrados'}
                 </h3>
-                <p className="text-gray-500">
-                  {busqueda 
-                    ? 'Intenta con otros términos de búsqueda' 
-                    : 'Comienza agregando el primer animal al sistema'
-                  }
-                </p>
-                {canManage && !busqueda && (
-                  <Button onClick={handleCreate} className="mt-4">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Crear Primer Animal
-                  </Button>
-                )}
+              
+               
               </div>
             )}
           </CardContent>

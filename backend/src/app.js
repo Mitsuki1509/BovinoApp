@@ -28,7 +28,7 @@ import produccionLecheraRouter from "./routes/produccionLecheraRoutes.js";
 import mataderoRouter from "./routes/mataderoRoutes.js";
 import produccionCarneRouter from "./routes/produccionCarneRoutes.js";
 import notificacionesRouter from "./routes/notificacionesRoutes.js";
-
+import dashboardRouter from "./routes/dashboardRoutes.js";
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -109,6 +109,7 @@ app.get("/", (_req, res) => {
       mataderos: "/api/mataderos",
       produccionCarne:"/api/produccionCarne",
       notificaciones: "/api/notificaciones",
+      dashboard: "/api/dashboard",
       health: "/health",
     },
   });
@@ -135,6 +136,7 @@ app.use("/api/produccionLechera", produccionLecheraRouter);
 app.use("/api/mataderos", mataderoRouter);
 app.use("/api/produccionCarne", produccionCarneRouter);
 app.use("/api/notificaciones", notificacionesRouter);
+app.use("/api/dashboard", dashboardRouter)
 
 app.use((req, res) => {
   res.status(404).json({

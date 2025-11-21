@@ -193,11 +193,26 @@ const GestionCarnePage = () => {
     });
   }, [fetchMataderos, fetchProducciones, editingItem, activeTab, toast]);
 
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const [year, month, day] = dateString.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        if (isNaN(date.getTime())) return 'Fecha inválida';
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+  };
+
   const getItemName = () => {
     if (!itemToDelete) return '';
     return itemToDelete.type === 'matadero' 
       ? itemToDelete.item.ubicacion
-      : `Producción del ${format(new Date(itemToDelete.item.fecha), "dd/MM/yyyy", { locale: es })}`;
+      : `Producción del ${formatDateWithoutTZ(itemToDelete.item.fecha)}`;
   };
 
   const getItemType = () => {
@@ -219,7 +234,8 @@ const GestionCarnePage = () => {
     return (
       produccion.animal?.arete?.toLowerCase().includes(searchLower) ||
       produccion.matadero?.ubicacion?.toLowerCase().includes(searchLower) ||
-      produccion.peso_canal?.toString().includes(searchTerm)
+      produccion.peso_canal?.toString().includes(searchTerm) ||
+      (produccion.pesaje?.numero_pesaje && produccion.pesaje.numero_pesaje.toLowerCase().includes(searchLower))
     );
   });
 
@@ -272,7 +288,7 @@ const GestionCarnePage = () => {
             placeholder={
               activeTab === 'mataderos' 
                 ? "Buscar mataderos por ubicación..." 
-                : "Buscar por arete, matadero o peso..."
+                : "Buscar por arete, matadero, peso o número de pesaje..."
             }
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -310,6 +326,7 @@ const GestionCarnePage = () => {
                             <th className="text-left py-3 font-medium">Animal</th>
                             <th className="text-left py-3 font-medium">Peso Canal</th>
                             <th className="text-left py-3 font-medium">Matadero</th>
+                            <th className="text-left py-3 font-medium">Pesaje</th>
                             <th className="text-left py-3 font-medium">Fecha</th>
                             {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
                           </tr>
@@ -322,7 +339,6 @@ const GestionCarnePage = () => {
                                   <Badge variant="secondary" className="font-mono">
                                     {produccion.animal?.arete}
                                   </Badge>
-                                  
                                 </div>
                               </td>
                               <td className="py-3">
@@ -339,8 +355,15 @@ const GestionCarnePage = () => {
                               </td>
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {produccion.pesaje?.numero_pesajes || 'Auto-generado'}
+                                  </Badge>
+                                </div>
+                              </td>
+                              <td className="py-3">
+                                <div className="flex items-center gap-2">
                                   <span>
-                                    {format(new Date(produccion.fecha), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateWithoutTZ(produccion.fecha)}
                                   </span>
                                 </div>
                               </td>
@@ -358,7 +381,7 @@ const GestionCarnePage = () => {
                                       </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                    
+                                     
                                       <DropdownMenuItem 
                                         onClick={() => handleDelete(produccion, 'produccion')}
                                         className="text-red-600 focus:text-red-600"
@@ -386,19 +409,23 @@ const GestionCarnePage = () => {
                                   <Badge variant="secondary" className="font-mono">
                                     {produccion.animal?.arete}
                                   </Badge>
-                                
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline">
-                                  {parseFloat(produccion.peso_canal).toFixed(2)} kg
-                                </Badge>
+                                  <Badge variant="outline">
+                                    {parseFloat(produccion.peso_canal).toFixed(2)} kg
+                                  </Badge>
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="text-sm">{produccion.matadero?.ubicacion}</span>
                                 </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {produccion.pesaje?.numero_pesaje || 'Auto-generado'}
+                                  </Badge>
+                                </div>
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm text-gray-600">
-                                    {format(new Date(produccion.fecha), "dd/MM/yyyy", { locale: es })}
+                                    {formatDateWithoutTZ(produccion.fecha)}
                                   </span>
                                 </div>
                               </div>
@@ -415,7 +442,7 @@ const GestionCarnePage = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                  
+                                 
                                     <DropdownMenuItem 
                                       onClick={() => handleDelete(produccion, 'produccion')}
                                       className="text-red-600 focus:text-red-600"
@@ -572,7 +599,7 @@ const GestionCarnePage = () => {
         </Tabs>
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">{getFormTitle()}</DialogTitle>
               <DialogDescription className="text-sm sm:text-base">{getFormDescription()}</DialogDescription>

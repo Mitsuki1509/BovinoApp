@@ -61,6 +61,14 @@ const CompraForm = ({
     }
   }, [compra, form])
 
+  // Función para formatear la fecha correctamente (SOLUCIÓN AL PROBLEMA)
+  const formatDateToLocalISO = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const onSubmit = async (data) => {
     setFormError('')
     setFieldErrors({})
@@ -68,8 +76,11 @@ const CompraForm = ({
     try {
       const compraData = {
         proveedor_id: parseInt(data.proveedor_id),
-        fecha: data.fecha.toISOString().split('T')[0] 
+        // SOLUCIÓN: Usar formato local en lugar de toISOString()
+        fecha: formatDateToLocalISO(data.fecha)
       }
+
+      console.log('📅 Fecha que se enviará:', compraData.fecha); // Para debug
 
       let result
       if (isEditing) {
@@ -107,7 +118,7 @@ const CompraForm = ({
     }
   }
 
-  // Función para comparar fechas sin considerar la hora
+  // Función para comparar fechas - ahora permite la fecha de hoy
   const isDateFuture = (date) => {
     const today = new Date();
     const selectedDate = new Date(date);
@@ -116,6 +127,7 @@ const CompraForm = ({
     today.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);
     
+    // Ahora solo bloquea fechas que sean mayores que hoy (no incluye hoy)
     return selectedDate > today;
   };
 

@@ -190,6 +190,35 @@ const PartosPage = () => {
     setEditingParto(null);
   }, []);
 
+  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
+  const convertirAFechaLocal = (fecha) => {
+    try {
+      if (!fecha) return null;
+      
+      let date;
+      
+      // Si es string YYYY-MM-DD, convertir directamente
+      if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = fecha.split('-').map(Number);
+        date = new Date(year, month - 1, day);
+      } else {
+        // Para otros formatos, crear fecha
+        date = new Date(fecha);
+      }
+      
+      if (isNaN(date.getTime())) return null;
+      
+      // Usar UTC para evitar problemas de zona horaria
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return null;
+    }
+  };
+
   const formatearNumeroMonta = (numeroMonta) => {
     if (!numeroMonta) return 'N/A';
     
@@ -242,10 +271,14 @@ const PartosPage = () => {
     }
     
     if (fechaFiltro) {
-      const fechaParto = new Date(partoItem.fecha);
-      const fechaFiltroDate = new Date(fechaFiltro);
+      const fechaParto = convertirAFechaLocal(partoItem.fecha);
+      const fechaFiltroComparable = convertirAFechaLocal(fechaFiltro);
       
-      if (fechaParto.toDateString() !== fechaFiltroDate.toDateString()) {
+      if (!fechaParto || !fechaFiltroComparable) {
+        return false;
+      }
+      
+      if (fechaParto !== fechaFiltroComparable) {
         return false;
       }
     }
@@ -279,41 +312,23 @@ const PartosPage = () => {
       </MainLayout>
     );
   }
- const formatDateSafe = (dateString) => {
-  try {
-    if (!dateString) {
-      console.warn('⚠️ Fecha vacía recibida');
-      return 'N/A';
+
+  // Función para formatear fechas sin problemas de zona horaria
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const fechaLocal = convertirAFechaLocal(dateString);
+        if (!fechaLocal) return 'Fecha inválida';
+        
+        const [year, month, day] = fechaLocal.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
     }
-    
-    console.log('📅 Fecha recibida para formatear:', dateString);
-    
-    // Si ya es una fecha de JavaScript
-    if (dateString instanceof Date) {
-      const adjustedDate = new Date(dateString.getTime() + dateString.getTimezoneOffset() * 60000);
-      return format(adjustedDate, "dd/MM/yyyy", { locale: es });
-    }
-    
-    // Si es string, intentar parsear
-    const date = new Date(dateString);
-    
-    if (isNaN(date.getTime())) {
-      console.error('❌ Fecha inválida:', dateString);
-      return 'N/A';
-    }
-    
-    // Ajustar por huso horario local
-    const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    const result = format(adjustedDate, "dd/MM/yyyy", { locale: es });
-    
-    console.log('📅 Fecha formateada:', result);
-    return result;
-    
-  } catch (error) {
-    console.error('❌ Error en formatDateSafe:', error, 'Fecha:', dateString);
-    return 'N/A';
-  }
-};
+  };
 
   return (
     <MainLayout>
@@ -382,7 +397,9 @@ const PartosPage = () => {
             <CardTitle>Lista de Partos</CardTitle>
             <CardDescription>
               {filteredPartos.length} de {partos.length} parto(s) encontrado(s)
-              {(searchTerm || fechaFiltro) && " (filtrados)"}
+              {fechaFiltro && (
+                <span> - Filtrado por: {format(fechaFiltro, "dd/MM/yyyy", { locale: es })}</span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -426,7 +443,7 @@ const PartosPage = () => {
                             </td>
                             <td className="py-3">
                               <div className="flex items-center gap-2">
-{formatDateSafe(partoItem.fecha)}
+                                {formatDateWithoutTZ(partoItem.fecha)}
                               </div>
                             </td>
                             <td className="py-3">
@@ -489,7 +506,7 @@ const PartosPage = () => {
                                   {partoItem.tipo_evento?.nombre || 'N/A'}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
-{formatDateSafe(partoItem.fecha)}
+                                  {formatDateWithoutTZ(partoItem.fecha)}
                                 </div>
                                 {partoItem.descripcion && (
                                   <div className="text-sm text-gray-600">
