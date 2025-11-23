@@ -184,7 +184,44 @@ export const useDashboardStore = create((set, get) => ({
       });
     }
   },
-
+  enviarReporte: async (reportData) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch('http://localhost:3000/api/reportes/enviar-reporte', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportData)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (!result.ok) {
+        throw new Error(result.msg || 'Error en la respuesta del servidor');
+      }
+      
+      set({ loading: false });
+      return { success: true, ...result };
+      
+    } catch (error) {
+      console.error('Error en enviarReporte:', error);
+      set({ 
+        error: error.message, 
+        loading: false 
+      });
+      return { 
+        success: false, 
+        error: error.message 
+      };
+    }
+  },
   clearError: () => set({ error: null }),
 
   reset: () => set({

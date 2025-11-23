@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useDashboardStore } from '../store/dashboardStore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -36,6 +36,14 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import ReporteModal from '../components/reportes/ReporteModal';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
   if (!data || data.length === 0) {
@@ -45,36 +53,33 @@ const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
       </div>
     );
   }
-const formatDateForChart = (dateString) => {
+
+  const formatDateForChart = (dateString) => {
     try {
-        if (!dateString) return 'Fecha inválida';
-        
-        // Si ya está formateada, devolverla tal cual
-        if (typeof dateString === 'string' && dateString.includes('/')) {
-            return dateString;
-        }
-        
-        // SOLUCIÓN: Crear la fecha en UTC para evitar problemas de zona horaria
-        // Asumir que la fecha viene en formato YYYY-MM-DD (sin hora)
-        const [year, month, day] = dateString.split('-').map(Number);
-        const date = new Date(Date.UTC(year, month - 1, day));
-        
-        if (isNaN(date.getTime())) {
-            console.warn('Fecha inválida:', dateString);
-            return 'Fecha inválida';
-        }
-        
-        // Formatear en UTC para mantener la fecha correcta
-        return date.toLocaleDateString('es-ES', { 
-            day: 'numeric', 
-            month: 'short',
-            timeZone: 'UTC' // Forzar UTC para mantener la fecha original
-        });
-    } catch (error) {
-        console.error('Error formateando fecha:', error);
+      if (!dateString) return 'Fecha inválida';
+      
+      if (typeof dateString === 'string' && dateString.includes('/')) {
+        return dateString;
+      }
+      
+      const [year, month, day] = dateString.split('-').map(Number);
+      const date = new Date(Date.UTC(year, month - 1, day));
+      
+      if (isNaN(date.getTime())) {
+        console.warn('Fecha inválida:', dateString);
         return 'Fecha inválida';
+      }
+      
+      return date.toLocaleDateString('es-ES', { 
+        day: 'numeric', 
+        month: 'short',
+        timeZone: 'UTC' 
+      });
+    } catch (error) {
+      console.error('Error formateando fecha:', error);
+      return 'Fecha inválida';
     }
-};
+  };
 
   const safeData = data.map((item, index) => ({
     ...item,
@@ -198,7 +203,7 @@ const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle })
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const { checkAuth } = useAuthStore();
+  const { checkAuth, user } = useAuthStore();
   const [authStatus, setAuthStatus] = useState('checking');
   const { 
     kpis, 
@@ -212,6 +217,9 @@ const DashboardPage = () => {
   } = useDashboardStore();
   
   const [timeRange, setTimeRange] = useState('30d');
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  const canGenerateReports = user?.rol === 'admin' || user?.rol === 'contable';
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -246,6 +254,18 @@ const DashboardPage = () => {
     }
   }, [timeRange, fetchTendenciaProduccion, authStatus]);
 
+  const handleOpenReportModal = useCallback(() => {
+    setShowReportModal(true);
+  }, []);
+
+  const handleCloseReportModal = useCallback(() => {
+    setShowReportModal(false);
+  }, []);
+
+  const handleReportSuccess = useCallback(() => {
+    setShowReportModal(false);
+  }, []);
+
   const getSafeChartData = (data) => {
     if (!data || !Array.isArray(data)) return [];
     
@@ -270,11 +290,10 @@ const DashboardPage = () => {
     value: Number(item.total_produccion) || 0,
     vacas: Number(item.total_vacas) || 0
   })) || [];
-
-
+  
   return (
     <MainLayout>
-      <div className="flex-1 space-y-6 p-6">
+      <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard Ganadero</h1>
@@ -289,16 +308,30 @@ const DashboardPage = () => {
                 {new Date().toLocaleDateString('es-ES')}
               </Badge>
             </div>
-            <select 
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-            >
-              <option value="7d">Últimos 7 días</option>
-              <option value="30d">Últimos 30 días</option>
-              <option value="90d">Últimos 90 días</option>
-              <option value="1y">Último año</option>
-            </select>
+            
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-[140px] text-sm">
+                <SelectValue placeholder="Seleccionar rango" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Últimos 7 días</SelectItem>
+                <SelectItem value="30d">Últimos 30 días</SelectItem>
+                <SelectItem value="90d">Últimos 90 días</SelectItem>
+                <SelectItem value="1y">Último año</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {canGenerateReports && (
+              <Button 
+                onClick={handleOpenReportModal}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                Generar Reporte
+              </Button>
+            )}
+            
             <Button 
               onClick={() => fetchDashboardCompleto()} 
               disabled={loading}
@@ -616,6 +649,14 @@ const DashboardPage = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {canGenerateReports && (
+          <ReporteModal 
+            isOpen={showReportModal}
+            onClose={handleCloseReportModal}
+            onSuccess={handleReportSuccess}
+          />
+        )}
       </div>
     </MainLayout>
   );
