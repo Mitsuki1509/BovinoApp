@@ -5,7 +5,7 @@ import { useDiagnosticoStore } from '@/store/diagnosticoStore'
 import { useTypeStore } from '@/store/typeStore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2, CalendarIcon } from 'lucide-react'
+import { Loader2} from 'lucide-react'
 import { Combobox } from '@/components/ui/combobox'
 import {
   Form,
@@ -15,22 +15,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { Calendar } from '@/components/ui/calendar'
 import { Textarea } from '@/components/ui/textarea'
 import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
+
 
 const PartoForm = ({ 
   parto = null, 
   onSuccess,
 }) => {
-  const { createParto, updateParto, loading } = usePartoStore()
+  const { createParto, updateParto, loading, partos } = usePartoStore()
   const { diagnosticos, fetchDiagnosticos } = useDiagnosticoStore()
   const { eventTypes, fetchEventTypes } = useTypeStore()
   const [isEditing, setIsEditing] = useState(false)
@@ -47,7 +40,7 @@ const PartoForm = ({
   })
 
   useEffect(() => {
-    fetchDiagnosticos()
+    fetchDiagnosticos() 
     fetchEventTypes()
   }, [fetchDiagnosticos, fetchEventTypes])
 
@@ -71,23 +64,36 @@ const PartoForm = ({
     }
   }, [parto, form])
 
+  const getDiagnosticosDisponibles = () => {
+    const diagnosticosConParto = new Set(
+      partos.map(parto => parto.prenez_id?.toString())
+    )
+
+    return diagnosticos.filter(diagnostico => 
+      diagnostico.resultado === true && 
+      !diagnostico.deleted_at &&
+      !diagnosticosConParto.has(diagnostico.prenez_id?.toString())
+    )
+  }
+
   const onSubmit = async (data) => {
     setFormError('')
     setFieldErrors({})
     
     try {
-    const fechaParto = new Date(data.fecha);
-    const year = fechaParto.getFullYear();
-    const month = String(fechaParto.getMonth() + 1).padStart(2, '0');
-    const day = String(fechaParto.getDate()).padStart(2, '0');
-    const fechaFormateada = `${year}-${month}-${day}`; 
-    
+      const fechaParto = new Date(data.fecha);
+      const year = fechaParto.getFullYear();
+      const month = String(fechaParto.getMonth() + 1).padStart(2, '0');
+      const day = String(fechaParto.getDate()).padStart(2, '0');
+      const fechaFormateada = `${year}-${month}-${day}`; 
+      
       const partoData = {
         prenez_id: parseInt(data.prenez_id),
         tipo_evento_id: parseInt(data.tipo_evento_id),
         descripcion: data.descripcion || null,
         fecha: fechaFormateada
       }
+      
       let result
       if (isEditing) {
         result = await updateParto(parto.evento_id, partoData)
@@ -113,6 +119,9 @@ const PartoForm = ({
         if (result.error?.includes('fecha')) {
           setFieldErrors(prev => ({ ...prev, fecha: 'Fecha no válida' }))
         }
+        if (result.error?.includes('parto') || result.error?.includes('asociado')) {
+          setFieldErrors(prev => ({ ...prev, prenez_id: 'Este diagnóstico ya tiene un parto registrado' }))
+        }
       }
     } catch (error) {
       console.error('Error en onSubmit:', error)
@@ -120,14 +129,12 @@ const PartoForm = ({
     }
   }
 
-  const diagnosticosPositivos = diagnosticos.filter(diagnostico => 
-    diagnostico.resultado === true && !diagnostico.deleted_at
-  )
+  const diagnosticosDisponibles = getDiagnosticosDisponibles()
 
-  const diagnosticosOptions = diagnosticosPositivos.map(diagnostico => ({
-  value: diagnostico.prenez_id.toString(),
-  label: `${diagnostico.monta?.numero_monta} - Hembra: ${diagnostico.monta?.hembra?.arete || 'N/A'}`
-}))
+  const diagnosticosOptions = diagnosticosDisponibles.map(diagnostico => ({
+    value: diagnostico.prenez_id.toString(),
+    label: `${diagnostico.monta?.numero_monta} - Hembra: ${diagnostico.monta?.hembra?.arete || 'N/A'} - Fecha Diag: ${diagnostico.fecha ? format(new Date(diagnostico.fecha), 'dd/MM/yyyy') : 'N/A'}`
+  }))
 
   const tipoEventoOptions = eventTypes
     .filter(tipo => !tipo.deleted_at)
@@ -165,8 +172,12 @@ const PartoForm = ({
                         options={diagnosticosOptions}
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder="Seleccionar diagnóstico positivo"
-                        disabled={loading}
+                        placeholder={
+                          diagnosticosDisponibles.length === 0 
+                            ? "No hay diagnósticos disponibles" 
+                            : "Seleccionar diagnóstico positivo"
+                        }
+                        disabled={loading || diagnosticosDisponibles.length === 0}
                         className="w-full"
                       />
                     </FormControl>
@@ -205,58 +216,6 @@ const PartoForm = ({
 
               <FormField
                 control={form.control}
-                name="fecha"
-                rules={{ 
-                  required: "La fecha del parto es requerida"
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Fecha del Parto</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={loading}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            return date < today;
-                          }}
-                          initialFocus
-                          locale={es}
-                          fromDate={new Date()}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage>
-                      {fieldErrors.fecha || form.formState.errors.fecha?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="descripcion"
                 render={({ field }) => (
                   <FormItem>
@@ -279,10 +238,9 @@ const PartoForm = ({
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
-            
               <Button 
                 type="submit" 
-                disabled={loading}
+                disabled={loading || diagnosticosDisponibles.length === 0}
                 className="flex-1"
                 variant="reproduccion"
               >

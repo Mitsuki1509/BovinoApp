@@ -6,7 +6,7 @@ import { useMataderoStore } from '@/store/mataderoStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CalendarIcon } from 'lucide-react';
+import { Loader2} from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
@@ -16,15 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+
 
 const ProduccionCarneForm = ({ 
   produccion = null, 
@@ -249,7 +241,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Animal *</FormLabel>
+                    <FormLabel>Animal </FormLabel>
                     <FormControl>
                       <Combobox
                         options={animalOptions}
@@ -275,7 +267,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Matadero *</FormLabel>
+                    <FormLabel>Matadero </FormLabel>
                     <FormControl>
                       <Combobox
                         options={mataderoOptions}
@@ -334,7 +326,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Unidad de Medida *</FormLabel>
+                    <FormLabel>Unidad de Medida </FormLabel>
                     <FormControl>
                       <Combobox
                         options={unidadOptions}
@@ -368,7 +360,7 @@ const ProduccionCarneForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Peso de Canal (kg) *</FormLabel>
+                    <FormLabel>Peso de Canal (kg) </FormLabel>
                     <FormControl>
                       <Input 
                         type="number"
@@ -386,58 +378,6 @@ const ProduccionCarneForm = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="fecha"
-                rules={{ 
-                  required: "La fecha es obligatoria",
-                  validate: {
-                    notFuture: (value) => {
-                      return !isDateDisabled(value) || "La fecha no puede ser futura"
-                    }
-                  }
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Fecha de Producción *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={loading}
-                            type="button"
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => handleDateSelect(date, field.onChange)}
-                          disabled={isDateDisabled}
-                          initialFocus
-                          locale={es}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage>
-                      {fieldErrors.fecha || form.formState.errors.fecha?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="pt-2 sm:pt-4 flex">

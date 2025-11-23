@@ -41,7 +41,6 @@ const MontaForm = ({
   const [fieldErrors, setFieldErrors] = useState({})
   const [estadoMonta, setEstadoMonta] = useState(0) 
 
-  // Función para formatear el número de monta
   const formatearNumeroMonta = (numeroMonta) => {
     if (!numeroMonta) return 'N/A';
     
@@ -160,7 +159,7 @@ const MontaForm = ({
     )
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete} - ${animal.nombre || 'Sin nombre'} (${calcularEdadEnMeses(animal.fecha_nacimiento)} meses)`
+      label: `${animal.arete} (${calcularEdadEnMeses(animal.fecha_nacimiento)} meses)`
     }))
 
   const machosOptions = animales
@@ -171,7 +170,7 @@ const MontaForm = ({
     )
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete} - ${animal.nombre || 'Sin nombre'} (${calcularEdadEnMeses(animal.fecha_nacimiento)} meses)`
+      label: `${animal.arete} (${calcularEdadEnMeses(animal.fecha_nacimiento)} meses)`
     }))
 
   const tipoEventoOptions = eventTypes

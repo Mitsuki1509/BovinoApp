@@ -197,7 +197,7 @@ export default class RazaController {
 
   static async delete(req, res) {
     try {
-      if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'operario' || req.usuario.rol !== 'veterinario') {
+      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'operario' && req.usuario.rol !== 'veterinario') {
         return res.status(403).json({
           ok: false,
           msg: "Solo los administradores pueden eliminar razas"

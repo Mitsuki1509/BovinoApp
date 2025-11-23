@@ -247,7 +247,7 @@ export default class ProduccionLecheraController {
       if (error.code === 'P2002') {
         return res.status(400).json({
           ok: false,
-          msg: "Ya existe una producción lechera para este animal en la fecha especificada"
+          msg: "Ya existe una producción lechera para este animal con la fecha de hoy"
         });
       }
 
