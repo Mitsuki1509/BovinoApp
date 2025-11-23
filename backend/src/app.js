@@ -29,6 +29,7 @@ import mataderoRouter from "./routes/mataderoRoutes.js";
 import produccionCarneRouter from "./routes/produccionCarneRoutes.js";
 import notificacionesRouter from "./routes/notificacionesRoutes.js";
 import dashboardRouter from "./routes/dashboardRoutes.js";
+import reportRouter from "./routes/reportRoutes.js";
 
 dotenv.config();
 
@@ -111,12 +112,12 @@ app.get("/", (_req, res) => {
       produccionCarne: "/api/produccionCarne",
       notificaciones: "/api/notificaciones",
       dashboard: "/api/dashboard",
+      reportes:"/api/reportes",
       health: "/health",
     },
   });
 });
 
-// Rutas API
 app.use("/api/users", userRouter);
 app.use("/api/types", typeRouter);
 app.use("/api/potreros", potreroRouter);
@@ -139,6 +140,7 @@ app.use("/api/mataderos", mataderoRouter);
 app.use("/api/produccionCarne", produccionCarneRouter);
 app.use("/api/notificaciones", notificacionesRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/reportes", reportRouter)
 
 app.use((req, res) => {
   res.status(404).json({
