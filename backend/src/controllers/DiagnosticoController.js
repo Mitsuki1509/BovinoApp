@@ -57,12 +57,6 @@ export default class DiagnosticoPrenezController {
             const { id } = req.params;
             const diagnosticoId = parseInt(id);
 
-            if (isNaN(diagnosticoId)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID del diagnóstico debe ser un número válido"
-                });
-            }
 
             const diagnostico = await prisma.diagnostico_prenez.findFirst({
                 where: { 
@@ -121,13 +115,6 @@ export default class DiagnosticoPrenezController {
         try {
             const { montaId } = req.params;
             const idMonta = parseInt(montaId);
-
-            if (isNaN(idMonta)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID de la monta debe ser un número válido"
-                });
-            }
 
             const diagnosticos = await prisma.diagnostico_prenez.findMany({
                 where: { 
@@ -197,13 +184,6 @@ export default class DiagnosticoPrenezController {
             }
 
             const montaId = parseInt(monta_id);
-
-            if (isNaN(montaId)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID de la monta debe ser un número válido"
-                });
-            }
 
             const monta = await prisma.evento_monta.findFirst({
                 where: { 
@@ -489,7 +469,7 @@ export default class DiagnosticoPrenezController {
 
     static async delete(req, res) {
         try {
-            if (req.usuario.rol !== 'admin') {
+            if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'veterinario' ) {
                 return res.status(403).json({
                     ok: false,
                     msg: "Solo los administradores pueden eliminar diagnósticos"
@@ -576,7 +556,7 @@ export default class DiagnosticoPrenezController {
                 mensaje,
                 'success',
                 'parto',
-                ['admin', 'veterinario']
+                ['admin', 'veterinario','operario']
             );
 
         } catch (error) {}
@@ -659,7 +639,7 @@ export default class DiagnosticoPrenezController {
                 mensaje,
                 tipo,
                 'parto',
-                ['admin', 'veterinario']
+                ['admin', 'veterinario','operario']
             );
 
         } catch (error) {}
@@ -674,7 +654,7 @@ export default class DiagnosticoPrenezController {
                 mensaje,
                 'info',
                 'parto',
-                ['admin', 'veterinario']
+                ['admin', 'veterinario','operario']
             );
 
         } catch (error) {}

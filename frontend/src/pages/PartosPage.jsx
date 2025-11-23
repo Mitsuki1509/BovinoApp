@@ -77,9 +77,8 @@ const PartosPage = () => {
 
   useEffect(() => {
     if (authStatus === 'authenticated' && 
-        (user?.rol === 'admin' || user?.rol === 'veterinario') && 
+        (user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario') && 
         !hasFetchedData) {
-      console.log('Cargando datos...');
       fetchPartos();
       fetchDiagnosticos(); 
       setHasFetchedData(true);
@@ -190,25 +189,21 @@ const PartosPage = () => {
     setEditingParto(null);
   }, []);
 
-  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
   const convertirAFechaLocal = (fecha) => {
     try {
       if (!fecha) return null;
       
       let date;
       
-      // Si es string YYYY-MM-DD, convertir directamente
       if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [year, month, day] = fecha.split('-').map(Number);
         date = new Date(year, month - 1, day);
       } else {
-        // Para otros formatos, crear fecha
         date = new Date(fecha);
       }
       
       if (isNaN(date.getTime())) return null;
       
-      // Usar UTC para evitar problemas de zona horaria
       const year = date.getUTCFullYear();
       const month = String(date.getUTCMonth() + 1).padStart(2, '0');
       const day = String(date.getUTCDate()).padStart(2, '0');
@@ -232,7 +227,6 @@ const PartosPage = () => {
   const obtenerDatosMonta = (partoItem) => {
   try {
     if (!partoItem || !partoItem.prenez) {
-      console.warn('⚠️ Parto sin preñez asociada:', partoItem);
       return { numeroMonta: 'N/A', areteHembra: 'N/A' };
     }
     
@@ -240,7 +234,6 @@ const PartosPage = () => {
     const monta = prenez.monta;
     
     if (!monta) {
-      console.warn('⚠️ Prenéz sin monta asociada:', prenez);
       return { numeroMonta: 'N/A', areteHembra: 'N/A' };
     }
     
@@ -249,7 +242,6 @@ const PartosPage = () => {
       areteHembra: monta.hembra?.arete || 'N/A'
     };
   } catch (error) {
-    console.error('❌ Error en obtenerDatosMonta:', error);
     return { numeroMonta: 'N/A', areteHembra: 'N/A' };
   }
 };
@@ -288,32 +280,14 @@ const PartosPage = () => {
 
   const getItemName = () => {
     if (!itemToDelete) return '';
-    return `Parto #${itemToDelete.evento_id}`;
+    
+    const { numeroMonta } = obtenerDatosMonta(itemToDelete);
+    const numeroMontaFormateado = formatearNumeroMonta(numeroMonta);
+    
+    return `Parto de la ${numeroMontaFormateado}`;
   };
 
-  const canManage = user?.rol === 'admin' || user?.rol === 'veterinario';
 
-  if (!canManage) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de partos.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  // Función para formatear fechas sin problemas de zona horaria
   const formatDateWithoutTZ = (dateString) => {
     try {
         if (!dateString) return 'Fecha inválida';
@@ -465,7 +439,7 @@ const PartosPage = () => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                  
-                                  {user.rol === 'admin' && (
+                                  {(user.rol === 'admin' || user.rol === 'veterinario' || user.rol === 'operario' )&& (
                                     <DropdownMenuItem 
                                       onClick={() => handleDeleteClick(partoItem)}
                                       className="text-red-600 focus:text-red-600"
@@ -528,7 +502,7 @@ const PartosPage = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 
-                                {user.rol === 'admin' && (
+                                {(user.rol === 'admin' || user.rol === 'veterinario' || user.rol === 'operario' )&&(
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(partoItem)}
                                     className="text-red-600 focus:text-red-600"

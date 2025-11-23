@@ -3,6 +3,16 @@ import NotificacionController from "./NotificacionController.js";
 
 export default class AlimentacionController {
 
+    static async generarNumeroAlimentacion() {
+        try {
+            const totalAlimentaciones = await prisma.alimentacion.count();
+            return `ALIM-${(totalAlimentaciones + 1).toString().padStart(4, '0')}`;
+        } catch (error) {
+            const timestamp = Date.now();
+            return `ALIM-${timestamp.toString().slice(-4)}`;
+        }
+    }
+
     static async getAll(req, res) {
         try {
             const alimentaciones = await prisma.alimentacion.findMany({
@@ -30,7 +40,7 @@ export default class AlimentacionController {
                     }
                 },
                 orderBy: {
-                    fecha: 'desc'
+                    fecha: 'asc'
                 }
             });
 
@@ -183,9 +193,13 @@ export default class AlimentacionController {
                 });
             }
 
+            // Generar número de alimentación
+            const numeroAlimentacion = await AlimentacionController.generarNumeroAlimentacion();
+
             const result = await prisma.$transaction(async (prisma) => {
                 const nuevaAlimentacion = await prisma.alimentacion.create({
                     data: {
+                        numero_alimentacion: numeroAlimentacion,
                         animal_id: animalId,
                         insumo_id: insumoId,
                         cantidad: cantidadInt,
@@ -277,7 +291,7 @@ export default class AlimentacionController {
 
     static async delete(req, res) {
         try {
-            const rolesPermitidos = ['admin', 'veterinario'];
+            const rolesPermitidos = ['admin', 'veterinario','operario'];
             if (!rolesPermitidos.includes(req.usuario.rol)) {
                 return res.status(403).json({
                     ok: false,
@@ -328,7 +342,7 @@ export default class AlimentacionController {
 
             return res.json({
                 ok: true,
-                msg: "Alimentación eliminada exitosamente"
+                msg: `Alimentación ${alimentacion.numero_alimentacion} eliminada exitosamente`
             });
 
         } catch (error) {
@@ -458,6 +472,64 @@ export default class AlimentacionController {
             return res.status(500).json({
                 ok: false,
                 msg: "Error al obtener las alimentaciones del insumo"
+            });
+        }
+    }
+
+    static async getByNumeroAlimentacion(req, res) {
+        try {
+            const { numero } = req.params;
+            
+            if (!numero) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "El número de alimentación es requerido"
+                });
+            }
+
+            const alimentacion = await prisma.alimentacion.findFirst({
+                where: {
+                    numero_alimentacion: numero,
+                    deleted_at: null
+                },
+                include: {
+                    animal: {
+                        select: {
+                            animal_id: true,
+                            arete: true
+                        }
+                    },
+                    insumo: {
+                        select: {
+                            insumo_id: true,
+                            nombre: true,
+                            cantidad: true,
+                            unidad: {
+                                select: {
+                                    nombre: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            if(!alimentacion){
+                return res.status(404).json({
+                    ok: false,
+                    msg: "Alimentación no encontrada"
+                });
+            }
+            
+            return res.json({
+                ok: true,
+                data: alimentacion
+            });
+
+        } catch (error) {
+            return res.status(500).json({
+                ok: false,
+                msg: "Error al obtener la alimentación"
             });
         }
     }

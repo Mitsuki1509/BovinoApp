@@ -76,9 +76,6 @@ const PartoForm = ({
     setFieldErrors({})
     
     try {
-      console.log('Datos del formulario:', data)
-
-      // Formatear fecha correctamente
     const fechaParto = new Date(data.fecha);
     const year = fechaParto.getFullYear();
     const month = String(fechaParto.getMonth() + 1).padStart(2, '0');
@@ -91,9 +88,6 @@ const PartoForm = ({
         descripcion: data.descripcion || null,
         fecha: fechaFormateada
       }
-
-      console.log('Enviando datos al servidor:', partoData)
-
       let result
       if (isEditing) {
         result = await updateParto(parto.evento_id, partoData)

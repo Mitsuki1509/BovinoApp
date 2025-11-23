@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin,  Calendar, Tag, Edit, Trash2, Clock } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 
 const FALLBACK_IMG = "/placeholder-animal.jpg";
 
@@ -13,26 +13,58 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
 
   const calculateEdad = (fechaNacimiento) => {
     if (!fechaNacimiento) return 'No disponible';
-    const nacimiento = new Date(fechaNacimiento);
-    const hoy = new Date();
-    let años = hoy.getFullYear() - nacimiento.getFullYear();
-    let meses = hoy.getMonth() - nacimiento.getMonth();
     
-    if (meses < 0) {
-      años--;
-      meses += 12;
+    try {
+      let nacimiento;
+      
+      if (typeof fechaNacimiento === 'string' && fechaNacimiento.includes('-')) {
+        const [year, month, day] = fechaNacimiento.split('-');
+        nacimiento = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        nacimiento = new Date(fechaNacimiento);
+      }
+      
+      const hoy = new Date();
+      let años = hoy.getFullYear() - nacimiento.getFullYear();
+      let meses = hoy.getMonth() - nacimiento.getMonth();
+      
+      if (meses < 0) {
+        años--;
+        meses += 12;
+      }
+      
+      if (hoy.getDate() < nacimiento.getDate()) {
+        meses--;
+        if (meses < 0) {
+          años--;
+          meses += 12;
+        }
+      }
+      
+      if (años === 0) {
+        return `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+      }
+      
+      return `${años} ${años === 1 ? 'año' : 'años'}${meses > 0 ? `, ${meses} ${meses === 1 ? 'mes' : 'meses'}` : ''}`;
+    } catch (error) {
+      return 'Edad no disponible';
     }
-    
-    if (años === 0) {
-      return `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
-    }
-    
-    return `${años} ${años === 1 ? 'año' : 'años'}${meses > 0 ? `, ${meses} ${meses === 1 ? 'mes' : 'meses'}` : ''}`;
   };
 
   const formatFecha = (fecha) => {
     if (!fecha) return 'No especificada';
-    return new Date(fecha).toLocaleDateString('es-ES');
+    
+    try {
+      if (typeof fecha === 'string' && fecha.includes('-')) {
+        const [year, month, day] = fecha.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return date.toLocaleDateString('es-ES');
+      }
+      
+      return new Date(fecha).toLocaleDateString('es-ES');
+    } catch (error) {
+      return 'Fecha inválida';
+    }
   };
 
   const handleDeleteClick = () => {
@@ -141,7 +173,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
             className="flex-1"
             variant="ganado"
           >
-           <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4 mr-2" />
             Editar
           </Button>
 
@@ -150,7 +182,7 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
             onClick={handleDeleteClick}
             className="flex-1"
           >
-          <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 mr-2" />
             Eliminar
           </Button>
         </div>

@@ -5,26 +5,23 @@ import crypto from "crypto";
 
 export default class AnimalController {
 
-  // AGREGAR ESTE MÉTODO A LA CLASE
   static validarEdadParaMonta(fechaNacimiento, sexo) {
     if (!fechaNacimiento) return false;
     
     const fechaNac = new Date(fechaNacimiento);
     const fechaActual = new Date();
     
-    // Calcular meses de edad
     let mesesDeEdad = (fechaActual.getFullYear() - fechaNac.getFullYear()) * 12;
     mesesDeEdad += fechaActual.getMonth() - fechaNac.getMonth();
     
-    // Ajustar si el día actual es menor al día de nacimiento
     if (fechaActual.getDate() < fechaNac.getDate()) {
       mesesDeEdad--;
     }
     
     if (sexo === 'H') {
-      return mesesDeEdad >= 15; // Hembras: 15 meses mínimo
+      return mesesDeEdad >= 15;
     } else if (sexo === 'M') {
-      return mesesDeEdad >= 18; // Machos: 18 meses mínimo
+      return mesesDeEdad >= 18; 
     }
     
     return false;
@@ -280,7 +277,6 @@ export default class AnimalController {
           });
         }
 
-        // CORREGIDO: Ahora el método existe
         if (!AnimalController.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
           return res.status(400).json({
             ok: false,
@@ -312,7 +308,6 @@ export default class AnimalController {
           });
         }
 
-        // CORREGIDO: Ahora el método existe
         if (!AnimalController.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
           return res.status(400).json({
             ok: false,
@@ -533,7 +528,6 @@ export default class AnimalController {
 
       if (animal_madre_id !== undefined) {
         if (animal_madre_id === '' || animal_madre_id === 'null') {
-          // Permitir eliminar la madre
         } else if (animal_madre_id) {
           const madreId = parseInt(animal_madre_id);
           const madre = await prisma.animales.findFirst({
@@ -557,7 +551,6 @@ export default class AnimalController {
             });
           }
 
-          // CORREGIDO: Ahora el método existe
           if (!AnimalController.validarEdadParaMonta(madre.fecha_nacimiento, 'H')) {
             return res.status(400).json({
               ok: false,
@@ -569,7 +562,6 @@ export default class AnimalController {
 
       if (animal_padre_id !== undefined) {
         if (animal_padre_id === '' || animal_padre_id === 'null') {
-          // Permitir eliminar el padre
         } else if (animal_padre_id) {
           const padreId = parseInt(animal_padre_id);
           const padre = await prisma.animales.findFirst({
@@ -593,7 +585,6 @@ export default class AnimalController {
             });
           }
 
-          // CORREGIDO: Ahora el método existe
           if (!AnimalController.validarEdadParaMonta(padre.fecha_nacimiento, 'M')) {
             return res.status(400).json({
               ok: false,

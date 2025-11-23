@@ -38,26 +38,20 @@ const ProduccionLecheraForm = ({
   const [formError, setFormError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Función para obtener la fecha local sin hora
   const getLocalDate = (date = null) => {
     if (date) {
-      // Si se proporciona una fecha, convertirla a fecha local sin hora
       const localDate = new Date(date);
       return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
     }
-    // Si no se proporciona fecha, usar la fecha actual local
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   };
 
-  // Función para convertir fecha de la BD a fecha local
   const parseFechaFromDB = (fechaString) => {
     if (!fechaString) return getLocalDate();
     
     try {
-      // Parsear la fecha desde la BD (formato YYYY-MM-DD)
       const [year, month, day] = fechaString.split('-').map(Number);
-      // Crear fecha local sin problemas de zona horaria
       return new Date(year, month - 1, day);
     } catch (error) {
       console.error('Error parsing date from DB:', error);
@@ -92,7 +86,6 @@ const ProduccionLecheraForm = ({
     if (produccion) {
       setIsEditing(true);
       
-      // Usar la fecha guardada en la BD, convertida a fecha local
       const fechaProduccion = parseFechaFromDB(produccion.fecha);
       
       form.reset({
@@ -114,7 +107,6 @@ const ProduccionLecheraForm = ({
     }
   }, [produccion, form]);
 
-  // Función para formatear fecha a YYYY-MM-DD para la BD
   const formatDateToLocalISO = (date) => {
     if (!date || !isValid(date)) return '';
     
@@ -128,7 +120,6 @@ const ProduccionLecheraForm = ({
 
   const handleDateSelect = (date, onChange) => {
     if (date && isValid(date)) {
-      // Convertir a fecha local sin hora
       const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
       onChange(localDate);
     }
@@ -140,7 +131,6 @@ const ProduccionLecheraForm = ({
     return compareDate > today;
   };
 
-  // Función segura para formatear fechas en la UI
   const formatDateForDisplay = (date) => {
     try {
       if (!date || !isValid(date)) {
@@ -157,14 +147,11 @@ const ProduccionLecheraForm = ({
     setFieldErrors({});
     
     try {
-      console.log('Datos del formulario:', data);
-
       if (!data.animal_id || !data.cantidad || !data.fecha || !data.unidad_id) {
         setFormError('Todos los campos marcados con * son obligatorios');
         return;
       }
 
-      // Validar que la fecha sea válida
       if (!isValid(data.fecha)) {
         setFormError('La fecha seleccionada no es válida');
         return;

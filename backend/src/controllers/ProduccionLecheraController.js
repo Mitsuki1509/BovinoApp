@@ -2,6 +2,16 @@ import prisma from "../database.js";
 
 export default class ProduccionLecheraController {
 
+  static async generarNumeroProduccion() {
+    try {
+      const totalProducciones = await prisma.produccion_lechera.count();
+      return `LEC-${(totalProducciones + 1).toString().padStart(4, '0')}`;
+    } catch (error) {
+      const timestamp = Date.now();
+      return `LEC-${timestamp.toString().slice(-4)}`;
+    }
+  }
+
   static async getAll(req, res) {
     try {
       const producciones = await prisma.produccion_lechera.findMany({
@@ -194,9 +204,12 @@ export default class ProduccionLecheraController {
         });
       }
 
+      const numeroProduccion = await ProduccionLecheraController.generarNumeroProduccion();
+
       const data = {
         animal_id: animalId,
         unidad_id: unidadId,
+        numero_produccion: numeroProduccion,
         cantidad: parseInt(cantidad),
         fecha: new Date(fecha)
       };
@@ -206,13 +219,7 @@ export default class ProduccionLecheraController {
       }
 
       const nuevaProduccion = await prisma.produccion_lechera.create({
-        data: data
-      });
-
-      const produccionCompleta = await prisma.produccion_lechera.findFirst({
-        where: { 
-          produccion_id: nuevaProduccion.produccion_id 
-        },
+        data: data,
         include: {
           animal: {
             select: {
@@ -232,7 +239,7 @@ export default class ProduccionLecheraController {
       return res.status(201).json({
         ok: true,
         msg: "Producción lechera registrada exitosamente",
-        data: produccionCompleta
+        data: nuevaProduccion
       });
 
     } catch (error) {
@@ -390,13 +397,7 @@ export default class ProduccionLecheraController {
 
       const produccionActualizada = await prisma.produccion_lechera.update({
         where: { produccion_id: produccionId },
-        data: updateData
-      });
-
-      const produccionCompleta = await prisma.produccion_lechera.findFirst({
-        where: { 
-          produccion_id: produccionId 
-        },
+        data: updateData,
         include: {
           animal: {
             select: {
@@ -416,7 +417,7 @@ export default class ProduccionLecheraController {
       return res.json({
         ok: true,
         msg: "Producción lechera actualizada exitosamente",
-        data: produccionCompleta
+        data: produccionActualizada
       });
 
     } catch (error) {
@@ -444,7 +445,7 @@ export default class ProduccionLecheraController {
 
   static async delete(req, res) {
     try {
-      if (req.usuario.rol !== 'admin') {
+      if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'ordeño' ) {
         return res.status(403).json({
           ok: false,
           msg: "Solo los administradores pueden eliminar producciones lecheras"
@@ -579,4 +580,55 @@ export default class ProduccionLecheraController {
     }
   }
 
+  static async getByNumeroProduccion(req, res) {
+    try {
+      const { numero } = req.params;
+      
+      if (!numero) {
+        return res.status(400).json({
+          ok: false,
+          msg: "El número de producción es requerido"
+        });
+      }
+
+      const produccion = await prisma.produccion_lechera.findFirst({
+        where: {
+          numero_produccion: numero,
+          deleted_at: null
+        },
+        include: {
+          animal: {
+            select: {
+              animal_id: true,
+              arete: true
+            }
+          },
+          unidad: {
+            select: {
+              unidad_id: true,
+              nombre: true,
+            }
+          }
+        }
+      });
+      
+      if(!produccion){
+        return res.status(404).json({
+          ok: false,
+          msg: "Producción lechera no encontrada"
+        });
+      }
+      
+      return res.json({
+        ok: true,
+        data: produccion
+      });
+
+    } catch (error) {
+      return res.status(500).json({
+        ok: false,
+        msg: "Error al obtener la producción lechera"
+      });
+    }
+  }
 }

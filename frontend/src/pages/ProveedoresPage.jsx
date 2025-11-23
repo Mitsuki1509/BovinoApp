@@ -5,7 +5,6 @@ import { useProveedorStore } from '../store/proveedorStore';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -67,7 +66,6 @@ const ProveedoresPage = () => {
     if (authStatus === 'authenticated' && 
         (user?.rol === 'admin' || user?.rol === 'contable') && 
         !hasFetchedProveedores) {
-      console.log('Cargando proveedores...');
       fetchProveedores();
       setHasFetchedProveedores(true);
     }
@@ -204,26 +202,6 @@ const ProveedoresPage = () => {
     return itemToDelete.nombre_compañia || 'Proveedor';
   };
 
-  if (user.rol !== 'admin' && user.rol !== 'contable') {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de proveedores.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -308,14 +286,14 @@ const ProveedoresPage = () => {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Editar proveedor
                                 </DropdownMenuItem>
-                                {user.rol === 'admin' && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(proveedorItem)}
-                                    className="text-red-600 focus:text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar proveedor
-                                  </DropdownMenuItem>
+                                {(user.rol === 'admin' ||  user.rol === 'contable') &&(
+                                 <DropdownMenuItem 
+                                  onClick={() => handleDeleteClick(proveedorItem)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar proveedor
+                                </DropdownMenuItem>
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -360,14 +338,14 @@ const ProveedoresPage = () => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Editar proveedor
                               </DropdownMenuItem>
-                              {user.rol === 'admin' && user === 'contable' && (
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteClick(proveedorItem)}
-                                  className="text-red-600 focus:text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Eliminar proveedor
-                                </DropdownMenuItem>
+                              {(user.rol === 'admin' || user.rol === 'contable') && (
+                               <DropdownMenuItem 
+                                onClick={() => handleDeleteClick(proveedorItem)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar proveedor
+                              </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>

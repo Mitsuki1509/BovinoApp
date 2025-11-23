@@ -48,43 +48,97 @@ import { useNotificacionStore } from "@/store/notificacionStore";
 import ModalNotificaciones from "@/components/notificaciones/ModalNotificaciones"; 
 import Modal from "@/components/users/Modal";
 
-const navItems = [
-  { title: "Dashboard", href: "/dashboard", icon: Home },
-  { title: "Usuarios", href: "/users", icon: Users },
-  { title: "Tipos de eventos", href: "/types", icon: Calendar }
+const permisosPorRol = {
+  admin: {
+    dashboard: true,
+    usuarios: true,
+    tiposEventos: true,
+    inventario: true,
+    ganado: true,
+    sanidad: true,
+    produccion: true,
+    reproduccion: true,
+    notificaciones: true
+  },
+  veterinario: {
+    dashboard: true,
+    usuarios: false,
+    tiposEventos: true,
+    inventario: false,
+    ganado: true,
+    sanidad: true,
+    produccion: false,
+    reproduccion: true,
+    notificaciones: true
+  },
+  operario: {
+    dashboard: true,
+    usuarios: false,
+    tiposEventos: true,
+    inventario: false,
+    ganado: true,
+    sanidad: true,
+    produccion: true,
+    reproduccion: true,
+    notificaciones: true
+  },
+  contable: {
+    dashboard: true,
+    usuarios: false,
+    tiposEventos: false,
+    inventario: true,
+    ganado: true,
+    sanidad: false,
+    produccion: false,
+    reproduccion: false,
+    notificaciones: true
+  },
+  ordeño: {
+    dashboard: true,
+    usuarios: false,
+    tiposEventos: false,
+    inventario: false,
+    ganado: true,
+    sanidad: false,
+    produccion: true,
+    reproduccion: false,
+    notificaciones: false
+  }
+};
+
+const navItemsBase = [
+  { title: "Dashboard", href: "/dashboard", icon: Home, permiso: "dashboard" },
+  { title: "Usuarios", href: "/users", icon: Users, permiso: "usuarios" },
+  { title: "Tipos de eventos", href: "/types", icon: Calendar, permiso: "tiposEventos" }
 ];
 
-const inventario = [
-  { title: "Insumos", href: "/gestion-insumos", icon: Package },
-  { title: "Compras", href: "/gestion-compras", icon: ShoppingCart },
-  { title: "Proveedores", href: "/proveedores", icon: Users },
+const inventarioBase = [
+  { title: "Insumos", href: "/gestion-insumos", icon: Package, permiso: "inventario" },
+  { title: "Compras", href: "/gestion-compras", icon: ShoppingCart, permiso: "inventario" },
+  { title: "Proveedores", href: "/proveedores", icon: Users, permiso: "inventario" },
 ];
 
-const ganado = [
-  { title: "Animales", href: "/animales", icon: FaCow },
-  { title: "Razas", href: "/razas", icon: Tag },
-  { title: "Gestión de Áreas", href: "/gestion-areas", icon: MapPin },
-  { title: "Alimentación", href: "/alimentaciones", icon: Utensils },
-  { title: "Pesajes", href: "/pesajes", icon: Scale },
+const ganadoBase = [
+  { title: "Animales", href: "/animales", icon: FaCow, permiso: "ganado" },
+  { title: "Razas", href: "/razas", icon: Tag, permiso: "ganado" },
+  { title: "Gestión de Áreas", href: "/gestion-areas", icon: MapPin, permiso: "ganado" },
+  { title: "Alimentación", href: "/alimentaciones", icon: Utensils, permiso: "ganado" },
+  { title: "Pesajes", href: "/pesajes", icon: Scale, permiso: "ganado" },
 ];
 
-const sanidad = [
-  { title: "Eventos Sanitarios", href: "/evento", icon: Stethoscope },
+const sanidadBase = [
+  { title: "Eventos Sanitarios", href: "/evento", icon: Stethoscope, permiso: "sanidad" },
 ];
 
-const pesaje = [
-  { title: "Registro de Pesajes", href: "/pesajes", icon: Weight },
+const produccionBase = [
+  { title: "Producción Lechera", href: "/produccionLechera", icon: Milk, permiso: "produccion" },
+  { title: "Producción Cárnica", href: "/produccionCarne", icon: FaCow, permiso: "produccion" },
 ];
 
-const produccion = [
-  { title: "Producción Lechera", href: "/produccionLechera", icon: Milk },
-  { title: "Producción Cárnica", href: "/produccionCarne", icon: FaCow },
-];
-
-const reproduccion = [
-  { title: "Montas", href: "/montas", icon: FaClipboardCheck },
-  { title: "Diagnóstico de Preñez", href: "/diagnosticos", icon: Stethoscope },
-  { title: "Partos", href: "/partos", icon: FaCow },
+const reproduccionBase = [
+  { title: "Montas", href: "/montas", icon: FaClipboardCheck, permiso: "reproduccion" },
+  { title: "Diagnóstico de Preñez", href: "/diagnosticos", icon: Stethoscope, permiso: "reproduccion" },
+  { title: "Partos", href: "/partos", icon: FaCow, permiso: "reproduccion" },
 ];
 
 export function MainLayout({ children }) {
@@ -103,6 +157,73 @@ export function MainLayout({ children }) {
     produccion: true,
     reproduccion: true
   });
+
+  const tienePermiso = (permiso) => {
+    if (!user?.rol) return false;
+    return permisosPorRol[user.rol]?.[permiso] || false;
+  };
+
+  const getNavItemsFiltrados = () => {
+    return navItemsBase.filter(item => tienePermiso(item.permiso));
+  };
+
+  const getInventarioFiltrado = () => {
+    if (user?.rol === 'contable') {
+      return inventarioBase;
+    }
+    return user?.rol === 'admin' ? inventarioBase : [];
+  };
+
+  const getGanadoFiltrado = () => {
+    const rol = user?.rol;
+    
+    switch(rol) {
+      case 'admin':
+        return ganadoBase;
+      case 'veterinario':
+        return ganadoBase.filter(item => item.href !== "/gestion-areas");
+      case 'operario':
+        return ganadoBase;
+      case 'contable':
+        return ganadoBase.filter(item => item.href === "/animales");
+      case 'ordeño':
+        return ganadoBase.filter(item => item.href === "/animales");
+      default:
+        return [];
+    }
+  };
+
+  const getSanidadFiltrado = () => {
+    return ['admin', 'veterinario', 'operario'].includes(user?.rol) ? sanidadBase : [];
+  };
+
+  const getProduccionFiltrado = () => {
+    const rol = user?.rol;
+    
+    switch(rol) {
+      case 'admin':
+        return produccionBase;
+      case 'operario':
+        return produccionBase.filter(item => item.href === "/produccionCarne");
+      case 'ordeño':
+        return produccionBase.filter(item => item.href === "/produccionLechera");
+      default:
+        return [];
+    }
+  };
+
+  const getReproduccionFiltrado = () => {
+    return ['admin', 'veterinario', 'operario'].includes(user?.rol) ? reproduccionBase : [];
+  };
+
+  const navItems = getNavItemsFiltrados();
+  const inventario = getInventarioFiltrado();
+  const ganado = getGanadoFiltrado();
+  const sanidad = getSanidadFiltrado();
+  const produccion = getProduccionFiltrado();
+  const reproduccion = getReproduccionFiltrado();
+
+  const mostrarSeccion = (seccion) => seccion.length > 0;
 
   useEffect(() => {
     const sidebarContent = sidebarContentRef.current;
@@ -169,21 +290,27 @@ export function MainLayout({ children }) {
   };
 
   const getPageTitle = () => {
-    const currentItem = navItems.find((item) => item.href === location.pathname);
-    const inventarioItem = inventario.find((item) => item.href === location.pathname);
-    const ganadoItem = ganado.find((item) => item.href === location.pathname);
-    const sanidadItem = sanidad.find((item) => item.href === location.pathname);
-    const pesajeItem = pesaje.find((item) => item.href === location.pathname);
-    const produccionItem = produccion.find((item) => item.href === location.pathname);
-    const reproduccionItem = reproduccion.find((item) => item.href === location.pathname);
-
-    return currentItem ? currentItem.title : 
-           inventarioItem ? inventarioItem.title :
-           ganadoItem ? ganadoItem.title : 
-           sanidadItem ? sanidadItem.title :
-           pesajeItem ? pesajeItem.title : 
-           produccionItem ? produccionItem.title :
-           reproduccionItem ? reproduccionItem.title : "Dashboard";
+    const allItems = [
+      ...navItems,
+      ...inventario,
+      ...ganado,
+      ...sanidad,
+      ...produccion,
+      ...reproduccion
+    ];
+    
+    const currentItem = allItems.find((item) => item.href === location.pathname);
+    
+    if (currentItem) {
+      return currentItem.title;
+    }
+    
+    const defaultTitles = {
+      '/': 'Inicio',
+      '/login': 'Iniciar Sesión'
+    };
+    
+    return defaultTitles[location.pathname] || 'cambiar contrión';
   };
 
   const getUserDisplayName = () => {
@@ -233,6 +360,9 @@ export function MainLayout({ children }) {
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-white mb-1">Finca San Pablo</h1>
                 <p className="text-white/80 text-sm">Sistema de Gestión</p>
+                <Badge variant="secondary" className="mt-1 text-xs bg-white/20 text-white border-white/30">
+                  {user.rol?.charAt(0).toUpperCase() + user.rol?.slice(1)}
+                </Badge>
               </div>
             </div>
           </SidebarHeader>
@@ -241,218 +371,230 @@ export function MainLayout({ children }) {
             ref={sidebarContentRef}
             className="flex-1 overflow-auto custom-scrollbar"
           >
-            <div className="p-3">
-              <div className="px-2 py-2 text-xs font-medium text-slate-600 uppercase tracking-wide">
-                Navegación Principal
+            {mostrarSeccion(navItems) && (
+              <div className="p-3">
+                <div className="px-2 py-2 text-xs font-medium text-slate-600 uppercase tracking-wide">
+                  Navegación Principal
+                </div>
+                <SidebarMenu>
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.href;
+
+                    return (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton asChild isActive={isActive} className="py-3">
+                          <Link to={item.href}>
+                            <Icon className="h-5 w-5" />
+                            <span className="text-sm">{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
               </div>
-              <SidebarMenu>
-                {navItems.slice(0, 5).map((item) => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.href;
+            )}
 
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild isActive={isActive} className="py-3">
-                        <Link to={item.href}>
-                          <Icon className="h-5 w-5" />
-                          <span className="text-sm">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </div>
+            {mostrarSeccion(inventario) && (
+              <div className="p-3">
+                <Collapsible 
+                  open={expandedSections.inventario} 
+                  onOpenChange={() => toggleSection('inventario')}
+                  className="group/collapsible"
+                >
+                  <SidebarGroup>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                        Inventario
+                      </span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {inventario.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.href;
+                            
+                            return (
+                              <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton asChild isActive={isActive} className="py-2">
+                                  <Link to={item.href}>
+                                    <Icon className="h-4 w-4" />
+                                    <span className="text-sm">{item.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
+              </div>
+            )}
 
-            <div className="p-3">
-              <Collapsible 
-                open={expandedSections.inventario} 
-                onOpenChange={() => toggleSection('inventario')}
-                className="group/collapsible"
-              >
-                <SidebarGroup>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Inventario
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {inventario.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = location.pathname === item.href;
-                          
-                          return (
-                            <SidebarMenuItem key={item.href}>
-                              <SidebarMenuButton asChild isActive={isActive} className="py-2">
-                                <Link to={item.href}>
-                                  <Icon className="h-4 w-4" />
-                                  <span className="text-sm">{item.title}</span>
-                                </Link>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          );
-                        })}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </CollapsibleContent>
-                </SidebarGroup>
-              </Collapsible>
-            </div>
+            {mostrarSeccion(ganado) && (
+              <div className="p-3">
+                <Collapsible 
+                  open={expandedSections.ganado} 
+                  onOpenChange={() => toggleSection('ganado')}
+                  className="group/collapsible"
+                >
+                  <SidebarGroup>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                        Ganado
+                      </span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {ganado.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.href;
+                            
+                            return (
+                              <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton asChild isActive={isActive} className="py-2">
+                                  <Link to={item.href}>
+                                    <Icon className="h-4 w-4" />
+                                    <span className="text-sm">{item.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
+              </div>
+            )}
 
-            <div className="p-3">
-              <Collapsible 
-                open={expandedSections.ganado} 
-                onOpenChange={() => toggleSection('ganado')}
-                className="group/collapsible"
-              >
-                <SidebarGroup>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Ganado
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {ganado.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = location.pathname === item.href;
-                          
-                          return (
-                            <SidebarMenuItem key={item.href}>
-                              <SidebarMenuButton asChild isActive={isActive} className="py-2">
-                                <Link to={item.href}>
-                                  <Icon className="h-4 w-4" />
-                                  <span className="text-sm">{item.title}</span>
-                                </Link>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          );
-                        })}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </CollapsibleContent>
-                </SidebarGroup>
-              </Collapsible>
-            </div>
+            {mostrarSeccion(sanidad) && (
+              <div className="p-3">
+                <Collapsible 
+                  open={expandedSections.sanidad} 
+                  onOpenChange={() => toggleSection('sanidad')}
+                  className="group/collapsible"
+                >
+                  <SidebarGroup>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                        Sanidad
+                      </span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {sanidad.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.href;
+                            
+                            return (
+                              <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton asChild isActive={isActive} className="py-2">
+                                  <Link to={item.href}>
+                                    <Icon className="h-4 w-4" />
+                                    <span className="text-sm">{item.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
+              </div>
+            )}
 
-            <div className="p-3">
-              <Collapsible 
-                open={expandedSections.sanidad} 
-                onOpenChange={() => toggleSection('sanidad')}
-                className="group/collapsible"
-              >
-                <SidebarGroup>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Sanidad
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {sanidad.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = location.pathname === item.href;
-                          
-                          return (
-                            <SidebarMenuItem key={item.href}>
-                              <SidebarMenuButton asChild isActive={isActive} className="py-2">
-                                <Link to={item.href}>
-                                  <Icon className="h-4 w-4" />
-                                  <span className="text-sm">{item.title}</span>
-                                </Link>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          );
-                        })}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </CollapsibleContent>
-                </SidebarGroup>
-              </Collapsible>
-            </div>
+            {mostrarSeccion(produccion) && (
+              <div className="p-3">
+                <Collapsible 
+                  open={expandedSections.produccion} 
+                  onOpenChange={() => toggleSection('produccion')}
+                  className="group/collapsible"
+                >
+                  <SidebarGroup>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                        Producción
+                      </span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {produccion.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.href;
+                            
+                            return (
+                              <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton asChild isActive={isActive} className="py-2">
+                                  <Link to={item.href}>
+                                    <Icon className="h-4 w-4" />
+                                    <span className="text-sm">{item.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
+              </div>
+            )}
 
-            <div className="p-3">
-              <Collapsible 
-                open={expandedSections.produccion} 
-                onOpenChange={() => toggleSection('produccion')}
-                className="group/collapsible"
-              >
-                <SidebarGroup>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Producción
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {produccion.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = location.pathname === item.href;
-                          
-                          return (
-                            <SidebarMenuItem key={item.href}>
-                              <SidebarMenuButton asChild isActive={isActive} className="py-2">
-                                <Link to={item.href}>
-                                  <Icon className="h-4 w-4" />
-                                  <span className="text-sm">{item.title}</span>
-                                </Link>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          );
-                        })}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </CollapsibleContent>
-                </SidebarGroup>
-              </Collapsible>
-            </div>
-
-            <div className="p-3">
-              <Collapsible 
-                open={expandedSections.reproduccion} 
-                onOpenChange={() => toggleSection('reproduccion')}
-                className="group/collapsible"
-              >
-                <SidebarGroup>
-                  <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                    <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Reproducción
-                    </span>
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {reproduccion.map((item) => {
-                          const Icon = item.icon;
-                          const isActive = location.pathname === item.href;
-                          
-                          return (
-                            <SidebarMenuItem key={item.href}>
-                              <SidebarMenuButton asChild isActive={isActive} className="py-2">
-                                <Link to={item.href}>
-                                  <Icon className="h-4 w-4" />
-                                  <span className="text-sm">{item.title}</span>
-                                </Link>
-                              </SidebarMenuButton>
-                            </SidebarMenuItem>
-                          );
-                        })}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </CollapsibleContent>
-                </SidebarGroup>
-              </Collapsible>
-            </div>
+            {mostrarSeccion(reproduccion) && (
+              <div className="p-3">
+                <Collapsible 
+                  open={expandedSections.reproduccion} 
+                  onOpenChange={() => toggleSection('reproduccion')}
+                  className="group/collapsible"
+                >
+                  <SidebarGroup>
+                    <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                        Reproducción
+                      </span>
+                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {reproduccion.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = location.pathname === item.href;
+                            
+                            return (
+                              <SidebarMenuItem key={item.href}>
+                                <SidebarMenuButton asChild isActive={isActive} className="py-2">
+                                  <Link to={item.href}>
+                                    <Icon className="h-4 w-4" />
+                                    <span className="text-sm">{item.title}</span>
+                                  </Link>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </CollapsibleContent>
+                  </SidebarGroup>
+                </Collapsible>
+              </div>
+            )}
           </SidebarContent>
 
           <SidebarFooter className="border-t border-slate-200 p-3">
@@ -472,6 +614,9 @@ export function MainLayout({ children }) {
                       <span className="text-xs text-slate-600 truncate">
                         {user.correo || "Correo no disponible"}
                       </span>
+                      <span className="text-xs text-blue-600 font-medium">
+                        {user.rol?.charAt(0).toUpperCase() + user.rol?.slice(1)}
+                      </span>
                     </div>
                   </div>
                 </Button>
@@ -481,6 +626,9 @@ export function MainLayout({ children }) {
                   <div className="font-medium">{getUserDisplayName()}</div>
                   <div className="text-slate-600 truncate">
                     {user.correo || "Correo no disponible"}
+                  </div>
+                  <div className="text-xs text-blue-600 font-medium mt-1">
+                    {user.rol?.charAt(0).toUpperCase() + user.rol?.slice(1)}
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -509,31 +657,35 @@ export function MainLayout({ children }) {
               <h1 className="text-lg font-semibold text-slate-900">{getPageTitle()}</h1>
             </div>
             
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setModalNotificacionesAbierto(true)}
-              className="relative"
-            >
-              <Bell className="h-5 w-5" />
-              {notificacionesNoLeidas > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-                >
-                  {notificacionesNoLeidas > 9 ? '9+' : notificacionesNoLeidas}
-                </Badge>
-              )}
-            </Button>
+            {['admin', 'veterinario', 'operario', 'contable'].includes(user?.rol) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setModalNotificacionesAbierto(true)}
+                className="relative"
+              >
+                <Bell className="h-5 w-5" />
+                {notificacionesNoLeidas > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {notificacionesNoLeidas > 9 ? '9+' : notificacionesNoLeidas}
+                  </Badge>
+                )}
+              </Button>
+            )}
           </header>
           
           <div className="flex-1 p-6 bg-slate-50">{children}</div>
         </main>
 
-        <ModalNotificaciones 
-          open={modalNotificacionesAbierto} 
-          onOpenChange={setModalNotificacionesAbierto} 
-        />
+        {['admin', 'veterinario', 'operario', 'contable'].includes(user?.rol) && (
+          <ModalNotificaciones 
+            open={modalNotificacionesAbierto} 
+            onOpenChange={setModalNotificacionesAbierto} 
+          />
+        )}
       </div>
 
       <style jsx>{`

@@ -26,8 +26,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar as CalendarIcon, Scale, TrendingUp, Hash
+import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, CheckCircle,
+  XCircle, Calendar as CalendarIcon
  } from 'lucide-react';
 import PesajeForm from '@/components/pesajes/PesajeForm';
 import Modal from '@/components/ui/modal';
@@ -252,28 +252,7 @@ const PesajesPage = () => {
   };
 
   const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
-  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario';
-
-  if (!canManage) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de pesajes.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
-
+  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -402,10 +381,6 @@ const PesajesPage = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEdit(pesajeItem)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar pesaje
-                              </DropdownMenuItem>
                               {canDelete && (
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(pesajeItem)}
@@ -468,10 +443,6 @@ const PesajesPage = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEdit(pesajeItem)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar pesaje
-                            </DropdownMenuItem>
                             {canDelete && (
                               <DropdownMenuItem 
                                 onClick={() => handleDeleteClick(pesajeItem)}

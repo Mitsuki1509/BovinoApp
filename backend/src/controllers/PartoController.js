@@ -61,13 +61,6 @@ export default class PartoController {
             const { id } = req.params;
             const partoId = parseInt(id);
 
-            if (isNaN(partoId)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID del parto debe ser un número válido"
-                });
-            }
-
             const parto = await prisma.evento_parto.findFirst({
                 where: { 
                     evento_id: partoId,
@@ -131,13 +124,6 @@ export default class PartoController {
             const { diagnosticoId } = req.params;
             const idDiagnostico = parseInt(diagnosticoId);
 
-            if (isNaN(idDiagnostico)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID del diagnóstico debe ser un número válido"
-                });
-            }
-
             const partos = await prisma.evento_parto.findMany({
                 where: { 
                     prenez_id: idDiagnostico,
@@ -171,7 +157,7 @@ export default class PartoController {
 
     static async create(req, res) {
         try {
-            const rolesPermitidos = ['admin', 'veterinario'];
+            const rolesPermitidos = ['admin', 'veterinario','operario'];
             if (!rolesPermitidos.includes(req.usuario.rol)) {
                 return res.status(403).json({
                     ok: false,
@@ -357,7 +343,7 @@ export default class PartoController {
 
     static async update(req, res) {
         try {
-            const rolesPermitidos = ['admin', 'veterinario'];
+            const rolesPermitidos = ['admin', 'veterinario','operario'];
             if (!rolesPermitidos.includes(req.usuario.rol)) {
                 return res.status(403).json({
                     ok: false,
@@ -443,12 +429,7 @@ export default class PartoController {
 
             if (tipo_evento_id !== undefined) {
                 const tipoEventoId = parseInt(tipo_evento_id);
-                if (isNaN(tipoEventoId)) {
-                    return res.status(400).json({
-                        ok: false,
-                        msg: "El ID del tipo de evento debe ser un número válido"
-                    });
-                }
+
 
                 const tipoEventoExistente = await prisma.tipo_evento.findFirst({
                     where: { 
@@ -553,7 +534,7 @@ export default class PartoController {
 
     static async delete(req, res) {
         try {
-            if (req.usuario.rol !== 'admin') {
+            if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'veterinario' || req.usuario.rol !== 'operario') {
                 return res.status(403).json({
                     ok: false,
                     msg: "Solo los administradores pueden eliminar partos"

@@ -63,7 +63,7 @@ const TypesPage = () => {
   }, [checkAuth, navigate]);
 
   useEffect(() => {
-    if (authStatus === 'authenticated' && (user?.rol === 'admin' || user?.rol === 'veterinario') && !hasFetchedTypes) {
+    if (authStatus === 'authenticated' && (user?.rol === 'admin' || user?.rol === 'veterinario'|| user?.rol === 'operario') && !hasFetchedTypes) {
       fetchEventTypes();
       fetchParentEventTypes();
       setHasFetchedTypes(true);
@@ -221,25 +221,6 @@ const TypesPage = () => {
   };
 
 
-  if (user.rol !== 'admin' && user.rol !== 'veterinario') {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de tipos de evento.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>

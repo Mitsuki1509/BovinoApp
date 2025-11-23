@@ -25,11 +25,7 @@ export default class UserController {
 
     try {
       const usuario = await prisma.usuarios.findUnique({
-        where: { correo: email },
-        include: {
-          rol: true,
-          finca: true
-        }
+        where: { correo: email }
       });
 
       if (!usuario) {
@@ -67,12 +63,7 @@ export default class UserController {
         ok: true,
         msg: "Usuario autenticado correctamente",
         data: {
-          usuario_id: usuario.usuario_id,
-          nombre: usuario.nombre,
           correo: usuario.correo,
-          verificado: usuario.verificado,
-          rol: usuario.rol?.nombre,
-          finca: usuario.finca
         }
       });
 

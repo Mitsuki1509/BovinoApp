@@ -56,13 +56,6 @@ export default class PesajeController {
       const { id } = req.params;
       const pesajeId = parseInt(id);
 
-      if (isNaN(pesajeId)) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del pesaje debe ser un número válido"
-        });
-      }
-
       const pesaje = await prisma.pesajes.findFirst({
         where: { 
           pesaje_id: pesajeId,
@@ -107,7 +100,7 @@ export default class PesajeController {
 
   static async create(req, res) {
     try {
-      const rolesPermitidos = ['admin', 'operario'];
+      const rolesPermitidos = ['admin', 'operario','veterinario'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
         return res.status(403).json({
           ok: false,
@@ -255,7 +248,7 @@ export default class PesajeController {
 
   static async update(req, res) {
     try {
-      const rolesPermitidos = ['admin', 'operario'];
+      const rolesPermitidos = ['admin', 'operario', 'veterinario'];
       if (!rolesPermitidos.includes(req.usuario.rol)) {
         return res.status(403).json({
           ok: false,
@@ -414,7 +407,7 @@ export default class PesajeController {
 
   static async delete(req, res) {
     try {
-      if (req.usuario.rol !== 'admin') {
+      if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'veterinario' || req.usuario.rol !== 'operario' ) {
         return res.status(403).json({
           ok: false,
           msg: "Solo los administradores pueden eliminar pesajes"

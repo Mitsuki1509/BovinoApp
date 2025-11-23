@@ -3,6 +3,17 @@ import NotificacionController from "./NotificacionController.js";
 
 export default class EventoSanitarioController {
 
+    static async generarNumeroEvento() {
+        try {
+            const totalEventos = await prisma.evento_sanitario.count();
+            return `EVT-${(totalEventos + 1).toString().padStart(4, '0')}`;
+        } catch (error) {
+            console.error("Error generando número de evento:", error);
+            const timestamp = Date.now();
+            return `EVT-${timestamp.toString().slice(-4)}`;
+        }
+    }
+
     static async getAll(req, res) {
         try {
             const eventos = await prisma.evento_sanitario.findMany({
@@ -32,7 +43,7 @@ export default class EventoSanitarioController {
                                     insumo_id: true,
                                     nombre: true,
                                     cantidad: true
-                                    }
+                                }
                             }
                         }
                     }
@@ -48,9 +59,11 @@ export default class EventoSanitarioController {
             });
 
         } catch (error) {
+            console.error("Error en getAll:", error);
             return res.status(500).json({
                 ok: false,
-                msg: "Error al obtener los eventos sanitarios"
+                msg: "Error al obtener los eventos sanitarios",
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     }
@@ -60,13 +73,6 @@ export default class EventoSanitarioController {
             const { id } = req.params;
 
             const eventoSanitarioId = parseInt(id);
-
-            if (isNaN(eventoSanitarioId)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID del evento sanitario debe ser un número"
-                });
-            }
 
             const eventoSanitario = await prisma.evento_sanitario.findFirst({
                 where: { 
@@ -116,80 +122,72 @@ export default class EventoSanitarioController {
             });
 
         } catch (error) {
+            console.error("Error en getById:", error);
             return res.status(500).json({
                 ok: false,
-                msg: "Error al obtener el evento sanitario"
+                msg: "Error al obtener el evento sanitario",
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     }
 
-   static async create(req, res) {
-    try {
-        const rolesPermitidos = ['admin', 'veterinario', 'operario'];
-        if (!rolesPermitidos.includes(req.usuario.rol)) {
-            return res.status(403).json({
-                ok: false,
-                msg: "No tienes permisos para crear eventos sanitarios"
-            });
-        }
+    static async create(req, res) {
+        try {
+            const {
+                animal_id,
+                tipo_evento_id,
+                diagnostico,
+                tratamiento,
+                fecha,
+                insumos 
+            } = req.body;
 
-        const {
-            animal_id,
-            tipo_evento_id,
-            estado,
-            diagnostico,
-            tratamiento,
-            fecha,
-            insumos 
-        } = req.body;
-
-        if (!animal_id || !tipo_evento_id || !estado || !fecha) {
-            return res.status(400).json({
-                ok: false,
-                msg: "Los campos animal_id, tipo_evento_id, estado y fecha son obligatorios"
-            });
-        }
-
-        const animalId = parseInt(animal_id);
-        const tipoEventoId = parseInt(tipo_evento_id);
-
-        if (isNaN(animalId) || isNaN(tipoEventoId)) {
-            return res.status(400).json({
-                ok: false,
-                msg: "Los IDs deben ser números válidos"
-            });
-        }
-
-        // ✅ VERIFICACIÓN DE DUPLICADO - Agregar esta parte
-        const eventoDuplicado = await prisma.evento_sanitario.findFirst({
-            where: {
-                animal_id: animalId,
-                tipo_evento_id: tipoEventoId,
-                fecha: new Date(fecha),
-                deleted_at: null
+            if (!animal_id || !tipo_evento_id || !fecha) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "Los campos animal_id, tipo_evento_id y fecha son obligatorios"
+                });
             }
-        });
 
-        if (eventoDuplicado) {
-            return res.status(400).json({
-                ok: false,
-                msg: "Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada"
-            });
-        }
+            const animalId = parseInt(animal_id);
+            const tipoEventoId = parseInt(tipo_evento_id);
 
-        const animal = await prisma.animales.findFirst({
-            where: { 
-                animal_id: animalId,
-                deleted_at: null 
+            if (isNaN(animalId) || isNaN(tipoEventoId)) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "Los IDs deben ser números válidos"
+                });
             }
-        });
 
-        if (!animal) {
-            return res.status(400).json({
-                ok: false,
-                msg: "El animal especificado no existe"
+            const eventoDuplicado = await prisma.evento_sanitario.findFirst({
+                where: {
+                    animal_id: animalId,
+                    tipo_evento_id: tipoEventoId,
+                    fecha: new Date(fecha),
+                    deleted_at: null
+                }
             });
-        }
+
+            if (eventoDuplicado) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada"
+                });
+            }
+
+            const animal = await prisma.animales.findFirst({
+                where: { 
+                    animal_id: animalId,
+                    deleted_at: null 
+                }
+            });
+
+            if (!animal) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "El animal especificado no existe"
+                });
+            }
 
             const tipoEvento = await prisma.tipo_evento.findFirst({
                 where: { 
@@ -247,12 +245,15 @@ export default class EventoSanitarioController {
                 }
             }
 
+            const numeroEvento = await EventoSanitarioController.generarNumeroEvento();
+
             const result = await prisma.$transaction(async (prisma) => {
                 const nuevoEvento = await prisma.evento_sanitario.create({
                     data: {
+                        numero_evento: numeroEvento,
                         animal_id: animalId,
                         tipo_evento_id: tipoEventoId,
-                        estado: estado.trim(),
+                        estado: 'Pendiente', 
                         diagnostico: diagnostico ? diagnostico.trim() : null,
                         tratamiento: tratamiento ? tratamiento.trim() : null,
                         fecha: new Date(fecha)
@@ -272,10 +273,6 @@ export default class EventoSanitarioController {
                         }
                     }
                 });
-
-                if (estado === 'Pendiente') {
-                    await EventoSanitarioController.crearNotificacionEventoPendiente(nuevoEvento);
-                }
 
                 if (insumos && Array.isArray(insumos)) {
                     for (const insumo of insumos) {
@@ -340,6 +337,8 @@ export default class EventoSanitarioController {
             });
 
         } catch (error) {
+            console.error("Error en create:", error);
+            
             if (error.code === 'P2002') {
                 return res.status(400).json({
                     ok: false,
@@ -362,177 +361,104 @@ export default class EventoSanitarioController {
         }
     }
 
-    static async crearNotificacionStockBajo(insumo) {
+    static async update(req, res) {
         try {
-            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. Cantidad actual: ${insumo.cantidad}`;
+            const { id } = req.params;
+            const {
+                estado,
+                diagnostico,
+                tratamiento
+            } = req.body;
 
-            await NotificacionController.crearNotificacionParaRol(
-                `Stock Bajo - ${insumo.nombre}`,
-                mensaje,
-                'warning',
-                'inventario',
-                ['admin', 'contable']
-            );
+            const eventoSanitarioId = parseInt(id);
+
+            const eventoSanitarioExistente = await prisma.evento_sanitario.findFirst({
+                where: { 
+                    evento_sanitario_id: eventoSanitarioId,
+                    deleted_at: null 
+                }
+            });
+
+            if (!eventoSanitarioExistente) {
+                return res.status(404).json({
+                    ok: false,
+                    msg: "Evento sanitario no encontrado"
+                });
+            }
+
+            const updateData = {};
+            if (estado !== undefined) updateData.estado = estado.trim();
+            if (diagnostico !== undefined) updateData.diagnostico = diagnostico.trim();
+            if (tratamiento !== undefined) updateData.tratamiento = tratamiento.trim();
+
+            const eventoSanitarioActualizado = await prisma.evento_sanitario.update({
+                where: { evento_sanitario_id: eventoSanitarioId },
+                data: updateData,
+                include: {
+                    animal: {
+                        select: {
+                            animal_id: true,
+                            arete: true
+                        }
+                    },
+                    tipo_evento: {
+                        select: {
+                            tipo_evento_id: true,
+                            nombre: true
+                        }
+                    },
+                    evento_insumo: {
+                        where: { deleted_at: null },
+                        include: {
+                            insumo: {
+                                select: {
+                                    insumo_id: true,
+                                    nombre: true,
+                                    cantidad: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            return res.json({
+                ok: true,
+                msg: "Evento sanitario actualizado exitosamente",
+                data: eventoSanitarioActualizado
+            });
 
         } catch (error) {
-            console.error("Error creando notificación de stock bajo:", error);
-        }
-    }
-
-
-    static async update(req, res) {
-    try {
-        const rolesPermitidos = ['admin', 'veterinario', 'operario'];
-        if (!rolesPermitidos.includes(req.usuario.rol)) {
-            return res.status(403).json({
-                ok: false,
-                msg: "No tienes permisos para actualizar eventos sanitarios"
-            });
-        }
-
-        const { id } = req.params;
-        const {
-            estado
-        } = req.body;
-
-        const eventoSanitarioId = parseInt(id);
-
-        if (isNaN(eventoSanitarioId)) {
-            return res.status(400).json({
-                ok: false,
-                msg: "El ID del evento sanitario debe ser un número"
-            });
-        }
-
-        const eventoSanitarioExistente = await prisma.evento_sanitario.findFirst({
-            where: { 
-                evento_sanitario_id: eventoSanitarioId,
-                deleted_at: null 
-            }
-        });
-
-        if (!eventoSanitarioExistente) {
-            return res.status(404).json({
-                ok: false,
-                msg: "Evento sanitario no encontrado"
-            });
-        }
-
-        const updateData = {};
-        if (estado !== undefined) updateData.estado = estado.trim();
-
-        if (estado === 'Completado' && eventoSanitarioExistente.estado === 'Pendiente') {
-            const fechaEvento = new Date(eventoSanitarioExistente.fecha);
-            const ahora = new Date();
-            const diferenciaHoras = (fechaEvento - ahora) / (1000 * 60 * 60);
+            console.error("Error en update:", error);
             
-            if (diferenciaHoras > 24) {
-                const eventoCompleto = await prisma.evento_sanitario.findFirst({
-                    where: { 
-                        evento_sanitario_id: eventoSanitarioId,
-                        deleted_at: null 
-                    },
-                    include: {
-                        animal: {
-                            select: {
-                                animal_id: true,
-                                arete: true
-                            }
-                        },
-                        tipo_evento: {
-                            select: {
-                                nombre: true
-                            }
-                        }
-                    }
+            if (error.code === 'P2002') {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "Error de duplicación de datos"
                 });
-                
-                if (eventoCompleto) {
-                    await EventoSanitarioController.crearNotificacionCompletado(eventoCompleto);
-                }
             }
-        }
-
-        const eventoSanitarioActualizado = await prisma.evento_sanitario.update({
-            where: { evento_sanitario_id: eventoSanitarioId },
-            data: updateData,
-            include: {
-                animal: {
-                    select: {
-                        animal_id: true,
-                        arete: true
-                    }
-                },
-                tipo_evento: {
-                    select: {
-                        tipo_evento_id: true,
-                        nombre: true
-                    }
-                },
-                evento_insumo: {
-                    where: { deleted_at: null },
-                    include: {
-                        insumo: {
-                            select: {
-                                insumo_id: true,
-                                nombre: true,
-                                cantidad: true
-                            }
-                        }
-                    }
-                }
+            
+            if (error.code === 'P2003') {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "Error de referencia: Verifique que los IDs proporcionados existen"
+                });
             }
-        });
 
-        return res.json({
-            ok: true,
-            msg: "Evento sanitario actualizado exitosamente",
-            data: eventoSanitarioActualizado
-        });
-
-    } catch (error) {
-        if (error.code === 'P2002') {
-            return res.status(400).json({
+            return res.status(500).json({
                 ok: false,
-                msg: "Error de duplicación de datos"
+                msg: "Error al actualizar el evento sanitario",
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
-        
-        if (error.code === 'P2003') {
-            return res.status(400).json({
-                ok: false,
-                msg: "Error de referencia: Verifique que los IDs proporcionados existen"
-            });
-        }
-
-        return res.status(500).json({
-            ok: false,
-            msg: "Error al actualizar el evento sanitario",
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
     }
-}
 
     static async delete(req, res) {
         try {
-            const rolesPermitidos = ['admin', 'veterinario'];
-            if (!rolesPermitidos.includes(req.usuario.rol)) {
-                return res.status(403).json({
-                    ok: false,
-                    msg: "No tienes permisos para eliminar eventos sanitarios"
-                });
-            }
-
             const { id } = req.params;
 
             const eventoSanitarioId = parseInt(id);
 
-            if (isNaN(eventoSanitarioId)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID del evento sanitario debe ser un número"
-                });
-            }
 
             const eventoSanitario = await prisma.evento_sanitario.findFirst({
                 where: { 
@@ -582,13 +508,15 @@ export default class EventoSanitarioController {
 
             return res.json({
                 ok: true,
-                msg: "Evento sanitario eliminado exitosamente"
+                msg: `Evento sanitario ${eventoSanitario.numero_evento} eliminado exitosamente`
             });
 
         } catch (error) {
+            console.error("Error en delete:", error);
             return res.status(500).json({
                 ok: false,
-                msg: "Error al eliminar el evento sanitario"
+                msg: "Error al eliminar el evento sanitario",
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     }
@@ -598,13 +526,6 @@ export default class EventoSanitarioController {
             const { animalId } = req.params;
 
             const id = parseInt(animalId);
-
-            if (isNaN(id)) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "El ID del animal debe ser un número"
-                });
-            }
 
             const animal = await prisma.animales.findFirst({
                 where: { 
@@ -658,6 +579,7 @@ export default class EventoSanitarioController {
             });
 
         } catch (error) {
+            console.error("Error en getByAnimalId:", error);
             return res.status(500).json({
                 ok: false,
                 msg: "Error al obtener los eventos sanitarios del animal"
@@ -665,129 +587,119 @@ export default class EventoSanitarioController {
         }
     }
 
-    static async crearNotificacionEventoPendiente(evento) {
+    static async getByNumeroEvento(req, res) {
         try {
-            if (evento.estado === 'Pendiente') {
-                await EventoSanitarioController.crearNotificacionInicial(evento);
-                await EventoSanitarioController.programarNotificacionUnDiaAntes(evento);
+            const { numero } = req.params;
+            
+            if (!numero) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "El número de evento es requerido"
+                });
             }
-        } catch (error) {}
-    }
 
-    static async crearNotificacionInicial(evento) {
-        try {
-            const mensaje = `Se programó ${evento.tipo_evento?.nombre || 'evento sanitario'} para ${evento.animal?.arete || 'animal'} con estado: Pendiente`;
-
-            await NotificacionController.crearNotificacionParaRol(
-                `Nuevo Evento Sanitario - ${evento.animal?.arete || 'Animal'}`,
-                mensaje,
-                'info',
-                'sanitario',
-                ['admin', 'veterinario', 'operario']
-            );
-
-        } catch (error) {}
-    }
-
-    static async programarNotificacionUnDiaAntes(evento) {
-        try {
-            const fechaEvento = new Date(evento.fecha);
-            const fechaNotificacion = new Date(fechaEvento);
-            fechaNotificacion.setDate(fechaEvento.getDate() - 1);
-            fechaNotificacion.setHours(8, 0, 0, 0);
-            
-            const ahora = new Date();
-            const diferenciaMs = fechaNotificacion.getTime() - ahora.getTime();
-            
-            if (diferenciaMs > 0) {
-                setTimeout(async () => {
-                    const eventoActualizado = await prisma.evento_sanitario.findFirst({
-                        where: { 
-                            evento_sanitario_id: evento.evento_sanitario_id,
-                            deleted_at: null 
-                        },
+            const evento = await prisma.evento_sanitario.findFirst({
+                where: {
+                    numero_evento: numero,
+                    deleted_at: null
+                },
+                include: {
+                    animal: {
+                        select: {
+                            animal_id: true,
+                            arete: true
+                        }
+                    },
+                    tipo_evento: {
+                        select: {
+                            tipo_evento_id: true,
+                            nombre: true
+                        }
+                    },
+                    evento_insumo: {
+                        where: { deleted_at: null },
                         include: {
-                            animal: {
+                            insumo: {
                                 select: {
-                                    arete: true
-                                }
-                            },
-                            tipo_evento: {
-                                select: {
-                                    nombre: true
+                                    insumo_id: true,
+                                    nombre: true,
+                                    cantidad: true
                                 }
                             }
                         }
-                    });
-                    
-                    if (eventoActualizado && eventoActualizado.estado === 'Pendiente') {
-                        await EventoSanitarioController.crearNotificacionRecordatorio(eventoActualizado);
                     }
-                }, diferenciaMs);
-            }
-        } catch (error) {}
-    }
-
-    static async crearNotificacionRecordatorio(evento) {
-        try {
-            const fechaEvento = new Date(evento.fecha);
-            const mensaje = `Recordatorio: El evento sanitario "${evento.tipo_evento?.nombre || 'Evento'}" para ${evento.animal?.arete || 'animal'} es para mañana (${fechaEvento.toLocaleDateString('es-ES')})`;
-
-            await NotificacionController.crearNotificacionParaRol(
-                `Recordatorio Evento - ${evento.animal?.arete || 'Animal'}`,
-                mensaje,
-                'warning',
-                'sanitario',
-                ['admin', 'veterinario', 'operario']
-            );
-
-        } catch (error) {}
-    }
-
-    static async crearNotificacionCompletado(evento) {
-        try {
-            const mensaje = `${evento.tipo_evento?.nombre || 'Evento'} para ${evento.animal?.arete || 'animal'} ha sido completado antes de la fecha límite`;
-
-            await NotificacionController.crearNotificacionParaRol(
-                `Evento Sanitario Completado - ${evento.animal?.arete || 'Animal'}`,
-                mensaje,
-                'success',
-                'sanitario',
-                ['admin', 'veterinario', 'operario']
-            );
+                }
+            });
             
-        } catch (error) {}
-    }
-static async checkDuplicado(req, res) {
-    try {
-        const { animal_id, tipo_evento_id, fecha } = req.query;
+            if(!evento){
+                return res.status(404).json({
+                    ok: false,
+                    msg: "Evento sanitario no encontrado"
+                });
+            }
+            
+            return res.json({
+                ok: true,
+                data: evento
+            });
 
-        if (!animal_id || !tipo_evento_id || !fecha) {
-            return res.status(400).json({
+        } catch (error) {
+            console.error("Error en getByNumeroEvento:", error);
+            return res.status(500).json({
                 ok: false,
-                msg: "Los parámetros animal_id, tipo_evento_id y fecha son requeridos"
+                msg: "Error al obtener el evento sanitario"
             });
         }
-
-        const eventoExistente = await prisma.evento_sanitario.findFirst({
-            where: {
-                animal_id: parseInt(animal_id),
-                tipo_evento_id: parseInt(tipo_evento_id),
-                fecha: new Date(fecha),
-                deleted_at: null
-            }
-        });
-
-        return res.json({ 
-            ok: true,
-            duplicado: !!eventoExistente 
-        });
-
-    } catch (error) {
-        return res.status(500).json({
-            ok: false,
-            msg: "Error verificando duplicado"
-        });
     }
-}
+
+    static async checkDuplicado(req, res) {
+        try {
+            const { animal_id, tipo_evento_id, fecha } = req.query;
+
+            if (!animal_id || !tipo_evento_id || !fecha) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: "Los parámetros animal_id, tipo_evento_id y fecha son requeridos"
+                });
+            }
+
+            const eventoExistente = await prisma.evento_sanitario.findFirst({
+                where: {
+                    animal_id: parseInt(animal_id),
+                    tipo_evento_id: parseInt(tipo_evento_id),
+                    fecha: new Date(fecha),
+                    deleted_at: null
+                }
+            });
+
+            return res.json({ 
+                ok: true,
+                duplicado: !!eventoExistente 
+            });
+
+        } catch (error) {
+            console.error("Error en checkDuplicado:", error);
+            return res.status(500).json({
+                ok: false,
+                msg: "Error verificando duplicado"
+            });
+        }
+    }
+
+    static async crearNotificacionStockBajo(insumo) {
+        try {
+            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. Cantidad actual: ${insumo.cantidad}`;
+
+            await NotificacionController.crearNotificacionParaRol(
+                `Stock Bajo - ${insumo.nombre}`,
+                mensaje,
+                'warning',
+                'inventario',
+                ['admin', 'contable']
+            );
+
+        } catch (error) {
+            console.error("Error creando notificación de stock bajo:", error);
+        }
+    }
 }

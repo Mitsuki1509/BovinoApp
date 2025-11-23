@@ -24,6 +24,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
@@ -38,7 +39,18 @@ const MontaForm = ({
   const [isEditing, setIsEditing] = useState(false)
   const [formError, setFormError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
-  const [estadoMonta, setEstadoMonta] = useState(1)
+  const [estadoMonta, setEstadoMonta] = useState(0) 
+
+  // Función para formatear el número de monta
+  const formatearNumeroMonta = (numeroMonta) => {
+    if (!numeroMonta) return 'N/A';
+    
+    if (typeof numeroMonta === 'number') {
+      return `MONTA-${numeroMonta.toString().padStart(3, '0')}`;
+    }
+    
+    return numeroMonta;
+  };
 
   const form = useForm({
     defaultValues: {
@@ -73,7 +85,7 @@ const MontaForm = ({
       })
     } else {
       setIsEditing(false)
-      setEstadoMonta(1)
+      setEstadoMonta(0) 
       form.reset({
         animal_hembra_id: '',
         animal_macho_id: '',
@@ -104,7 +116,7 @@ const MontaForm = ({
             animal_macho_id: data.animal_macho_id ? parseInt(data.animal_macho_id) : null,
             tipo_evento_id: parseInt(data.tipo_evento_id),
             descripcion: data.descripcion || null,
-            estado: estadoMonta === 1,
+            estado: false, 
             fecha: fechaFormateada
           }
 
@@ -117,7 +129,7 @@ const MontaForm = ({
 
       if (result?.success) {
         form.reset()
-        setEstadoMonta(1)
+        setEstadoMonta(0) 
         onSuccess?.()
       } else {
         const errorMsg = result?.error || 'Error al procesar la solicitud'
@@ -341,20 +353,29 @@ const MontaForm = ({
                 </>
               )}
 
-              <div className="flex flex-row items-center justify-between rounded-lg border p-3">
-                <div className="space-y-0.5">
-                  <Label htmlFor="estado-monta">Estado de la Monta</Label>
-                  <div className="text-sm text-muted-foreground">
-                    {estadoMonta === 1 ? 'Completada' : 'Pendiente'}
+              {isEditing && monta && (
+                <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="estado-monta">Estado de la Monta</Label>
+                      {monta && (
+                        <Badge variant="secondary" className="font-mono">
+                          {formatearNumeroMonta(monta.numero_monta)}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {estadoMonta === 1 ? 'Completada' : 'Pendiente'}
+                    </div>
                   </div>
+                  <Switch
+                    id="estado-monta"
+                    checked={estadoMonta === 1}
+                    onCheckedChange={toggleEstado}
+                    disabled={loading}
+                  />
                 </div>
-                <Switch
-                  id="estado-monta"
-                  checked={estadoMonta === 1}
-                  onCheckedChange={toggleEstado}
-                  disabled={loading}
-                />
-              </div>
+              )}
             </div>
 
             <div className="pt-2 sm:pt-4 flex">

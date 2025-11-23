@@ -205,7 +205,7 @@ export default class MontaController {
 
     static async create(req, res) {
         try {
-            const rolesPermitidos = ['admin', 'veterinario'];
+            const rolesPermitidos = ['admin', 'veterinario', 'operario'];
             if (!rolesPermitidos.includes(req.usuario.rol)) {
                 return res.status(403).json({
                     ok: false,
@@ -676,13 +676,6 @@ export default class MontaController {
 
     static async delete(req, res) {
         try {
-            if (req.usuario.rol !== 'admin') {
-                return res.status(403).json({
-                    ok: false,
-                    msg: "Solo los administradores pueden eliminar montas"
-                });
-            }
-
             const { id } = req.params;
 
             const montaId = parseInt(id);
@@ -758,7 +751,7 @@ export default class MontaController {
                 mensaje,
                 'info',
                 'monta',
-                ['admin', 'veterinario']
+                ['admin', 'veterinario','operario']
             );
 
         } catch (error) {}
@@ -808,7 +801,7 @@ export default class MontaController {
                 mensaje,
                 'warning',
                 'monta',
-                ['admin', 'veterinario']
+                ['admin', 'veterinario','operario']
             );
 
         } catch (error) {}
@@ -823,7 +816,7 @@ export default class MontaController {
                 mensaje,
                 'success',
                 'monta',
-                ['admin', 'veterinario']
+                ['admin', 'veterinario','operario']
             );
             
         } catch (error) {}

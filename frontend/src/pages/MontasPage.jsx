@@ -197,23 +197,17 @@ const MontasPage = () => {
     const formatearNumeroMonta = (numeroMonta) => {
       if (!numeroMonta) return 'N/A';
       
-      // Si ya está en formato string, retornarlo directamente
       if (typeof numeroMonta === 'string') {
           return numeroMonta;
       }
-      
-      // Si es número, formatearlo (para compatibilidad con datos existentes)
       return `MONTA-${numeroMonta}`;
   };
 
   const formatDateSafe = (dateString) => {
     try {
         if (!dateString) return 'N/A';
-        
-        // Dividir la fecha en partes YYYY-MM-DD
         const [year, month, day] = dateString.split('-');
         
-        // Crear fecha local (sin conversión UTC)
         const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         
         if (isNaN(date.getTime())) return 'N/A';
@@ -254,25 +248,6 @@ const MontasPage = () => {
       <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pendiente</Badge>;
   };
 
-  if (user.rol !== 'admin' && user.rol !== 'veterinario' && user.rol !== 'operario') {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de montas.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -325,7 +300,7 @@ const MontasPage = () => {
               {filteredMontas.length} de {montas.length} monta(s) encontrada(s)
               {filtroEstado !== 'todos' && (
                 <span className="ml-2">
-                  ({filtroEstado === 'completadas' ? 'Completadas' : 'En proceso'})
+                  ({filtroEstado === 'completadas' ? 'Completadas' : 'Pendiente'})
                 </span>
               )}
             </CardDescription>
@@ -358,12 +333,16 @@ const MontasPage = () => {
                           </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">
-                              {montaItem.hembra?.arete || 'N/A'}
+                              <Badge variant="secondary" className="font-mono">
+                                                      {montaItem.hembra?.arete || 'N/A'}
+                              </Badge>
                             </div>
                           </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">
-                              {montaItem.macho?.arete || 'No asignado'}
+                              <Badge variant="secondary" className="font-mono">
+                                {montaItem.macho?.arete || 'N/A'}
+                              </Badge>
                             </div>
                           </td>
                           <td className="py-3">
@@ -393,7 +372,7 @@ const MontasPage = () => {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Editar monta
                                 </DropdownMenuItem>
-                                {user.rol === 'admin' && (
+                                { (
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(montaItem)}
                                     className="text-red-600 focus:text-red-600"
@@ -428,7 +407,7 @@ const MontasPage = () => {
                                 <span className="text-gray-600">Hembra: {montaItem.hembra?.arete || 'N/A'}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">Macho: {montaItem.macho?.arete || 'No asignado'}</span>
+                                <span className="text-gray-600">Macho: {montaItem.macho?.arete || 'N/A'}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-600">{montaItem.tipo_evento?.nombre || 'N/A'}</span>

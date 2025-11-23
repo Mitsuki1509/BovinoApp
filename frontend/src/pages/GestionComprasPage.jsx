@@ -1,9 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { useCompraStore } from '@/store/compraStore';
-import { useDetalleCompraStore } from '@/store/detalleCompraStore';
-import { useProveedorStore } from '@/store/proveedorStore';
+import { useCompraInsumoStore } from '@/store/compraInsumoStore';
+import { useCompraAnimalStore } from '@/store/compraAnimalStore';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,30 +22,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Edit, Trash2, MoreHorizontal, Search, Package, Receipt,
-  CheckCircle, XCircle, Calendar, User, DollarSign
- } from 'lucide-react';
-import CompraForm from '@/components/compras/CompraForm';
-import DetalleCompraForm from '@/components/compras/DetalleCompraForm';
+import { 
+  Plus, 
+  Edit, 
+  Trash2, 
+  MoreHorizontal, 
+  Search, 
+  Package
+} from 'lucide-react';
+import { FaCow } from 'react-icons/fa6';
+
+import CompraInsumoForm from '@/components/compras/CompraInsumoForm';
+import CompraAnimalForm from '@/components/compras/CompraAnimalForm';
+import DetalleInsumo from "@/components/compras/DetalleInsumo";
+import DetalleAnimal from "@/components/compras/DetalleAnimal";
 import Modal from '@/components/ui/modal';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 const GestionComprasPage = () => {
   const navigate = useNavigate();
   const { checkAuth, user } = useAuthStore();
-  const { compras, fetchCompras, deleteCompra, loading: loadingCompras } = useCompraStore();
-  const { detalles, fetchDetalles, deleteDetalleCompra, loading: loadingDetalles } = useDetalleCompraStore();
-  const { proveedores, fetchProveedores } = useProveedorStore();
+  const { comprasInsumos, fetchComprasInsumos, deleteCompraInsumo, loading: loadingComprasInsumos } = useCompraInsumoStore();
+  const { comprasAnimales, fetchComprasAnimales, deleteCompraAnimal, loading: loadingComprasAnimales } = useCompraAnimalStore();
   const [authStatus, setAuthStatus] = useState('checking');
-  const [activeTab, setActiveTab] = useState('compras');
-  const [showForm, setShowForm] = useState(false);
-  const [showDetalleForm, setShowDetalleForm] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [activeTab, setActiveTab] = useState('insumos');
+  const [showInsumoForm, setShowInsumoForm] = useState(false);
+  const [showAnimalForm, setShowAnimalForm] = useState(false);
+  const [showInsumoDetail, setShowInsumoDetail] = useState(false);
+  const [showAnimalDetail, setShowAnimalDetail] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -59,55 +65,32 @@ const GestionComprasPage = () => {
         const isAuthenticated = await checkAuth();
         if (isAuthenticated) {
           setAuthStatus('authenticated');
+          fetchComprasInsumos();
+          fetchComprasAnimales();
         } else {
           setAuthStatus('unauthenticated');
           navigate('/login', { replace: true });
         }
       } catch (error) {
-        console.error('Error verificando autenticación:', error);
         setAuthStatus('unauthenticated');
         navigate('/login', { replace: true });
       }
     };
-
     verifyAuth();
-  }, [checkAuth, navigate]);
+  }, [checkAuth, navigate, fetchComprasInsumos, fetchComprasAnimales]);
 
-  useEffect(() => {
-    if (authStatus === 'authenticated') {
-      const loadData = async () => {
-        try {
-          await fetchCompras();
-          await fetchProveedores();
-          if (fetchDetalles) {
-            await fetchDetalles();
-          }
-        } catch (error) {
-          console.error('Error cargando datos:', error);
-        }
-      };
-      loadData();
-    }
-  }, [authStatus, fetchCompras, fetchProveedores, fetchDetalles]);
+  const handleCreateInsumo = () => setShowInsumoForm(true);
+  const handleCreateAnimal = () => setShowAnimalForm(true);
 
-  const handleCreate = useCallback(() => {
-    setEditingItem(null);
-    setShowForm(true);
-  }, []);
+  const handleViewDetail = (item, type) => {
+    setSelectedItem(item);
+    type === 'insumo' ? setShowInsumoDetail(true) : setShowAnimalDetail(true);
+  };
 
-  const handleCreateDetalle = useCallback(() => {
-    setShowDetalleForm(true);
-  }, []);
-
-  const handleEdit = useCallback((item) => {
-    setEditingItem(item);
-    setShowForm(true);
-  }, []);
-
-  const handleDelete = useCallback((item, type) => {
+  const handleDelete = (item, type) => {
     setItemToDelete({ item, type });
     setShowConfirm(true);
-  }, []);
+  };
 
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
@@ -115,71 +98,33 @@ const GestionComprasPage = () => {
     setDeleteLoading(true);
     try {
       const { item, type } = itemToDelete;
-      let result;
-      
-      if (type === 'compra') {
-        result = await deleteCompra(item.compra_id);
-      } else {
-        result = await deleteDetalleCompra(item.detalle_id);
-      }
+      const result = type === 'insumo' 
+        ? await deleteCompraInsumo(item.compra_insumo_id)
+        : await deleteCompraAnimal(item.compra_animal_id);
             
       if (result?.success) {
-        await fetchCompras();
-        if (fetchDetalles) {
-          await fetchDetalles();
-        }
-        
+        fetchComprasInsumos();
+        fetchComprasAnimales();
         toast({
-          title: (
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span>Eliminado correctamente</span>
-            </div>
-          ),
-          description: `El ${type === 'compra' ? 'compra' : 'detalle de compra'} se eliminó exitosamente.`,
-          duration: 3000,
+          title: "Eliminado correctamente",
+          description: `La compra de ${type === 'insumo' ? 'insumos' : 'animales'} se eliminó exitosamente.`,
+          variant: "default",
         });
       } else {
         const errorMessage = result?.error || 'Error desconocido al eliminar';
-        
-        if (errorMessage.includes('referencia') || errorMessage.includes('foreign key') || errorMessage.includes('detalles') || errorMessage.includes('asociados')) {
-          toast({
-            title: (
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-600" />
-                <span>No se puede eliminar</span>
-              </div>
-            ),
-            description: `No se puede eliminar la compra porque tiene detalles de compra asociados.`,
-            variant: "destructive",
-            duration: 5000,
-          });
-        } else {
-          toast({
-            title: (
-              <div className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-600" />
-                <span>Error al eliminar</span>
-              </div>
-            ),
-            description: `Error: ${errorMessage}`,
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
+        toast({
+          title: "Error al eliminar",
+          description: errorMessage.includes('referencia') || errorMessage.includes('foreign key') 
+            ? 'No se puede eliminar la compra porque tiene detalles asociados.'
+            : `Error: ${errorMessage}`,
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Error eliminando:', error);
       toast({
-        title: (
-          <div className="flex items-center gap-2">
-            <XCircle className="h-5 w-5 text-red-600" />
-            <span>Error de conexión</span>
-          </div>
-        ),
+        title: "Error de conexión",
         description: "Por favor, intente nuevamente.",
         variant: "destructive",
-        duration: 5000,
       });
     } finally {
       setDeleteLoading(false);
@@ -187,149 +132,60 @@ const GestionComprasPage = () => {
     }
   };
 
-  const handleFormSuccess = useCallback(() => {
-    setShowForm(false);
-    setEditingItem(null);
-    fetchCompras();
-    
+  const handleFormSuccess = (type) => {
+    type === 'insumo' ? setShowInsumoForm(false) : setShowAnimalForm(false);
+    type === 'insumo' ? fetchComprasInsumos() : fetchComprasAnimales();
     toast({
-      title: editingItem ? (
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <span>Actualizado correctamente</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <span>Creado correctamente</span>
-        </div>
-      ),
-      description: editingItem 
-        ? `La compra se actualizó exitosamente.` 
-        : `La compra se creó exitosamente.`,
-      duration: 3000,
+      title: "Creado correctamente",
+      description: `La compra de ${type} se creó exitosamente.`,
+      variant: "default",
     });
-  }, [fetchCompras, editingItem, toast]);
+  };
 
-  const handleDetalleFormSuccess = useCallback(() => {
-    setShowDetalleForm(false);
-
-    if (fetchDetalles) {
-      fetchDetalles();
-    }
-    
-    toast({
-      title: (
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <span>Detalle agregado</span>
-        </div>
-      ),
-      description: `El insumo se agregó exitosamente a la compra.`,
-      duration: 3000,
-    });
-  }, [fetchDetalles, toast]);
-
-  // Función para formatear fechas sin problemas de zona horaria
   const formatDateWithoutTZ = (dateString) => {
     try {
-        if (!dateString) return 'Fecha inválida';
-        
-        const [year, month, day] = dateString.split('-');
-        
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
-        if (isNaN(date.getTime())) return 'Fecha inválida';
-        
-        return format(date, "dd/MM/yyyy", { locale: es });
+      if (!dateString) return 'Fecha inválida';
+      const [year, month, day] = dateString.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return isNaN(date.getTime()) ? 'Fecha inválida' : date.toLocaleDateString('es-ES');
     } catch (error) {
-        return 'Fecha inválida';
+      return 'Fecha inválida';
     }
-  };
-
-  const getItemName = () => {
-    if (!itemToDelete) return '';
-    return itemToDelete.type === 'compra' 
-      ? `${itemToDelete.item.numero_compra} - ${itemToDelete.item.proveedor?.nombre_compañia}`
-      : `${itemToDelete.item.insumo?.nombre} (${itemToDelete.item.cantidad} unidades)`;
-  };
-
-  const getItemType = () => {
-    if (!itemToDelete) return '';
-    return itemToDelete.type === 'compra' ? 'compra' : 'detalle de compra';
   };
 
   const canManage = user?.rol === 'admin' || user?.rol === 'contable';
 
-  const filteredCompras = compras.filter(compra => {
-    if (!searchTerm.trim()) return true;
-    const searchLower = searchTerm.toLowerCase().trim();
-    return (
-      compra.numero_compra?.toLowerCase().includes(searchLower) ||
-      compra.proveedor?.nombre_compañia?.toLowerCase().includes(searchLower) ||
-      compra.proveedor?.nombre_contacto?.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredComprasInsumos = comprasInsumos.filter(compra => 
+    !searchTerm.trim() || 
+    compra.numero_compra?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    compra.proveedor?.nombre_compañia?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const filteredDetalles = (detalles || []).filter(detalle => {
-    if (!searchTerm.trim()) return true;
-    const searchLower = searchTerm.toLowerCase().trim();
-    return (
-      detalle.compra?.numero_compra?.toLowerCase().includes(searchLower) ||
-      detalle.insumo?.nombre?.toLowerCase().includes(searchLower) ||
-      detalle.insumo?.tipo_insumo?.nombre?.toLowerCase().includes(searchLower) ||
-      detalle.compra?.proveedor?.nombre_compañia?.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredComprasAnimales = comprasAnimales.filter(compra =>
+    !searchTerm.trim() ||
+    compra.numero_compra?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    compra.proveedor?.nombre_compañia?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getFormTitle = () => {
-    return editingItem ? 'Editar Compra' : 'Crear Nueva Compra';
-  };
-
-  const getFormDescription = () => {
-    return editingItem 
-      ? 'Actualiza la información de la compra' 
-      : 'Complete la información para crear una nueva compra';
-  };
-
-  const calcularTotalCompra = (compra) => {
-    if (!compra.detalle_compras || compra.detalle_compras.length === 0) return 0;
-    return compra.detalle_compras.reduce((total, detalle) => {
-      return total + (parseFloat(detalle.precio) * detalle.cantidad);
-    }, 0);
-  };
-
-  const loading = loadingCompras || loadingDetalles;
+  const loading = loadingComprasInsumos || loadingComprasAnimales;
 
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Órdenes de Compras</h1>
-            <p className="text-gray-600 text-sm sm:text-base">Administra compras y sus detalles</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Compras</h1>
+            <p className="text-gray-600 text-sm sm:text-base">Administra compras de insumos y animales</p>
           </div>
           <div className="flex gap-2">
-            {canManage && activeTab === 'compras' && (
-              <Button 
-                onClick={handleCreate} 
-                className="flex items-center gap-2"
-                type="button"
-                variant="inventario"
-              >
-                <Plus className="h-4 w-4" />
-                Crear Compra
+            {canManage && activeTab === 'insumos' && (
+              <Button onClick={handleCreateInsumo} className="flex items-center gap-2" variant="inventario">
+                <Plus className="h-4 w-4" />Comprar Insumos
               </Button>
             )}
-            {canManage && activeTab === 'detalles' && (
-              <Button 
-                onClick={handleCreateDetalle} 
-                className="flex items-center gap-2"
-                type="button"
-                variant="inventario"
-              >
-                <Plus className="h-4 w-4" />
-                Agregar Insumo
+            {canManage && activeTab === 'animales' && (
+              <Button onClick={handleCreateAnimal} className="flex items-center gap-2" variant="inventario">
+                <Plus className="h-4 w-4" />Comprar Animales
               </Button>
             )}
           </div>
@@ -338,11 +194,7 @@ const GestionComprasPage = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder={
-              activeTab === 'compras' 
-                ? "Buscar por número de compra o proveedor..." 
-                : "Buscar por número de compra, insumo o proveedor..."
-            }
+            placeholder={activeTab === 'insumos' ? "Buscar compras de insumos..." : "Buscar compras de animales..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 w-full"
@@ -351,133 +203,130 @@ const GestionComprasPage = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="compras" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
-              Compras ({compras.length})
+            <TabsTrigger value="insumos" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4" />Insumos ({comprasInsumos.length})
             </TabsTrigger>
-            <TabsTrigger value="detalles" className="flex items-center gap-2 text-xs sm:text-sm">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-              Detalles ({(detalles || []).length})
+            <TabsTrigger value="animales" className="flex items-center gap-2 text-xs sm:text-sm">
+              <FaCow className="h-3 w-3 sm:h-4 sm:w-4" />Animales ({comprasAnimales.length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="compras">
+          <TabsContent value="insumos">
             <Card>
               <CardHeader>
-                <CardTitle>Lista de Compras</CardTitle>
-                <CardDescription>
-                  {filteredCompras.length} de {compras.length} compra(s) encontrada(s)
-                </CardDescription>
+                <CardTitle>Compras de Insumos</CardTitle>
+                <CardDescription>{filteredComprasInsumos.length} de {comprasInsumos.length} compra(s) encontrada(s)</CardDescription>
               </CardHeader>
               <CardContent>
-                {(
-                  <div className="overflow-x-auto">
-                    <div className="hidden sm:block">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-3 font-medium">Número</th>
-                            <th className="text-left py-3 font-medium">Proveedor</th>
-                            <th className="text-left py-3 font-medium">Fecha</th>
-                            <th className="text-left py-3 font-medium">Total</th>
-                            {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredCompras.map((compra) => (
-                            <tr key={compra.compra_id} className="border-b hover:bg-gray-50">
+                <div className="overflow-x-auto">
+                  <div className="hidden sm:block">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 font-medium">Número</th>
+                          <th className="text-left py-3 font-medium">Proveedor</th>
+                          <th className="text-left py-3 font-medium">Fecha</th>
+                          <th className="text-left py-3 font-medium">Total</th>
+                          <th className="text-left py-3 font-medium">Insumos</th>
+                          {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredComprasInsumos.map((compra) => (                        
+                          <tr key={compra.compra_insumo_id} className="border-b hover:bg-gray-50">
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="font-mono">
+                                  {compra.numero_compra}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                {compra.proveedor?.nombre_compañia}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                {formatDateWithoutTZ(compra.fecha)}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">C${compra.total?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {compra.detalles?.length || 0} insumo(s)
+                                </Badge>
+                              </div>
+                            </td>
+                            {canManage && (
                               <td className="py-3">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="font-mono">
-                                    {compra.numero_compra}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      className="h-8 w-8 p-0"
+                                      type="button"
+                                    >
+                                      <span className="sr-only">Abrir menú</span>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleViewDetail(compra, 'insumo')}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Ver Detalle
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(compra, 'insumo')}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Eliminar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="sm:hidden space-y-4">
+                    {filteredComprasInsumos.map((compra) => (
+                      <Card key={compra.compra_insumo_id} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="secondary" className="font-mono">
+                                  {compra.numero_compra}
+                                </Badge>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-gray-600">{compra.proveedor?.nombre_compañia}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-gray-600">{formatDateWithoutTZ(compra.fecha)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="font-medium">C${compra.total?.toFixed(2) || '0.00'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Badge variant="outline">
+                                    {compra.detalles?.length || 0} insumo(s)
                                   </Badge>
                                 </div>
-                              </td>
-                              <td className="py-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
-                                    {compra.proveedor?.nombre_compañia}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-3">
-                                <div className="flex items-center gap-2">
-                                  <span>
-                                    {formatDateWithoutTZ(compra.fecha)}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
-                                    ${calcularTotalCompra(compra).toFixed(2)}
-                                  </span>
-                                </div>
-                              </td>
-                          
-                              {canManage && (
-                                <td className="py-3">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        className="h-8 w-8 p-0"
-                                        type="button"
-                                      >
-                                        <span className="sr-only">Abrir menú</span>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleEdit(compra)}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Editar
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        onClick={() => handleDelete(compra, 'compra')}
-                                        className="text-red-600 focus:text-red-600"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Eliminar
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </td>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="sm:hidden space-y-4">
-                      {filteredCompras.map((compra) => (
-                        <Card key={compra.compra_id} className="p-4">
-                          <div className="space-y-3">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div>
-                                    <Badge variant="secondary" className="font-mono">
-                                      {compra.numero_compra}
-                                    </Badge>
-                                    <div className="flex items-center gap-2">
-                                      <h3 className="font-semibold">{compra.proveedor?.nombre_compañia}</h3>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span>
-                                    {formatDateWithoutTZ(compra.fecha)}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-medium">
-                                    ${calcularTotalCompra(compra).toFixed(2)}
-                                  </span>
-                                </div>
-                              
                               </div>
+                            </div>
+                            {canManage && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button 
@@ -490,12 +339,12 @@ const GestionComprasPage = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(compra)}>
+                                  <DropdownMenuItem onClick={() => handleViewDetail(compra, 'insumo')}>
                                     <Edit className="h-4 w-4 mr-2" />
-                                    Editar
+                                    Ver Detalle
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
-                                    onClick={() => handleDelete(compra, 'compra')}
+                                    onClick={() => handleDelete(compra, 'insumo')}
                                     className="text-red-600 focus:text-red-600"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
@@ -503,200 +352,173 @@ const GestionComprasPage = () => {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            </div>
+                            )}
                           </div>
-                        </Card>
-                      ))}
-                    </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
-                )}
-
-                {filteredCompras.length === 0 && !loading && (
+                </div>
+                {filteredComprasInsumos.length === 0 && !loading && (
                   <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? 'No se encontraron compras que coincidan con la búsqueda' : 'No hay compras registradas'}
+                    {searchTerm ? 'No se encontraron compras que coincidan con la búsqueda' : 'No hay compras de insumos registradas'}
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="detalles">
+          <TabsContent value="animales">
             <Card>
               <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                  <div>
-                    <CardTitle>Todos los Detalles de Compra</CardTitle>
-                    <CardDescription>
-                      {filteredDetalles.length} de {(detalles || []).length} detalle(s) encontrado(s)
-                    </CardDescription>
-                  </div>
-                </div>
+                <CardTitle>Compras de Animales</CardTitle>
+                <CardDescription>{filteredComprasAnimales.length} de {comprasAnimales.length} compra(s) encontrada(s)</CardDescription>
               </CardHeader>
               <CardContent>
-                {(
-                  <div className="overflow-x-auto">
-                    {filteredDetalles.length > 0 ? (
-                      <>
-                        <div className="hidden sm:block">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b">
-                                <th className="text-left py-3 font-medium">Número</th>
-                                <th className="text-left py-3 font-medium">Proveedor</th>
-                                <th className="text-left py-3 font-medium">Insumo</th>
-                                <th className="text-left py-3 font-medium">Precio Unitario</th>
-                                <th className="text-left py-3 font-medium">Cantidad</th>
-                                <th className="text-left py-3 font-medium">Subtotal</th>
-                                {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredDetalles.map((detalle) => (
-                                <tr key={detalle.detalle_id} className="border-b hover:bg-gray-50">
-                                  <td className="py-3">
-                                    <div className="flex items-center gap-2">
-                                      <Badge variant="secondary" className="font-mono">
-                                        {detalle.compra?.numero_compra}
-                                      </Badge>
-                                    </div>
-                                  </td>
-                                  <td className="py-3">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm">
-                                        {detalle.compra?.proveedor?.nombre_compañia}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="py-3">
-                                    <div className="flex items-center gap-2">
-                                      <div>
-                                        <span >{detalle.insumo?.nombre}</span>
-                                      
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="py-3">
-                                    <span className="font-medium">
-                                      ${parseFloat(detalle.precio).toFixed(2)}
-                                    </span>
-                                  </td>
-                                  <td className="py-3">
-                                    <Badge variant="outline">
-                                      {detalle.cantidad} {detalle.insumo?.unidad?.nombre}
-                                    </Badge>
-                                  </td>
-                                  <td className="py-3">
-                                    <span className="font-medium ">
-                                      ${(parseFloat(detalle.precio) * detalle.cantidad).toFixed(2)}
-                                    </span>
-                                  </td>
-                                  {canManage && (
-                                    <td className="py-3">
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button 
-                                            variant="ghost" 
-                                            className="h-8 w-8 p-0"
-                                            type="button"
-                                          >
-                                            <span className="sr-only">Abrir menú</span>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                          <DropdownMenuItem 
-                                            onClick={() => handleDelete(detalle, 'detalle')}
-                                            className="text-red-600 focus:text-red-600"
-                                          >
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Eliminar
-                                          </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
-                                    </td>
-                                  )}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                <div className="overflow-x-auto">
+                  <div className="hidden sm:block">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 font-medium">Número</th>
+                          <th className="text-left py-3 font-medium">Proveedor</th>
+                          <th className="text-left py-3 font-medium">Fecha</th>
+                          <th className="text-left py-3 font-medium">Total</th>
+                          <th className="text-left py-3 font-medium">Animales</th>
+                          {canManage && <th className="text-left py-3 font-medium">Acciones</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredComprasAnimales.map((compra) => (                        
+                          <tr key={compra.compra_animal_id} className="border-b hover:bg-gray-50">
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="font-mono">
+                                  {compra.numero_compra}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                {compra.proveedor?.nombre_compañia}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                {formatDateWithoutTZ(compra.fecha)}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">C${compra.total?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  {compra.detalles?.length || 0} animal(es)
+                                </Badge>
+                              </div>
+                            </td>
+                            {canManage && (
+                              <td className="py-3">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      className="h-8 w-8 p-0"
+                                      type="button"
+                                    >
+                                      <span className="sr-only">Abrir menú</span>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleViewDetail(compra, 'animal')}>
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Ver Detalle
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDelete(compra, 'animal')}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Eliminar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                        <div className="sm:hidden space-y-4">
-                          {filteredDetalles.map((detalle) => (
-                            <Card key={detalle.detalle_id} className="p-4">
-                              <div className="space-y-3">
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <div>
-                                        <Badge variant="secondary" className="font-mono">
-                                          {detalle.compra?.numero_compra}
-                                        </Badge>
-                                        <div className="flex items-center gap-2 mt-1">
-                                          <span className="font-medium text-sm">
-                                            {detalle.compra?.proveedor?.nombre_compañia}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <div>
-                                        <h3 className="font-semibold">{detalle.insumo?.nombre}</h3>
-                                      </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                      <div>
-                                        <span className="text-gray-600">Precio:</span>
-                                        <div className="font-medium">${parseFloat(detalle.precio).toFixed(2)}</div>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-600">Cantidad:</span>
-                                        <div>
-                                          <Badge variant="outline">
-                                            {detalle.cantidad} {detalle.insumo?.unidad?.nombre}
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="mt-2">
-                                      <span className="text-gray-600">Subtotal:</span>
-                                      <div className="font-medium ">
-                                        ${(parseFloat(detalle.precio) * detalle.cantidad).toFixed(2)}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button 
-                                        variant="ghost" 
-                                        className="h-8 w-8 p-0"
-                                        type="button"
-                                      >
-                                        <span className="sr-only">Abrir menú</span>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem 
-                                        onClick={() => handleDelete(detalle, 'detalle')}
-                                        className="text-red-600 focus:text-red-600"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Eliminar
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                  <div className="sm:hidden space-y-4">
+                    {filteredComprasAnimales.map((compra) => (
+                      <Card key={compra.compra_animal_id} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="secondary" className="font-mono">
+                                  {compra.numero_compra}
+                                </Badge>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-gray-600">{compra.proveedor?.nombre_compañia}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="text-gray-600">{formatDateWithoutTZ(compra.fecha)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <span className="font-medium">C${compra.total?.toFixed(2) || '0.00'}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Badge variant="outline">
+                                    {compra.detalles?.length || 0} animal(es)
+                                  </Badge>
                                 </div>
                               </div>
-                            </Card>
-                          ))}
+                            </div>
+                            {canManage && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    className="h-8 w-8 p-0"
+                                    type="button"
+                                  >
+                                    <span className="sr-only">Abrir menú</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewDetail(compra, 'animal')}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Ver Detalle
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleDelete(compra, 'animal')}
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        {searchTerm ? 'No se encontraron detalles que coincidan con la búsqueda' : 'No hay detalles de compra registrados'}
-                      </div>
-                    )}
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+                {filteredComprasAnimales.length === 0 && !loading && (
+                  <div className="text-center py-8 text-gray-500">
+                    {searchTerm ? 'No se encontraron compras que coincidan con la búsqueda' : 'No hay compras de animales registradas'}
                   </div>
                 )}
               </CardContent>
@@ -704,38 +526,47 @@ const GestionComprasPage = () => {
           </TabsContent>
         </Tabs>
 
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
+        <Dialog open={showInsumoForm} onOpenChange={setShowInsumoForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-lg sm:text-xl">{getFormTitle()}</DialogTitle>
-              <DialogDescription className="text-sm sm:text-base">{getFormDescription()}</DialogDescription>
+              <DialogTitle className="text-lg sm:text-xl">Comprar Insumos</DialogTitle>
+              <DialogDescription className="text-sm sm:text-base">
+                Complete la información para registrar una nueva compra de insumos
+              </DialogDescription>
             </DialogHeader>
-            <CompraForm
-              compra={editingItem}
-              onSuccess={handleFormSuccess}
-            />
+            <CompraInsumoForm onSuccess={() => handleFormSuccess('insumos')} />
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showDetalleForm} onOpenChange={setShowDetalleForm}>
-          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto mx-2 sm:mx-0">
+        <Dialog open={showAnimalForm} onOpenChange={setShowAnimalForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-lg sm:text-xl">Agregar Insumo a Compra</DialogTitle>
+              <DialogTitle className="text-lg sm:text-xl">Comprar Animales</DialogTitle>
               <DialogDescription className="text-sm sm:text-base">
-                Seleccione la compra y agregue un insumo
+                Complete la información para registrar una nueva compra de animales
               </DialogDescription>
             </DialogHeader>
-            <DetalleCompraForm
-              onSuccess={handleDetalleFormSuccess}
-            />
+            <CompraAnimalForm onSuccess={() => handleFormSuccess('animales')} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showInsumoDetail} onOpenChange={setShowInsumoDetail}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DetalleInsumo compra={selectedItem} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAnimalDetail} onOpenChange={setShowAnimalDetail}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DetalleAnimal compra={selectedItem} />
           </DialogContent>
         </Dialog>
 
         <Modal
           open={showConfirm}
           onOpenChange={setShowConfirm}
-          title={`Eliminar ${getItemType()}`}
-          description={`¿Está seguro de eliminar "${getItemName()}"? Esta acción no se puede deshacer.`}
+          title={`Eliminar ${itemToDelete?.type === 'insumo' ? 'compra de insumos' : 'compra de animales'}`}
+          description={`¿Está seguro de eliminar "${itemToDelete?.item?.numero_compra} - ${itemToDelete?.item?.proveedor?.nombre_compañia}"?`}
           variant="destructive"
           confirmText="Eliminar"
           loading={deleteLoading}

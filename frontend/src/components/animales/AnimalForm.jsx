@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Switch } from '@/components/ui/switch';
 
 const AnimalForm = ({ 
   animal = null, 
@@ -82,11 +83,33 @@ const AnimalForm = ({
       raza_id: '',
       animal_madre_id: '',
       animal_padre_id: '',
-      imagen: null
+      imagen: null,
+      mostrar_padres: false 
     }
   });
 
   const fechaNacimiento = form.watch('fecha_nacimiento');
+  const mostrarPadres = form.watch('mostrar_padres'); 
+
+  const parseDateFromDB = (dateString) => {
+    if (!dateString) return null;
+    
+    try {
+      if (typeof dateString === 'string' && dateString.includes('-')) {
+        const [year, month, day] = dateString.split('-');
+        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      }
+      
+      if (dateString instanceof Date) {
+        return dateString;
+      }
+      
+      return new Date(dateString);
+    } catch (error) {
+      console.error('Error parsing date:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -99,16 +122,28 @@ const AnimalForm = ({
 
         if (animal) {
           setIsEditing(true);
+          
+          const fechaNacimientoParsed = parseDateFromDB(animal.fecha_nacimiento);
+          const fechaDesteteParsed = parseDateFromDB(animal.fecha_destete);
+          
+          console.log('Fecha nacimiento original:', animal.fecha_nacimiento);
+          console.log('Fecha nacimiento parsed:', fechaNacimientoParsed);
+          console.log('Fecha destete original:', animal.fecha_destete);
+          console.log('Fecha destete parsed:', fechaDesteteParsed);
+
+          const tienePadres = animal.animal_madre_id || animal.animal_padre_id;
+
           form.reset({
             arete: animal.arete || '',
             sexo: animal.sexo || '',
-            fecha_nacimiento: animal.fecha_nacimiento ? new Date(animal.fecha_nacimiento) : null,
-            fecha_destete: animal.fecha_destete ? new Date(animal.fecha_destete) : null,
+            fecha_nacimiento: fechaNacimientoParsed,
+            fecha_destete: fechaDesteteParsed,
             lote_id: animal.lote_id ? animal.lote_id.toString() : '',
             raza_id: animal.raza_id ? animal.raza_id.toString() : '',
             animal_madre_id: animal.animal_madre_id ? animal.animal_madre_id.toString() : '',
             animal_padre_id: animal.animal_padre_id ? animal.animal_padre_id.toString() : '',
-            imagen: null
+            imagen: null,
+            mostrar_padres: tienePadres 
           });
           
           if (animal.imagen) {
@@ -125,7 +160,8 @@ const AnimalForm = ({
             raza_id: '',
             animal_madre_id: '',
             animal_padre_id: '',
-            imagen: null
+            imagen: null,
+            mostrar_padres: false 
           });
         }
       } catch (error) {
@@ -182,6 +218,21 @@ const AnimalForm = ({
     label: raza.nombre
   }));
 
+  const formatDateForDB = (date) => {
+    if (!date) return null;
+    
+    try {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error formatting date for DB:', error);
+      return null;
+    }
+  };
+
   const onSubmit = async (data) => {
     setLoading(true);
     setFormError('');
@@ -202,7 +253,6 @@ const AnimalForm = ({
         errors.fecha_nacimiento = 'La fecha de nacimiento es requerida';
       }
 
-      // Validar que la fecha de destete no sea más antigua que la fecha de nacimiento
       if (data.fecha_destete && data.fecha_nacimiento) {
         const fechaDestete = new Date(data.fecha_destete);
         const fechaNacimiento = new Date(data.fecha_nacimiento);
@@ -220,17 +270,19 @@ const AnimalForm = ({
         errors.raza_id = 'La raza es requerida';
       }
 
-      if (data.animal_madre_id) {
-        const madreSeleccionada = animales.find(a => a.animal_id.toString() === data.animal_madre_id);
-        if (madreSeleccionada && !esAptoParaMonta(madreSeleccionada)) {
-          errors.animal_madre_id = 'La madre seleccionada no cumple con la edad mínima de 15 meses para reproducción';
+      if (data.mostrar_padres) {
+        if (data.animal_madre_id) {
+          const madreSeleccionada = animales.find(a => a.animal_id.toString() === data.animal_madre_id);
+          if (madreSeleccionada && !esAptoParaMonta(madreSeleccionada)) {
+            errors.animal_madre_id = 'La madre seleccionada no cumple con la edad mínima de 15 meses para reproducción';
+          }
         }
-      }
 
-      if (data.animal_padre_id) {
-        const padreSeleccionado = animales.find(a => a.animal_id.toString() === data.animal_padre_id);
-        if (padreSeleccionado && !esAptoParaMonta(padreSeleccionado)) {
-          errors.animal_padre_id = 'El padre seleccionado no cumple con la edad mínima de 18 meses para reproducción';
+        if (data.animal_padre_id) {
+          const padreSeleccionado = animales.find(a => a.animal_id.toString() === data.animal_padre_id);
+          if (padreSeleccionado && !esAptoParaMonta(padreSeleccionado)) {
+            errors.animal_padre_id = 'El padre seleccionado no cumple con la edad mínima de 18 meses para reproducción';
+          }
         }
       }
 
@@ -239,8 +291,8 @@ const AnimalForm = ({
         throw new Error('Por favor, complete todos los campos requeridos');
       }
 
-      const fechaNacimientoISO = data.fecha_nacimiento.toISOString().split('T')[0];
-      const fechaDesteteISO = data.fecha_destete ? data.fecha_destete.toISOString().split('T')[0] : null;
+      const fechaNacimientoISO = formatDateForDB(data.fecha_nacimiento);
+      const fechaDesteteISO = formatDateForDB(data.fecha_destete);
 
       const formData = {
         arete: data.arete.trim(),
@@ -249,10 +301,12 @@ const AnimalForm = ({
         fecha_destete: fechaDesteteISO,
         lote_id: data.lote_id,
         raza_id: data.raza_id,
-        animal_madre_id: data.animal_madre_id || '',
-        animal_padre_id: data.animal_padre_id || '',
+        animal_madre_id: data.mostrar_padres ? (data.animal_madre_id || '') : '',
+        animal_padre_id: data.mostrar_padres ? (data.animal_padre_id || '') : '',
         imagen: data.imagen
       };
+
+      console.log('Datos a enviar:', formData);
 
       let result;
       
@@ -288,7 +342,6 @@ const AnimalForm = ({
           </div>
         )}
         
-        <Card>
           <CardContent className="space-y-4">
             <FormField
               control={form.control}
@@ -470,55 +523,79 @@ const AnimalForm = ({
               )}
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="animal_madre_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Madre</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={madreOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Buscar madre..."
-                        disabled={loading}
-                        className="h-9"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs">
-                      {fieldErrors.animal_madre_id || form.formState.errors.animal_madre_id?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="mostrar_padres"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Registrar Padres</FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      {field.value ? 'Mostrando campos de padres' : 'Ocultando campos de padres'}
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="animal_padre_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Padre</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={padreOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Buscar padre..."
-                        disabled={loading}
-                        className="h-9"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs">
-                      {fieldErrors.animal_padre_id || form.formState.errors.animal_padre_id?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-            </div>
+            {mostrarPadres && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="animal_madre_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Madre</FormLabel>
+                      <FormControl>
+                        <Combobox
+                          options={madreOptions}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Buscar madre..."
+                          disabled={loading}
+                          className="h-9"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs">
+                        {fieldErrors.animal_madre_id || form.formState.errors.animal_madre_id?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="animal_padre_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Padre</FormLabel>
+                      <FormControl>
+                        <Combobox
+                          options={padreOptions}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Buscar padre..."
+                          disabled={loading}
+                          className="h-9"
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs">
+                        {fieldErrors.animal_padre_id || form.formState.errors.animal_padre_id?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
           </CardContent>
-        </Card>
+        
 
         <Card>
           <CardHeader>

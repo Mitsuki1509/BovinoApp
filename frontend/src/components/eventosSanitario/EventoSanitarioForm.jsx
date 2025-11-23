@@ -41,13 +41,12 @@ const EventoSanitarioForm = ({
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState('');
   const [insumosSeleccionados, setInsumosSeleccionados] = useState([]);
-  const [estadoEvento, setEstadoEvento] = useState(1);
+  const [estadoEvento, setEstadoEvento] = useState(0); 
 
   const form = useForm({
     defaultValues: {
       animal_id: '',
       tipo_evento_id: '',
-      estado: '',
       diagnostico: '',
       tratamiento: '',
       fecha: new Date()
@@ -64,10 +63,10 @@ const EventoSanitarioForm = ({
     if (eventoSanitario) {
       setIsEditing(true);
       setEstadoEvento(eventoSanitario.estado === 'Completado' ? 1 : 0);
+      
       form.reset({
         animal_id: eventoSanitario.animal_id ? eventoSanitario.animal_id.toString() : '',
         tipo_evento_id: eventoSanitario.tipo_evento_id ? eventoSanitario.tipo_evento_id.toString() : '',
-        estado: eventoSanitario.estado || '',
         diagnostico: eventoSanitario.diagnostico || '',
         tratamiento: eventoSanitario.tratamiento || '',
         fecha: eventoSanitario.fecha ? new Date(eventoSanitario.fecha) : new Date()
@@ -85,11 +84,10 @@ const EventoSanitarioForm = ({
       }
     } else {
       setIsEditing(false);
-      setEstadoEvento(1);
+      setEstadoEvento(0); 
       form.reset({
         animal_id: '',
         tipo_evento_id: '',
-        estado: '',
         diagnostico: '',
         tratamiento: '',
         fecha: new Date()
@@ -105,43 +103,47 @@ const EventoSanitarioForm = ({
       const fechaSeleccionada = new Date(data.fecha);
       const fechaFormateada = fechaSeleccionada.toISOString().split('T')[0];
       
-      const eventoSanitarioData = {
-        animal_id: parseInt(data.animal_id),
-        tipo_evento_id: parseInt(data.tipo_evento_id),
-        estado: estadoEvento === 1 ? 'Completado' : 'Pendiente',
-        diagnostico: data.diagnostico || null,
-        tratamiento: data.tratamiento || null,
-        fecha: fechaFormateada,
-        insumos: insumosSeleccionados.map(insumo => ({
-          insumo_id: parseInt(insumo.insumo_id),
-          cantidad: parseInt(insumo.cantidad)
-        }))
-      };
-
-      let result;
       if (isEditing) {
-        result = await updateEventoSanitario(eventoSanitario.evento_sanitario_id, {
+        const result = await updateEventoSanitario(eventoSanitario.evento_sanitario_id, {
           estado: estadoEvento === 1 ? 'Completado' : 'Pendiente'
         });
-      } else {
-        result = await createEventoSanitario(eventoSanitarioData);
-      }
 
-      if (result?.success) {
-        form.reset();
-        setInsumosSeleccionados([]);
-        setEstadoEvento(1);
-        onSuccess?.();
-      } else {
-        // ✅ MEJOR DETECCIÓN DE ERRORES DE DUPLICADO
-        const errorMsg = result?.error || '';
-        if (errorMsg.includes('duplicado') || 
-            errorMsg.includes('duplicate') || 
-            errorMsg.includes('ya existe') ||
-            errorMsg.includes('mismo tipo')) {
-          setFormError('Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada.');
+        if (result?.success) {
+          onSuccess?.();
         } else {
-          setFormError(errorMsg || 'Error al procesar la solicitud');
+          setFormError(result?.error || 'Error al procesar la solicitud');
+        }
+      } else {
+        const eventoSanitarioData = {
+          animal_id: parseInt(data.animal_id),
+          tipo_evento_id: parseInt(data.tipo_evento_id),
+          estado: 'Pendiente', 
+          diagnostico: data.diagnostico || null,
+          tratamiento: data.tratamiento || null,
+          fecha: fechaFormateada,
+          insumos: insumosSeleccionados.map(insumo => ({
+            insumo_id: parseInt(insumo.insumo_id),
+            cantidad: parseInt(insumo.cantidad)
+          }))
+        };
+
+        const result = await createEventoSanitario(eventoSanitarioData);
+
+        if (result?.success) {
+          form.reset();
+          setInsumosSeleccionados([]);
+          setEstadoEvento(0);
+          onSuccess?.();
+        } else {
+          const errorMsg = result?.error || '';
+          if (errorMsg.includes('duplicado') || 
+              errorMsg.includes('duplicate') || 
+              errorMsg.includes('ya existe') ||
+              errorMsg.includes('mismo tipo')) {
+            setFormError('Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada.');
+          } else {
+            setFormError(errorMsg || 'Error al procesar la solicitud');
+          }
         }
       }
     } catch (error) {
@@ -161,7 +163,6 @@ const EventoSanitarioForm = ({
     const nuevosInsumos = [...insumosSeleccionados];
     nuevosInsumos[index][field] = value;
     
-    // Si se selecciona un insumo, verificar stock
     if (field === 'insumo_id' && value) {
       const insumoSeleccionado = insumos.find(i => i.insumo_id.toString() === value);
       if (insumoSeleccionado) {
@@ -182,7 +183,7 @@ const EventoSanitarioForm = ({
     .filter(animal => !animal.deleted_at)
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete} `
+      label: `${animal.arete}`
     }));
 
   const tipoEventoOptions = eventTypes
@@ -219,77 +220,59 @@ const EventoSanitarioForm = ({
             )}
 
             <div className="space-y-4">
-              {!isEditing && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="animal_id"
-                    rules={{ required: "El animal es obligatorio" }}
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Animal</FormLabel>
-                        <FormControl>
-                          <Combobox
-                            options={animalesOptions}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="Seleccionar animal"
-                            disabled={loading}
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="animal_id"
+                rules={{ required: !isEditing ? "El animal es obligatorio" : false }}
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Animal</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={animalesOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar animal"
+                        disabled={loading || isEditing}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name="tipo_evento_id"
-                    rules={{ required: "El tipo de evento es obligatorio" }}
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Tipo de Evento Sanitario</FormLabel>
-                        <FormControl>
-                          <Combobox
-                            options={tipoEventoOptions}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="Seleccionar tipo de evento"
-                            disabled={loading}
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
-
-              <div className="flex flex-row items-center justify-between rounded-lg border p-3">
-                <div className="space-y-0.5">
-                  <Label htmlFor="estado-evento">Estado del Evento</Label>
-                  <div className="text-sm text-muted-foreground">
-                    {estadoEvento === 1 ? 'Completado' : 'Pendiente'}
-                  </div>
-                </div>
-                <Switch
-                  id="estado-evento"
-                  checked={estadoEvento === 1}
-                  onCheckedChange={toggleEstado}
-                  disabled={loading}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="tipo_evento_id"
+                rules={{ required: !isEditing ? "El tipo de evento es obligatorio" : false }}
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Tipo de Evento Sanitario</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={tipoEventoOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar tipo de evento"
+                        disabled={loading || isEditing}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {!isEditing && (
                 <FormField
                   control={form.control}
                   name="fecha"
                   rules={{ 
-                    required: "La fecha es requerida",
+                    required: !isEditing ? "La fecha es requerida" : false,
                     validate: {
                       futureDate: (value) => {
+                        if (isEditing) return true;
                         const selectedDate = new Date(value);
                         const tomorrow = new Date();
                         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -310,7 +293,7 @@ const EventoSanitarioForm = ({
                                 "w-full pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
-                              disabled={loading}
+                              disabled={loading || isEditing}
                             >
                               {field.value ? (
                                 format(field.value, "PPP", { locale: es })
@@ -338,56 +321,67 @@ const EventoSanitarioForm = ({
                 />
               )}
 
-              {!isEditing && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="diagnostico"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Diagnóstico (Opcional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Descripción del diagnóstico..."
-                            disabled={loading}
-                            className="w-full resize-none"
-                            rows={3}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={form.control}
+                name="diagnostico"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Diagnóstico</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Descripción del diagnóstico..."
+                        disabled={loading || isEditing}
+                        className="w-full resize-none"
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={form.control}
-                    name="tratamiento"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tratamiento (Opcional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Descripción del tratamiento aplicado..."
-                            disabled={loading}
-                            className="w-full resize-none"
-                            rows={3}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
+              <FormField
+                control={form.control}
+                name="tratamiento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tratamiento</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Descripción del tratamiento aplicado..."
+                        disabled={loading || isEditing}
+                        className="w-full resize-none"
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              {!isEditing && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                      Insumos Utilizados (Opcional)
-                    </label>
+              <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="estado-evento">Estado del Evento</Label>
+                  <div className="text-sm text-muted-foreground">
+                    {estadoEvento === 1 ? 'Completado' : 'Pendiente'}
+                  </div>
+                </div>
+                <Switch
+                  id="estado-evento"
+                  checked={estadoEvento === 1}
+                  onCheckedChange={toggleEstado}
+                  disabled={loading || !isEditing}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Insumos Utilizados (Opcional)
+                  </label>
+                  {!isEditing && (
                     <div className="flex gap-2">
                       {loadingInsumos && (
                         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
@@ -397,77 +391,79 @@ const EventoSanitarioForm = ({
                         onClick={agregarInsumo}
                         variant="outline"
                         size="sm"
-                        disabled={loading || loadingInsumos}
+                        disabled={loading || loadingInsumos || isEditing}
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Agregar Insumo
                       </Button>
                     </div>
-                  </div>
-
-                  {insumosOptions.length === 1 && insumosOptions[0].value === 'no-data' && (
-                    <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
-                      No hay insumos disponibles en el sistema. 
-                      <Button 
-                        variant="link" 
-                        className="p-0 h-auto text-amber-700 ml-1"
-                        onClick={() => fetchInsumos()}
-                      >
-                        Reintentar
-                      </Button>
-                    </div>
                   )}
+                </div>
 
-                  {insumosSeleccionados.map((insumo, index) => (
-                    <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
-                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div className="space-y-2">
-                          <label className="text-xs font-medium">Insumo</label>
-                          <Combobox
-                            options={insumosOptions}
-                            value={insumo.insumo_id}
-                            onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
-                            placeholder="Seleccionar insumo"
-                            disabled={loading || loadingInsumos}
-                          />
-                          {insumo.nombre && (
-                            <p className="text-xs text-muted-foreground">
-                              Stock disponible: {insumo.stock || 0}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-medium">Cantidad</label>
-                          <Input
-                            type="number"
-                            min="1"
-                            max={insumo.stock || 1}
-                            value={insumo.cantidad}
-                            onChange={(e) => actualizarInsumo(index, 'cantidad', e.target.value)}
-                            placeholder="Cantidad"
-                            disabled={loading}
-                          />
-                          {insumo.stock && insumo.cantidad > insumo.stock && (
-                            <p className="text-xs text-red-500">
-                              Cantidad excede el stock disponible
-                            </p>
-                          )}
-                        </div>
+                {insumosOptions.length === 1 && insumosOptions[0].value === 'no-data' && (
+                  <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
+                    No hay insumos disponibles en el sistema. 
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-amber-700 ml-1"
+                      onClick={() => fetchInsumos()}
+                    >
+                      Reintentar
+                    </Button>
+                  </div>
+                )}
+
+                {insumosSeleccionados.map((insumo, index) => (
+                  <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium">Insumo</label>
+                        <Combobox
+                          options={insumosOptions}
+                          value={insumo.insumo_id}
+                          onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
+                          placeholder="Seleccionar insumo"
+                          disabled={loading || loadingInsumos || isEditing}
+                        />
+                        {insumo.nombre && (
+                          <p className="text-xs text-muted-foreground">
+                            Stock disponible: {insumo.stock || 0}
+                          </p>
+                        )}
                       </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium">Cantidad</label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={insumo.stock || 1}
+                          value={insumo.cantidad}
+                          onChange={(e) => actualizarInsumo(index, 'cantidad', e.target.value)}
+                          placeholder="Cantidad"
+                          disabled={loading || isEditing}
+                        />
+                        {insumo.stock && insumo.cantidad > insumo.stock && (
+                          <p className="text-xs text-red-500">
+                            Cantidad excede el stock disponible
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {!isEditing && (
                       <Button
                         type="button"
                         onClick={() => eliminarInsumo(index)}
                         variant="ghost"
                         size="icon"
-                        disabled={loading}
+                        disabled={loading || isEditing}
                         className="mt-6"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">

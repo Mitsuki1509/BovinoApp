@@ -155,9 +155,7 @@ export default class ProduccionCarneController {
       fecha
     } = req.body;
 
-    console.log('🔍 Datos recibidos:', req.body);
 
-    // Validaciones de campos requeridos
     if (!animal_id || animal_id === 'null' || animal_id === '') {
       return res.status(400).json({
         ok: false,
@@ -193,12 +191,10 @@ export default class ProduccionCarneController {
       });
     }
 
-    // Convertir IDs a números
     const animalId = parseInt(animal_id);
     const mataderoId = parseInt(matadero_id);
     const unidadId = parseInt(unidad_id);
 
-    // Validar que el animal existe y está activo
     const animal = await prisma.animales.findFirst({
       where: { 
         animal_id: animalId,
@@ -220,9 +216,6 @@ export default class ProduccionCarneController {
       });
     }
 
-    console.log('🔍 Animal encontrado:', animal.arete);
-
-    // Validar que el matadero existe
     const matadero = await prisma.mataderos.findFirst({
       where: { 
         matadero_id: mataderoId,
@@ -237,7 +230,6 @@ export default class ProduccionCarneController {
       });
     }
 
-    // Validar que la unidad existe
     const unidad = await prisma.unidades.findFirst({
       where: { 
         unidad_id: unidadId,
@@ -254,11 +246,8 @@ export default class ProduccionCarneController {
 
     let pesajeId = null;
 
-    // Si no se proporciona pesaje_id, crear uno automáticamente
     if (!pesaje_id || pesaje_id === 'null' || pesaje_id === '') {
-      console.log('🔍 Creando pesaje automáticamente...');
-      
-      // Generar número de pesaje único
+
       const ultimoPesaje = await prisma.pesajes.findFirst({
         orderBy: { pesaje_id: 'desc' }
       });
@@ -267,7 +256,6 @@ export default class ProduccionCarneController {
         `PES-${String(ultimoPesaje.pesaje_id + 1).padStart(4, '0')}` : 
         'PES-0001';
 
-      // Crear el pesaje automáticamente
       const nuevoPesaje = await prisma.pesajes.create({
         data: {
           animal_id: animalId,
@@ -279,9 +267,8 @@ export default class ProduccionCarneController {
       });
 
       pesajeId = nuevoPesaje.pesaje_id;
-      console.log('🔍 Pesaje creado automáticamente con ID:', pesajeId);
     } else {
-      // Usar el pesaje_id proporcionado
+
       pesajeId = parseInt(pesaje_id);
       const pesaje = await prisma.pesajes.findFirst({
         where: { 
@@ -298,7 +285,6 @@ export default class ProduccionCarneController {
       }
     }
 
-    // Verificar que no exista ya una producción para este animal
     const produccionExistente = await prisma.produccion_carne.findFirst({
       where: { 
         animal_id: animalId,
@@ -313,11 +299,7 @@ export default class ProduccionCarneController {
       });
     }
 
-    console.log('🔍 Iniciando transacción para crear producción y dar de baja animal...');
-
-    // Usar transacción para asegurar que ambas operaciones se completen
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Crear la producción de carne
       const nuevaProduccion = await tx.produccion_carne.create({
         data: {
           animal_id: animalId,
@@ -364,9 +346,6 @@ export default class ProduccionCarneController {
         }
       });
 
-      console.log('🔍 Producción creada:', nuevaProduccion.produccion_id);
-
-      // 2. Hacer soft delete del animal (marcar como eliminado)
       const animalActualizado = await tx.animales.update({
         where: { animal_id: animalId },
         data: { 
@@ -379,12 +358,8 @@ export default class ProduccionCarneController {
         }
       });
 
-      console.log('🔍 Animal marcado como eliminado:', animalActualizado.animal_id);
-
       return nuevaProduccion;
     });
-
-    console.log('🔍 Transacción completada exitosamente');
 
     return res.status(201).json({
       ok: true,
@@ -393,9 +368,7 @@ export default class ProduccionCarneController {
     });
 
   } catch (error) {
-    console.error('❌ ERROR en create:', error);
-    
-    // Manejo específico de errores de Prisma
+  
     if (error.code === 'P2002') {
       return res.status(400).json({
         ok: false,
@@ -774,9 +747,7 @@ export default class ProduccionCarneController {
   }
 static async getPesajesDisponibles(req, res) {
   try {
-    console.log('🔍 Buscando pesajes disponibles...');
-    
-    // Primero obtener todos los pesajes activos
+
     const todosPesajes = await prisma.pesajes.findMany({
       where: { 
         deleted_at: null
@@ -807,12 +778,9 @@ static async getPesajesDisponibles(req, res) {
       }
     });
 
-    // Filtrar en JavaScript los pesajes que NO tienen producción de carne asociada
     const pesajesDisponibles = todosPesajes.filter(pesaje => 
       pesaje.producciones_carne.length === 0
     );
-
-    console.log(`🔍 Se encontraron ${pesajesDisponibles.length} pesajes disponibles de ${todosPesajes.length} totales`);
 
     return res.json({
       ok: true,

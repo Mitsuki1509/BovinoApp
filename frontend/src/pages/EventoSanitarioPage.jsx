@@ -20,8 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar as CalendarIcon, Stethoscope
+import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, CheckCircle,
+  XCircle, Calendar as CalendarIcon
  } from 'lucide-react';
 import EventoSanitarioForm from '@/components/eventosSanitario/EventoSanitarioForm';
 import Modal from '@/components/ui/modal';
@@ -176,25 +176,21 @@ const EventosSanitariosPage = () => {
     setEditingEvento(null);
   }, []);
 
-  // Función para convertir cualquier fecha a formato YYYY-MM-DD sin zona horaria
   const convertirAFechaLocal = (fecha) => {
     try {
       if (!fecha) return null;
       
       let date;
       
-      // Si es string YYYY-MM-DD, convertir directamente
       if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [year, month, day] = fecha.split('-').map(Number);
         date = new Date(year, month - 1, day);
       } else {
-        // Para otros formatos, crear fecha
         date = new Date(fecha);
       }
       
       if (isNaN(date.getTime())) return null;
       
-      // Usar UTC para evitar problemas de zona horaria
       const year = date.getUTCFullYear();
       const month = String(date.getUTCMonth() + 1).padStart(2, '0');
       const day = String(date.getUTCDate()).padStart(2, '0');
@@ -250,11 +246,11 @@ const EventosSanitariosPage = () => {
 
   const getItemName = () => {
     if (!itemToDelete) return '';
-    return `Evento Sanitario #${itemToDelete.evento_sanitario_id}`;
+    return `Evento Sanitario ${itemToDelete.numero_evento}`;
   };
 
   const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
-  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario';
+  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario'|| user?.rol === 'operario';
 
   if (!canManage) {
     return (
@@ -371,6 +367,7 @@ const EventosSanitariosPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
+                        <th className="text-left py-3 font-medium">Número</th>
                         <th className="text-left py-3 font-medium">Animal</th>
                         <th className="text-left py-3 font-medium">Tipo Evento</th>
                         <th className="text-left py-3 font-medium">Estado</th>
@@ -384,6 +381,13 @@ const EventosSanitariosPage = () => {
                     <tbody>
                       {filteredEventos.map((eventoItem) => (                        
                         <tr key={eventoItem.evento_sanitario_id} className="border-b hover:bg-gray-50">
+                           <td className="py-3">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="font-mono">
+                                {eventoItem.numero_evento || `EVT-${eventoItem.evento_sanitario_id.toString().padStart(4, '0')}`}
+                              </Badge>
+                            </div>
+                          </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary"  className="font-mono">

@@ -244,33 +244,12 @@ const AlimentacionesPage = () => {
     }
   };
 
-  const getItemName = () => {
-    if (!itemToDelete) return '';
-    return `Alimentación #${itemToDelete.alimentacion_id}`;
-  };
+    const getItemName = () => {
+      if (!itemToDelete) return '';
+      return `Alimentación ${itemToDelete.numero_alimentacion || `#${itemToDelete.alimentacion_id}`}`;
+    };
 
-  const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
-  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario';
-
-  if (!canManage) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de alimentaciones.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
+  const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario'|| user?.rol === 'operario';
 
   return (
     <MainLayout>
@@ -350,6 +329,7 @@ const AlimentacionesPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-left py-3 font-medium">Número</th>
                       <th className="text-left py-3 font-medium">Animal</th>
                       <th className="text-left py-3 font-medium">Insumo</th>
                       <th className="text-left py-3 font-medium">Cantidad</th>
@@ -360,6 +340,13 @@ const AlimentacionesPage = () => {
                   <tbody>
                     {filteredAlimentaciones.map((alimentacionItem) => (                        
                       <tr key={alimentacionItem.alimentacion_id} className="border-b hover:bg-gray-50">
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {alimentacionItem.numero_alimentacion || `ALIM-${alimentacionItem.alimentacion_id.toString().padStart(4, '0')}`}
+                            </Badge>
+                          </div>
+                        </td>
                         <td className="py-3">
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="font-mono">

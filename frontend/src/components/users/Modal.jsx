@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CardContent } from '@/components/ui/card';
-import { Loader2, Eye, EyeOff, Lock } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription, 
 } from '@/components/ui/dialog';
 import { useUserAdminStore } from '@/store/userAdminStore';
 
@@ -25,9 +26,8 @@ const Modal = ({
   usuario = null,
   onSuccess 
 }) => {
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
   
   const { resetPassword, loading, error } = useUserAdminStore();
 
@@ -37,6 +37,15 @@ const Modal = ({
       confirmar_contraseña: ''
     }
   });
+
+  useEffect(() => {
+    if (!open) {
+      const timer = setTimeout(() => {
+        triggerRef.current?.focus?.();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
 
   const onSubmit = async (data) => {
     const errors = {};
@@ -79,113 +88,100 @@ const Modal = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="w-full justify-start">
-          <Lock className=" h-4 w-4" />
+        <Button 
+          ref={triggerRef}
+          variant="ghost" 
+          className="w-full justify-start"
+        >
+          <Lock className="h-4 w-4 mr-2" />
           Cambiar Contraseña
         </Button>
       </DialogTrigger>
+      
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Cambiar Contraseña</DialogTitle>
+          <DialogDescription>
+            Formulario para cambiar la contraseña del usuario {usuario?.nombre}. 
+            Ingrese y confirme la nueva contraseña.
+          </DialogDescription>
         </DialogHeader>
         
-          <CardContent className="p-0 pt-4">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {error && (
-                  <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                    {error}
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="nueva_contraseña"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nueva Contraseña</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type={showNewPassword ? "text" : "password"}
-                              placeholder="Ingrese la nueva contraseña" 
-                              {...field} 
-                              disabled={loading}
-                              className="pr-10"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowNewPassword(!showNewPassword)}
-                            >
-                              {showNewPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="confirmar_contraseña"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirmar Nueva Contraseña</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type={showConfirmPassword ? "text" : "password"}
-                              placeholder="Confirme la nueva contraseña" 
-                              {...field} 
-                              disabled={loading}
-                              className="pr-10"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                              {showConfirmPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+        <CardContent className="p-0 pt-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {error && (
+                <div 
+                  className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md"
+                  role="alert"
+                >
+                  {error}
                 </div>
+              )}
 
-                <div className="pt-2 flex gap-3">
-                  <Button 
-                    type="submit" 
-                    disabled={loading}
-                    className="flex-1"
-                    variant="login"
-                  >
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Cambiar Contraseña
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="nueva_contraseña"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nueva Contraseña</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Ingrese la nueva contraseña" 
+                          {...field} 
+                          disabled={loading}
+                          className="w-full"
+                          aria-describedby="password-help"
+                        />
+                      </FormControl>
+                      <div id="password-help" className="text-xs text-muted-foreground">
+                        Mínimo 6 caracteres
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirmar_contraseña"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar Nueva Contraseña</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Confirme la nueva contraseña" 
+                          {...field} 
+                          disabled={loading}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="flex-1"
+                  variant="login"
+                >
+                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Cambiar Contraseña
+                </Button>
+                
+               
+              </div>
+            </form>
+          </Form>
+        </CardContent>
       </DialogContent>
-      
     </Dialog>
   );
 };
