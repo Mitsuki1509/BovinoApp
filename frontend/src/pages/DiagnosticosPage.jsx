@@ -216,11 +216,15 @@ const DiagnosticosPage = () => {
     );
   });
 
+  
   const getItemName = () => {
     if (!itemToDelete) return '';
-    return `Diagnóstico #${itemToDelete.prenez_id}`;
+    
+    const numeroMonta = itemToDelete.monta?.numero_monta;
+    const numeroMontaFormateado = formatearNumeroMonta(numeroMonta);
+    
+    return `Diagnóstico de la ${numeroMontaFormateado}`;
   };
-
   const getResultadoBadge = (resultado) => {
     return resultado ? 
       <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-100">
@@ -231,35 +235,12 @@ const DiagnosticosPage = () => {
       </Badge>;
   };
 
-  const canManage = user?.rol === 'admin' || user?.rol === 'veterinario';
-
-  if (!canManage) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de diagnósticos.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
-
   const formatDateSafe = (dateString) => {
     try {
         if (!dateString) return 'N/A';
         
         const date = new Date(dateString);
         
-        // Ajustar por huso horario local
         const adjustedDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
         
         return format(adjustedDate, "dd/MM/yyyy", { locale: es });
@@ -277,15 +258,17 @@ const DiagnosticosPage = () => {
             <h1 className="text-2xl sm:text-3xl font-bold">Gestión de Diagnósticos</h1>
             <p className="text-gray-600 text-sm sm:text-base">Administra los diagnósticos de preñez del sistema</p>
           </div>
-          <Button 
-            onClick={handleCreate} 
-            className="flex items-center gap-2 w-full sm:w-auto"
-            type="button"
-            variant="reproduccion"
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo Diagnóstico
-          </Button>
+          {(user?.rol === 'admin' || user?.rol === 'veterinario') && (
+            <Button 
+              onClick={handleCreate} 
+              className="flex items-center gap-2 w-full sm:w-auto"
+              type="button"
+              variant="reproduccion"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo Diagnóstico
+            </Button>
+          )}
         </div>
 
         <div className="relative">
@@ -342,7 +325,7 @@ const DiagnosticosPage = () => {
                           <td className="py-3">
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="font-mono">
-                                {diagnosticoItem.monta?.macho?.arete || 'No asignado'}
+                                {diagnosticoItem.monta?.macho?.arete || 'N/A'}
 
                               </Badge>
                             </div>
@@ -378,7 +361,7 @@ const DiagnosticosPage = () => {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                
-                                {user.rol === 'admin' && (
+                                {(user.rol === 'admin' || user.rol === 'veterinario')&& (
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(diagnosticoItem)}
                                     className="text-red-600 focus:text-red-600"
@@ -416,10 +399,10 @@ const DiagnosticosPage = () => {
                                 <span className="font-medium">{diagnosticoItem.metodo || 'N/A'}</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">Hembra: {diagnosticoItem.monta?.hembra?.arete || 'N/A'}</span>
+                                <span className="text-gray-600">Hembra: {diagnosticoItem.monta?.hembra?.arete }</span>
                               </div>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">Macho: {diagnosticoItem.monta?.macho?.arete || 'No asignado'}</span>
+                                <span className="text-gray-600">Macho: {diagnosticoItem.monta?.macho?.arete || 'N/A'}</span>
                               </div>
                               {diagnosticoItem.fecha_probable_parto && (
                                 <div className="flex items-center gap-2 text-sm">
@@ -443,7 +426,7 @@ const DiagnosticosPage = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                             
-                              {user.rol === 'admin' && (
+                              {(user.rol === 'admin' || user.rol === 'veterinario') &&(
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(diagnosticoItem)}
                                   className="text-red-600 focus:text-red-600"

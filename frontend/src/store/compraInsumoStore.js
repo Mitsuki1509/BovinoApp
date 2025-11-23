@@ -1,20 +1,20 @@
 import { create } from 'zustand';
 
-export const useCompraStore = create((set, get) => ({
-  compras: [],
+export const useCompraInsumoStore = create((set, get) => ({
+  comprasInsumos: [],
   loading: false,
   error: null,
 
-  fetchCompras: async () => {
+  fetchComprasInsumos: async () => {
     const currentState = get();
     if (currentState.loading) return;
     
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/compras', {
+      const response = await fetch('http://localhost:3000/api/comprasInsumo', {
         credentials: 'include'
       });
-      
+     
       const result = await response.json();
       
       if (!response.ok) {
@@ -22,22 +22,22 @@ export const useCompraStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        set({ compras: result.data || [], loading: false });
+        set({ comprasInsumos: result.data || [], loading: false });
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
       }
     } catch (error) {
       set({ 
-        error: error.message || 'Error al cargar compras', 
+        error: error.message || 'Error al cargar compras de insumos', 
         loading: false 
       });
     }
   },
 
-  createCompra: async (compraData) => {
+  createCompraInsumo: async (compraData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('http://localhost:3000/api/compras', {
+      const response = await fetch('http://localhost:3000/api/comprasInsumo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,22 +54,22 @@ export const useCompraStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchCompras();
+        get().fetchComprasInsumos();
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al crear compra', loading: false });
+      set({ error: error.message || 'Error al crear compra de insumos', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  updateCompra: async (id, compraData) => {
+  updateCompraInsumo: async (id, compraData) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch(`http://localhost:3000/api/compras/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/comprasInsumo/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -86,21 +86,21 @@ export const useCompraStore = create((set, get) => ({
       
       if (result.ok) {
         set({ loading: false });
-        get().fetchCompras();
+        get().fetchComprasInsumos();
         return { success: true, data: result.data };
       } else {
         set({ error: result.msg || 'Error desconocido', loading: false });
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      set({ error: error.message || 'Error al actualizar compra', loading: false });
+      set({ error: error.message || 'Error al actualizar compra de insumos', loading: false });
       return { success: false, error: error.message };
     }
   },
 
-  deleteCompra: async (id) => {
+  deleteCompraInsumo: async (id) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/compras/${id}`, {
+      const response = await fetch(`http://localhost:3000/api/comprasInsumo/${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -112,64 +112,12 @@ export const useCompraStore = create((set, get) => ({
       }
       
       if (result.ok) {
-        get().fetchCompras();
+        get().fetchComprasInsumos();
         return { success: true };
       } else {
         return { success: false, error: result.msg };
       }
     } catch (error) {
-      return { success: false, error: error.message };
-    }
-  },
-
-  fetchCompraById: async (id) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await fetch(`http://localhost:3000/api/compras/${id}`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        set({ loading: false });
-        return { success: true, data: result.data };
-      } else {
-        set({ error: result.msg || 'Error desconocido', loading: false });
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      set({ error: error.message || 'Error al cargar compra', loading: false });
-      return { success: false, error: error.message };
-    }
-  },
-
-  fetchCompraByNumero: async (numeroCompra) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await fetch(`http://localhost:3000/api/compras/numero/${numeroCompra}`, {
-        credentials: 'include'
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.msg || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      if (result.ok) {
-        set({ loading: false });
-        return { success: true, data: result.data };
-      } else {
-        set({ error: result.msg || 'Error desconocido', loading: false });
-        return { success: false, error: result.msg };
-      }
-    } catch (error) {
-      set({ error: error.message || 'Error al cargar compra', loading: false });
       return { success: false, error: error.message };
     }
   },

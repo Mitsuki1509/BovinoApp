@@ -129,7 +129,7 @@ export default class TypeController {
 
   static async createType(req, res) {
     try {
-      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario') {
+      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario' && req.usuario.rol !== 'operario') {
         return res.status(403).json({
           ok: false,
           msg: "No tienes permisos para crear tipos de evento"
@@ -209,7 +209,7 @@ export default class TypeController {
 
   static async updateType(req, res) {
     try {
-      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario') {
+      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario' && req.usuario.rol !== 'operario') {
         return res.status(403).json({
           ok: false,
           msg: "No tienes permisos para actualizar tipos de evento"
@@ -335,7 +335,7 @@ export default class TypeController {
 
   static async deleteType(req, res) {
     try {
-      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario') {
+      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario' && req.usuario.rol !== 'operario') {
         return res.status(403).json({
           ok: false,
           msg: "No tienes permisos para eliminar tipos de evento"

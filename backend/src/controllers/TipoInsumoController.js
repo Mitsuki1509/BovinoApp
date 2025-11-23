@@ -42,13 +42,6 @@ export default class TipoInsumoController {
       const { id } = req.params;
       const tipoInsumoId = parseInt(id);
 
-      if (isNaN(tipoInsumoId)) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del tipo de insumo debe ser un número válido"
-        });
-      }
-
       const tipoInsumo = await prisma.tipo_insumo.findFirst({
         where: { 
           tipo_insumo_id: tipoInsumoId,
@@ -58,11 +51,6 @@ export default class TipoInsumoController {
           insumos: {
             where: {
               deleted_at: null
-            },
-            select: {
-              insumo_id: true,
-              nombre: true,
-              cantidad: true
             }
           }
         }
@@ -161,13 +149,6 @@ export default class TipoInsumoController {
       const { nombre } = req.body;
 
       const tipoInsumoId = parseInt(id);
-
-      if (isNaN(tipoInsumoId)) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del tipo de insumo debe ser un número válido"
-        });
-      }
 
       const tipoExistente = await prisma.tipo_insumo.findFirst({
         where: { 

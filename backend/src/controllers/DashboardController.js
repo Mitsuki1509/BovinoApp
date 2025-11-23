@@ -183,25 +183,22 @@ static async getTendenciaProduccion(req, res) {
             `
         ]);
 
-        // SOLUCIÓN: Devolver las fechas tal cual vienen de la base de datos
         const responseData = {
             produccion: produccionPorDia.map(item => ({
-                fecha: item.fecha.toISOString().split('T')[0], // Sin ajustes
+                fecha: item.fecha.toISOString().split('T')[0], 
                 cantidad: Number(item._sum?.cantidad) || 0
             })),
             reproduccion: eventosReproductivos.map(item => ({
-                fecha: item.fecha.toISOString().split('T')[0], // Sin ajustes
+                fecha: item.fecha.toISOString().split('T')[0],
                 cantidad: Number(item._count?.monta_id) || 0
             })),
             salud: eventosSanitarios.map(item => ({
-                fecha: item.fecha.toISOString().split('T')[0], // Sin ajustes
+                fecha: item.fecha.toISOString().split('T')[0], 
                 cantidad: Number(item._count?.evento_sanitario_id) || 0
             })),
             produccionPorRaza: convertBigInt(produccionPorRaza)
         };
 
-        // Agregar console.log para debug
-        console.log('Datos de producción enviados:', responseData.produccion);
 
         return res.json({
             ok: true,

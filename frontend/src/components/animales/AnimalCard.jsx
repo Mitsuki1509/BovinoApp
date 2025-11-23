@@ -1,5 +1,7 @@
+import { Button } from '@/components/ui/button';
+
 const FALLBACK_IMG = "/placeholder-animal.jpg";
-import { Button } from '@/components/ui/button'
+
 const AnimalCard = ({ animal, onVerDetalles }) => {
   const imgSrc = animal?.imagen || FALLBACK_IMG;
 
@@ -8,21 +10,58 @@ const AnimalCard = ({ animal, onVerDetalles }) => {
 
   const calculateEdad = (fechaNacimiento) => {
     if (!fechaNacimiento) return 'Edad no disponible';
-    const nacimiento = new Date(fechaNacimiento);
-    const hoy = new Date();
-    let años = hoy.getFullYear() - nacimiento.getFullYear();
-    let meses = hoy.getMonth() - nacimiento.getMonth();
     
-    if (meses < 0) {
-      años--;
-      meses += 12;
+    try {
+      let nacimiento;
+      
+      if (typeof fechaNacimiento === 'string' && fechaNacimiento.includes('-')) {
+        const [year, month, day] = fechaNacimiento.split('-');
+        nacimiento = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        nacimiento = new Date(fechaNacimiento);
+      }
+      
+      const hoy = new Date();
+      let años = hoy.getFullYear() - nacimiento.getFullYear();
+      let meses = hoy.getMonth() - nacimiento.getMonth();
+      
+      if (meses < 0) {
+        años--;
+        meses += 12;
+      }
+      
+      if (hoy.getDate() < nacimiento.getDate()) {
+        meses--;
+        if (meses < 0) {
+          años--;
+          meses += 12;
+        }
+      }
+      
+      if (años === 0) {
+        return `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+      }
+      
+      return `${años} ${años === 1 ? 'año' : 'años'}${meses > 0 ? `, ${meses} ${meses === 1 ? 'mes' : 'meses'}` : ''}`;
+    } catch (error) {
+      return 'Edad no disponible';
     }
+  };
+
+  const formatFecha = (fecha) => {
+    if (!fecha) return 'No especificada';
     
-    if (años === 0) {
-      return `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+    try {
+      if (typeof fecha === 'string' && fecha.includes('-')) {
+        const [year, month, day] = fecha.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return date.toLocaleDateString('es-ES');
+      }
+      
+      return new Date(fecha).toLocaleDateString('es-ES');
+    } catch (error) {
+      return 'Fecha inválida';
     }
-    
-    return `${años} ${años === 1 ? 'año' : 'años'}${meses > 0 ? `, ${meses} ${meses === 1 ? 'mes' : 'meses'}` : ''}`;
   };
 
   return (
@@ -57,6 +96,11 @@ const AnimalCard = ({ animal, onVerDetalles }) => {
           </div>
           
           <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="font-medium">Nacimiento:</span>
+            <span>{formatFecha(animal?.fecha_nacimiento)}</span>
+          </div>
+          
+          <div className="flex items-center gap-2 text-sm text-gray-600">
             <span className="font-medium">Edad:</span>
             <span>{calculateEdad(animal?.fecha_nacimiento)}</span>
           </div>
@@ -70,6 +114,7 @@ const AnimalCard = ({ animal, onVerDetalles }) => {
         <Button
           onClick={() => onVerDetalles(animal)}
           variant="ganado"
+          className="mt-auto"
         >
           Más información
         </Button>

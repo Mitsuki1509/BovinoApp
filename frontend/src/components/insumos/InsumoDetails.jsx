@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin,  Calendar, Tag, Edit, Trash2, Clock } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 
 const FALLBACK_IMG = "/placeholder-insumo.jpg";
 

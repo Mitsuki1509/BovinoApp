@@ -447,22 +447,15 @@ export default class InsumoController {
 
   static async delete(req, res) {
     try {
-      if (req.usuario.rol !== 'admin') {
+      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'contable') {
         return res.status(403).json({
           ok: false,
-          msg: "Solo los administradores pueden eliminar insumos"
+          msg: "Solo los administradores y contables pueden eliminar insumos"
         });
       }
 
       const { id } = req.params;
       const insumoId = parseInt(id);
-
-      if (isNaN(insumoId)) {
-        return res.status(400).json({
-          ok: false,
-          msg: "El ID del insumo debe ser un número válido"
-        });
-      }
 
       const insumo = await prisma.insumos.findFirst({
         where: { 
@@ -477,7 +470,7 @@ export default class InsumoController {
                   deleted_at: null
                 }
               },
-              detalle_compras: {
+              detalle_compras_insumos: {
                 where: {
                   deleted_at: null
                 }
@@ -500,7 +493,7 @@ export default class InsumoController {
       }
 
       if (insumo._count.alimentaciones > 0 || 
-          insumo._count.detalle_compras > 0 || 
+          insumo._count.detalle_compras_insumos > 0 || 
           insumo._count.evento_insumos > 0) {
         return res.status(400).json({
           ok: false,

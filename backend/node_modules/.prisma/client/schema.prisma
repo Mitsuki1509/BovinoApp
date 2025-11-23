@@ -56,19 +56,19 @@ model tipo_insumo {
 }
 
 model insumos {
-  insumo_id       Int               @id @default(autoincrement())
-  tipo_insumo_id  Int?
-  nombre          String            @db.VarChar(255)
-  imagen          String?           @db.VarChar(255)
-  cantidad        Int
-  unidad_id       Int?
-  descripcion     String?
-  deleted_at      DateTime?         @db.Timestamp(6)
-  alimentaciones  alimentacion[]
-  detalle_compras detalle_compras[]
-  evento_insumos  evento_insumo[]
-  tipo_insumo     tipo_insumo?      @relation(fields: [tipo_insumo_id], references: [tipo_insumo_id], onDelete: NoAction, onUpdate: NoAction)
-  unidad          unidades?         @relation(fields: [unidad_id], references: [unidad_id], onDelete: NoAction, onUpdate: NoAction)
+  insumo_id               Int                       @id @default(autoincrement())
+  tipo_insumo_id          Int?
+  nombre                  String                    @db.VarChar(255)
+  imagen                  String?                   @db.VarChar(255)
+  cantidad                Int
+  unidad_id               Int?
+  descripcion             String?
+  deleted_at              DateTime?                 @db.Timestamp(6)
+  alimentaciones          alimentacion[]
+  detalle_compras_insumos detalle_compras_insumos[]
+  evento_insumos          evento_insumo[]
+  tipo_insumo             tipo_insumo?              @relation(fields: [tipo_insumo_id], references: [tipo_insumo_id], onDelete: NoAction, onUpdate: NoAction)
+  unidad                  unidades?                 @relation(fields: [unidad_id], references: [unidad_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model tipo_evento {
@@ -109,61 +109,86 @@ model lotes {
 }
 
 model animales {
-  animal_id          Int                  @id @default(autoincrement())
-  animal_madre_id    Int?
-  animal_padre_id    Int?
-  lote_id            Int?
-  raza_id            Int?
-  imagen             String?              @db.VarChar(255)
-  arete              String               @unique @db.VarChar(100)
-  sexo               String?              @db.Char(1)
-  fecha_destete      DateTime?            @db.Date
-  fecha_nacimiento   DateTime             @db.Date
-  deleted_at         DateTime?            @db.Timestamp(6)
-  alimentaciones     alimentacion[]
-  madre              animales?            @relation("Madre", fields: [animal_madre_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
-  hijos_madre        animales[]           @relation("Madre")
-  padre              animales?            @relation("Padre", fields: [animal_padre_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
-  hijos_padre        animales[]           @relation("Padre")
-  lote               lotes?               @relation(fields: [lote_id], references: [lote_id], onDelete: NoAction, onUpdate: NoAction)
-  raza               razas?               @relation(fields: [raza_id], references: [raza_id], onDelete: NoAction, onUpdate: NoAction)
-  montas_hembra      evento_monta[]       @relation("MontaHembra")
-  montas_macho       evento_monta[]       @relation("MontaMacho")
-  eventos_sanitarios evento_sanitario[]
-  pesajes            pesajes[]
-  producciones_carne produccion_carne[]
-  producciones_leche produccion_lechera[]
+  animal_id                Int                        @id @default(autoincrement())
+  animal_madre_id          Int?
+  animal_padre_id          Int?
+  lote_id                  Int?
+  raza_id                  Int?
+  imagen                   String?                    @db.VarChar(255)
+  arete                    String                     @unique @db.VarChar(100)
+  sexo                     String?                    @db.Char(1)
+  fecha_destete            DateTime?                  @db.Date
+  fecha_nacimiento         DateTime                   @db.Date
+  deleted_at               DateTime?                  @db.Timestamp(6)
+  alimentaciones           alimentacion[]
+  madre                    animales?                  @relation("Madre", fields: [animal_madre_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
+  hijos_madre              animales[]                 @relation("Madre")
+  padre                    animales?                  @relation("Padre", fields: [animal_padre_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
+  hijos_padre              animales[]                 @relation("Padre")
+  lote                     lotes?                     @relation(fields: [lote_id], references: [lote_id], onDelete: NoAction, onUpdate: NoAction)
+  raza                     razas?                     @relation(fields: [raza_id], references: [raza_id], onDelete: NoAction, onUpdate: NoAction)
+  detalle_compras_animales detalle_compras_animales[]
+  montas_hembra            evento_monta[]             @relation("MontaHembra")
+  montas_macho             evento_monta[]             @relation("MontaMacho")
+  eventos_sanitarios       evento_sanitario[]
+  pesajes                  pesajes[]
+  producciones_carne       produccion_carne[]
+  producciones_leche       produccion_lechera[]
 }
 
 model proveedores {
-  proveedor_id      Int       @id @default(autoincrement())
-  nombre_compañia  String    @db.VarChar(255)
-  nombre_contacto   String?   @db.VarChar(255)
-  telefono_local    String?   @db.Char(8)
-  telefono_completo String?   @default(dbgenerated("('505'::text || (telefono_local)::text)")) @db.VarChar(20)
-  deleted_at        DateTime? @db.Timestamp(6)
-  compras           compras[]
+  proveedor_id      Int                @id @default(autoincrement())
+  nombre_compañia  String             @db.VarChar(255)
+  nombre_contacto   String?            @db.VarChar(255)
+  telefono_local    String?            @db.Char(8)
+  telefono_completo String?            @default(dbgenerated("('505'::text || (telefono_local)::text)")) @db.VarChar(20)
+  deleted_at        DateTime?          @db.Timestamp(6)
+  compras_animales  compras_animales[]
+  compras_insumos   compras_insumos[]
 }
 
-model compras {
-  compra_id       Int               @id @default(autoincrement())
-  numero_compra   String            @db.VarChar(20)
-  proveedor_id    Int?
-  fecha           DateTime          @db.Date
-  deleted_at      DateTime?         @db.Timestamp(6)
-  proveedor       proveedores?      @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction)
-  detalle_compras detalle_compras[]
+model compras_insumos {
+  compra_insumo_id Int                       @id @default(autoincrement())
+  numero_compra    String                    @db.VarChar(20)
+  proveedor_id     Int?
+  fecha            DateTime                  @db.Date
+  deleted_at       DateTime?                 @db.Timestamp(6)
+  proveedor        proveedores?              @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction)
+  detalles         detalle_compras_insumos[]
 }
 
-model detalle_compras {
-  detalle_id Int       @id @default(autoincrement())
-  compra_id  Int?
-  insumo_id  Int?
-  precio     Decimal   @db.Decimal(10, 2)
-  cantidad   Int
-  deleted_at DateTime? @db.Timestamp(6)
-  compra     compras?  @relation(fields: [compra_id], references: [compra_id], onDelete: NoAction, onUpdate: NoAction)
-  insumo     insumos?  @relation(fields: [insumo_id], references: [insumo_id], onDelete: NoAction, onUpdate: NoAction)
+model detalle_compras_insumos {
+  compra_insumo_id Int
+  insumo_id        Int
+  precio           Decimal         @db.Decimal(10, 2)
+  cantidad         Int
+  deleted_at       DateTime?       @db.Timestamp(6)
+  compra_insumo    compras_insumos @relation(fields: [compra_insumo_id], references: [compra_insumo_id], onDelete: NoAction, onUpdate: NoAction)
+  insumo           insumos         @relation(fields: [insumo_id], references: [insumo_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([compra_insumo_id, insumo_id])
+}
+
+model compras_animales {
+  compra_animal_id Int                        @id @default(autoincrement())
+  numero_compra    String                     @db.VarChar(20)
+  proveedor_id     Int?
+  fecha            DateTime                   @db.Date
+  deleted_at       DateTime?                  @db.Timestamp(6)
+  proveedor        proveedores?               @relation(fields: [proveedor_id], references: [proveedor_id], onDelete: NoAction, onUpdate: NoAction)
+  detalles         detalle_compras_animales[]
+}
+
+model detalle_compras_animales {
+  compra_animal_id Int
+  animal_id        Int
+  precio           Decimal          @db.Decimal(10, 2)
+  observaciones    String?
+  deleted_at       DateTime?        @db.Timestamp(6)
+  animal           animales         @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
+  compra_animal    compras_animales @relation(fields: [compra_animal_id], references: [compra_animal_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([compra_animal_id, animal_id])
 }
 
 model evento_sanitario {
@@ -175,6 +200,7 @@ model evento_sanitario {
   tratamiento         String?
   fecha               DateTime        @db.Date
   deleted_at          DateTime?       @db.Timestamp(6)
+  numero_evento       String?         @db.VarChar(20)
   evento_insumo       evento_insumo[]
   animal              animales?       @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   tipo_evento         tipo_evento?    @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
@@ -192,14 +218,15 @@ model evento_insumo {
 }
 
 model alimentacion {
-  alimentacion_id Int       @id @default(autoincrement())
-  insumo_id       Int?
-  animal_id       Int?
-  cantidad        Int
-  fecha           DateTime  @db.Date
-  deleted_at      DateTime? @db.Timestamp(6)
-  animal          animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
-  insumo          insumos?  @relation(fields: [insumo_id], references: [insumo_id], onDelete: NoAction, onUpdate: NoAction)
+  alimentacion_id     Int       @id @default(autoincrement())
+  insumo_id           Int?
+  animal_id           Int?
+  cantidad            Int
+  fecha               DateTime  @db.Date
+  deleted_at          DateTime? @db.Timestamp(6)
+  numero_alimentacion String?   @db.VarChar(20)
+  animal              animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
+  insumo              insumos?  @relation(fields: [insumo_id], references: [insumo_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model pesajes {
@@ -238,15 +265,16 @@ model produccion_carne {
 }
 
 model produccion_lechera {
-  produccion_id Int       @id @default(autoincrement())
-  animal_id     Int?
-  cantidad      Int
-  unidad_id     Int?
-  fecha         DateTime  @db.Date
-  descripcion   String?
-  deleted_at    DateTime? @db.Timestamp(6)
-  animal        animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
-  unidad        unidades? @relation(fields: [unidad_id], references: [unidad_id], onDelete: NoAction, onUpdate: NoAction)
+  produccion_id     Int       @id @default(autoincrement())
+  animal_id         Int?
+  cantidad          Int
+  unidad_id         Int?
+  fecha             DateTime  @db.Date
+  descripcion       String?
+  deleted_at        DateTime? @db.Timestamp(6)
+  numero_produccion String?   @db.VarChar(20)
+  animal            animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
+  unidad            unidades? @relation(fields: [unidad_id], references: [unidad_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model evento_monta {

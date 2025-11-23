@@ -20,8 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, AlertCircle
+import { Plus, Edit, Trash2, MoreHorizontal, Search, CheckCircle,
+  XCircle
  } from 'lucide-react';
 import RazaForm from '@/components/razas/RazaForm';
 import Modal from '@/components/ui/modal';
@@ -67,7 +67,6 @@ useEffect(() => {
   if (authStatus === 'authenticated' && 
       (user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario') && 
       !hasFetchedRazas) {
-    console.log('Cargando razas...');
     fetchRazas()
     setHasFetchedRazas(true);
   }
@@ -204,26 +203,6 @@ useEffect(() => {
     return itemToDelete.nombre || 'Raza';
   };
 
-  if (user.rol !== 'admin' && user.rol !== 'veterinario' && user.rol !='operario') {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de razas.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -301,7 +280,7 @@ useEffect(() => {
                                   <Edit className="h-4 w-4 mr-2" />
                                   Editar raza
                                 </DropdownMenuItem>
-                                {user.rol === 'admin' && (
+                                {(user.rol === 'admin'|| user.rol === 'operario'|| user.rol === 'veterinario') && (
                                   <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(razaItem)}
                                     className="text-red-600 focus:text-red-600"
@@ -350,7 +329,7 @@ useEffect(() => {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Editar raza
                               </DropdownMenuItem>
-                              {user.rol === 'admin' && (
+                              {(user.rol === 'admin' || user.rol === 'operario'|| user.rol === 'veterinario') && (
                                 <DropdownMenuItem 
                                   onClick={() => handleDeleteClick(razaItem)}
                                   className="text-red-600 focus:text-red-600"

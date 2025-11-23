@@ -117,7 +117,6 @@ const DiagnosticoForm = ({
                 return
             }
             
-            // Formatear fecha en formato ISO (más seguro)
             fechaPartoFormateada = fecha.toISOString().split('T')[0];
             console.log('Fecha formateada ISO:', fechaPartoFormateada);
         }
@@ -158,12 +157,11 @@ const DiagnosticoForm = ({
     return fechaParto;
   }
 
-  // CORRECCIÓN: Filtrar montas que no tengan diagnóstico y estén activas
   const montasOptions = montas
     .filter(monta => 
       !monta.deleted_at &&
       monta.estado === true &&
-      (!monta.diagnosticos || monta.diagnosticos.length === 0) // Solo montas sin diagnóstico
+      (!monta.diagnosticos || monta.diagnosticos.length === 0) 
     )
     .map(monta => ({
       value: monta.monta_id.toString(),
@@ -200,7 +198,7 @@ const DiagnosticoForm = ({
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar monta"
-                        disabled={loading || isEditing} // Deshabilitar en edición
+                        disabled={loading || isEditing} 
                         className="w-full"
                       />
                     </FormControl>
@@ -217,7 +215,6 @@ const DiagnosticoForm = ({
                 )}
               />
 
-              {/* Resto del formulario se mantiene igual */}
               <FormField
                 control={form.control}
                 name="metodo"

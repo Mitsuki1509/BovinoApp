@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar as CalendarIcon, Milk, TrendingUp
+  XCircle, Calendar as CalendarIcon, Milk, TrendingUp, Hash
  } from 'lucide-react';
 import ProduccionLecheraForm from '@/components/produccionLechera/ProduccionLecheraForm';
 import Modal from '@/components/ui/modal';
@@ -209,6 +209,7 @@ const ProduccionLecheraPage = () => {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
       const coincide = (
+        produccionItem.numero_produccion?.toLowerCase().includes(searchLower) ||
         produccionItem.animal?.arete?.toLowerCase().includes(searchLower) ||
         produccionItem.animal?.nombre?.toLowerCase().includes(searchLower) ||
         produccionItem.unidad?.nombre?.toLowerCase().includes(searchLower) ||
@@ -253,31 +254,11 @@ const ProduccionLecheraPage = () => {
 
   const getItemName = () => {
     if (!itemToDelete) return '';
-    return `Producción #${itemToDelete.produccion_id}`;
+    return `Producción ${itemToDelete.numero_produccion || `#${itemToDelete.produccion_id}`}`;
   };
 
-  const canManage = user?.rol === 'admin' || user?.rol === 'ordeño';
-  const canDelete = user?.rol === 'admin';
+  const canDelete = user?.rol === 'admin' || user?.rol === 'ordeño';
 
-  if (!canManage) {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de producciones lecheras.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -302,7 +283,7 @@ const ProduccionLecheraPage = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Buscar producciones por arete, nombre, unidad, cantidad o descripción..."
+              placeholder="Buscar producciones por número, arete, nombre, unidad, cantidad o descripción..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-full"
@@ -357,6 +338,7 @@ const ProduccionLecheraPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
+                        <th className="text-left py-3 font-medium">Número</th>
                         <th className="text-left py-3 font-medium">Animal</th>
                         <th className="text-left py-3 font-medium">Cantidad</th>
                         <th className="text-left py-3 font-medium">Fecha</th>
@@ -367,6 +349,13 @@ const ProduccionLecheraPage = () => {
                     <tbody>
                       {filteredProducciones.map((produccionItem) => (                        
                         <tr key={produccionItem.produccion_id} className="border-b hover:bg-gray-50">
+                          <td className='py-3'>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="font-mono">
+                                {produccionItem.numero_produccion || `LEC-${produccionItem.produccion_id.toString().padStart(4, '0')}`}
+                              </Badge>                   
+                            </div>
+                          </td>
                           <td className="py-3">
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="font-mono">
@@ -439,6 +428,11 @@ const ProduccionLecheraPage = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="secondary" className="font-mono">
+                                {produccionItem.numero_produccion || `LEC-${produccionItem.produccion_id.toString().padStart(4, '0')}`}
+                              </Badge>
+                            </div>
                             <div className="flex items-center gap-2 mb-2">
                               <Badge variant="secondary" className="font-mono">
                                 {produccionItem.animal?.arete}

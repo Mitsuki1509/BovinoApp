@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAlimentacionStore } from '@/store/alimentacionStore';
 import { useAnimalStore } from '@/store/animalStore';
+import { useInsumoStore } from '@/store/insumoStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CalendarIcon } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
@@ -14,61 +15,45 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 const AlimentacionForm = ({ 
   alimentacion = null, 
   onSuccess,
-  onCancel 
 }) => {
   const { 
     createAlimentacion, 
     updateAlimentacion, 
-    loading
+    loading: loadingAlimentacion
   } = useAlimentacionStore();
   
-  const { animales, fetchAnimales } = useAnimalStore();
+  const { animales, fetchAnimales, loading: loadingAnimales } = useAnimalStore();
+  const { insumos, fetchInsumos, loading: loadingInsumos } = useInsumoStore();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState('');
-  const [insumos, setInsumos] = useState([]);
   const [insumoSeleccionado, setInsumoSeleccionado] = useState(null);
+
+  const getCurrentDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const form = useForm({
     defaultValues: {
       animal_id: '',
       insumo_id: '',
-      cantidad: '',
-      fecha: new Date()
+      cantidad: ''
     }
   });
 
   useEffect(() => {
     fetchAnimales();
     fetchInsumos();
-  }, []);
-
-  const fetchInsumos = async () => {
-    try {
-      const response = await fetch('/api/insumos');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok) {
-          setInsumos(data.data || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error cargando insumos:', error);
-    }
-  };
+  }, [fetchAnimales, fetchInsumos]);
 
   useEffect(() => {
     if (alimentacion) {
@@ -76,10 +61,8 @@ const AlimentacionForm = ({
       form.reset({
         animal_id: alimentacion.animal_id ? alimentacion.animal_id.toString() : '',
         insumo_id: alimentacion.insumo_id ? alimentacion.insumo_id.toString() : '',
-        cantidad: alimentacion.cantidad ? alimentacion.cantidad.toString() : '',
-        fecha: alimentacion.fecha ? new Date(alimentacion.fecha) : new Date()
+        cantidad: alimentacion.cantidad ? alimentacion.cantidad.toString() : ''
       });
-      // Buscar el insumo seleccionado
       const insumo = insumos.find(i => i.insumo_id === alimentacion.insumo_id);
       setInsumoSeleccionado(insumo);
     } else {
@@ -87,44 +70,27 @@ const AlimentacionForm = ({
       form.reset({
         animal_id: '',
         insumo_id: '',
-        cantidad: '',
-        fecha: new Date()
+        cantidad: ''
       });
       setInsumoSeleccionado(null);
     }
   }, [alimentacion, form, insumos]);
 
-  const formatDateToLocalISO = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const onSubmit = async (data) => {
     setFormError('');
     
     try {
-      console.log('Datos del formulario:', data);
-      
-      if (!data.animal_id || !data.insumo_id || !data.cantidad || !data.fecha) {
+      if (!data.animal_id || !data.insumo_id || !data.cantidad) {
         setFormError('Todos los campos son obligatorios');
         return;
       }
- const fechaSeleccionada = data.fecha;
-    const fechaLocal = new Date(
-      fechaSeleccionada.getFullYear(),
-      fechaSeleccionada.getMonth(),
-      fechaSeleccionada.getDate()
-    );
 
-    const alimentacionData = {
-      animal_id: parseInt(data.animal_id),
-      insumo_id: parseInt(data.insumo_id),
-      cantidad: parseInt(data.cantidad),
-      fecha: format(fechaLocal, 'yyyy-MM-dd')
-    };
-      console.log('Datos a enviar:', alimentacionData);
+      const alimentacionData = {
+        animal_id: parseInt(data.animal_id),
+        insumo_id: parseInt(data.insumo_id),
+        cantidad: parseInt(data.cantidad),
+        fecha: getCurrentDate() 
+      };
 
       let result;
       if (isEditing) {
@@ -137,8 +103,7 @@ const AlimentacionForm = ({
         form.reset({
           animal_id: '',
           insumo_id: '',
-          cantidad: '',
-          fecha: new Date()
+          cantidad: ''
         });
         setInsumoSeleccionado(null);
         onSuccess?.();
@@ -155,7 +120,7 @@ const AlimentacionForm = ({
     .filter(animal => !animal.deleted_at)
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete} - ${animal.nombre || 'Sin nombre'}`
+      label: `${animal.arete}`
     }));
 
   const insumosOptions = insumos && insumos.length > 0 
@@ -172,13 +137,7 @@ const AlimentacionForm = ({
     setInsumoSeleccionado(insumo);
   };
 
-  const isDateDisabled = (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const compareDate = new Date(date);
-    compareDate.setHours(0, 0, 0, 0);
-    return compareDate > today;
-  };
+  const loading = loadingAlimentacion || loadingAnimales || loadingInsumos;
 
   return (
     <Card className="w-full border-0 shadow-none">
@@ -198,7 +157,7 @@ const AlimentacionForm = ({
                 rules={{ required: "El animal es obligatorio" }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Animal *</FormLabel>
+                    <FormLabel>Animal</FormLabel>
                     <FormControl>
                       <Combobox
                         options={animalesOptions}
@@ -220,7 +179,7 @@ const AlimentacionForm = ({
                 rules={{ required: "El insumo es obligatorio" }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Insumo *</FormLabel>
+                    <FormLabel>Insumo</FormLabel>
                     <FormControl>
                       <Combobox
                         options={insumosOptions}
@@ -254,7 +213,7 @@ const AlimentacionForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cantidad *</FormLabel>
+                    <FormLabel>Cantidad</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -275,57 +234,6 @@ const AlimentacionForm = ({
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="fecha"
-                rules={{ 
-                  required: "La fecha es requerida",
-                  validate: {
-                    notFuture: (value) => {
-                      return !isDateDisabled(value) || "La fecha no puede ser futura"
-                    }
-                  }
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Fecha de Alimentación *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={loading}
-                            type="button"
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP", { locale: es })
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          locale={es}
-                          disabled={isDateDisabled}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
@@ -338,17 +246,6 @@ const AlimentacionForm = ({
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Alimentación' : 'Registrar Alimentación'}
               </Button>
-              
-              {onCancel && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={onCancel}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-              )}
             </div>
           </form>
         </Form>

@@ -14,10 +14,10 @@ import loteRouter from "./routes/loteRoutes.js";
 import razaRouter from "./routes/razaRoutes.js";
 import animalRouter from "./routes/animalRoutes.js";
 import proveedorRouter from "./routes/proveedorRoutes.js";
-import compraRouter from "./routes/compraRoutes.js";
+import compraInsumoRouter from "./routes/compraInsumoRoutes.js";
+import compraAnimalRouter from "./routes/compraAnimalRoutes.js";
 import insumoRouter from "./routes/insumoRoutes.js";
 import tipoInsumoRouter from "./routes/tipoInsumoRoutes.js";
-import detalleCompraRouter from "./routes/detalleCompraRoutes.js";
 import montaRouter from "./routes/montaRoutes.js";
 import diagnosticoRouter from "./routes/diagnosticoRoutes.js";
 import partoRouter from './routes/partoRoutes.js';
@@ -29,6 +29,7 @@ import mataderoRouter from "./routes/mataderoRoutes.js";
 import produccionCarneRouter from "./routes/produccionCarneRoutes.js";
 import notificacionesRouter from "./routes/notificacionesRoutes.js";
 import dashboardRouter from "./routes/dashboardRoutes.js";
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -95,19 +96,19 @@ app.get("/", (_req, res) => {
       razas: "/api/razas",
       animales: "/api/animales",
       proveedores: "/api/proveedores",
-      compras: "/api/compras",
-      tiposInsumo:"/api/tipoInsumo",
-      insumos:"/api/insumos",
-      detalleCompra:"/api/detalleCompra",
+      comprasInsumo: "/api/comprasInsumo",
+      comprasAnimales: "/api/comprasAnimales",
+      tiposInsumo: "/api/tipoInsumo",
+      insumos: "/api/insumos",
       montas: "/api/montas",
       diagnosticos: "/api/diagnosticos",
       partos: "/api/partos",
-      eventoSanitario: "/api/eventosSanitario",
+      eventosSanitario: "/api/eventosSanitario",
       alimentaciones: "/api/alimentaciones",
       pesajes: "/api/pesajes",
-      produccionLechera:"/api/produccionLechera",
+      produccionLechera: "/api/produccionLechera",
       mataderos: "/api/mataderos",
-      produccionCarne:"/api/produccionCarne",
+      produccionCarne: "/api/produccionCarne",
       notificaciones: "/api/notificaciones",
       dashboard: "/api/dashboard",
       health: "/health",
@@ -115,6 +116,7 @@ app.get("/", (_req, res) => {
   });
 });
 
+// Rutas API
 app.use("/api/users", userRouter);
 app.use("/api/types", typeRouter);
 app.use("/api/potreros", potreroRouter);
@@ -122,10 +124,10 @@ app.use("/api/lotes", loteRouter);
 app.use("/api/razas", razaRouter);
 app.use("/api/animales", animalRouter);
 app.use("/api/proveedores", proveedorRouter);
-app.use("/api/compras", compraRouter);
+app.use("/api/comprasInsumo", compraInsumoRouter);
+app.use("/api/comprasAnimales", compraAnimalRouter);
 app.use("/api/tipoInsumo", tipoInsumoRouter);
 app.use("/api/insumos", insumoRouter);
-app.use("/api/detalleCompra", detalleCompraRouter);
 app.use("/api/montas", montaRouter);
 app.use("/api/diagnosticos", diagnosticoRouter);
 app.use("/api/partos", partoRouter);
@@ -136,7 +138,7 @@ app.use("/api/produccionLechera", produccionLecheraRouter);
 app.use("/api/mataderos", mataderoRouter);
 app.use("/api/produccionCarne", produccionCarneRouter);
 app.use("/api/notificaciones", notificacionesRouter);
-app.use("/api/dashboard", dashboardRouter)
+app.use("/api/dashboard", dashboardRouter);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -148,6 +150,7 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
+  console.error("Error global:", error);
   res.status(500).json({
     ok: false,
     message: "Error interno del servidor",

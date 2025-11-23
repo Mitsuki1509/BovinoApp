@@ -4,7 +4,7 @@ import { usePesajeStore } from '@/store/pesajeStore';
 import { useAnimalStore } from '@/store/animalStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CalendarIcon, Scale } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
@@ -14,16 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { format, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 const PesajeForm = ({ 
   pesaje = null, 
@@ -36,38 +27,19 @@ const PesajeForm = ({
   const [formError, setFormError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Función para obtener fecha local sin hora
-  const getLocalDate = (date = null) => {
-    if (date && isValid(date)) {
-      // Si se proporciona una fecha, convertirla a fecha local sin hora
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    }
-    // Si no se proporciona fecha, usar la fecha actual local
+  const getCurrentDate = () => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  };
-
-  // Función para convertir fecha de la BD a fecha local
-  const parseFechaFromDB = (fechaString) => {
-    if (!fechaString) return getLocalDate();
-    
-    try {
-      // Parsear la fecha desde la BD (formato YYYY-MM-DD)
-      const [year, month, day] = fechaString.split('-').map(Number);
-      // Crear fecha local sin problemas de zona horaria
-      return new Date(year, month - 1, day);
-    } catch (error) {
-      console.error('Error parsing date from DB:', error);
-      return getLocalDate();
-    }
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const form = useForm({
     defaultValues: {
       animal_id: '',
       unidad_id: '',
-      peso: '',
-      fecha: getLocalDate()
+      peso: ''
     }
   });
 
@@ -87,84 +59,28 @@ const PesajeForm = ({
   useEffect(() => {
     if (pesaje) {
       setIsEditing(true);
-      
-      // SOLUCIÓN CORREGIDA: Usar la fecha guardada en la BD, convertida a fecha local
-      const fechaPesaje = parseFechaFromDB(pesaje.fecha);
-      
-      console.log('📅 Fecha original de BD:', pesaje.fecha);
-      console.log('📅 Fecha convertida a local:', fechaPesaje);
-      
       form.reset({
         animal_id: pesaje.animal_id ? pesaje.animal_id.toString() : '',
         unidad_id: pesaje.unidad_id ? pesaje.unidad_id.toString() : '',
-        peso: pesaje.peso ? parseFloat(pesaje.peso).toString() : '',
-        fecha: fechaPesaje
+        peso: pesaje.peso ? parseFloat(pesaje.peso).toString() : ''
       });
     } else {
       setIsEditing(false);
       form.reset({
         animal_id: '',
         unidad_id: '',
-        peso: '',
-        fecha: getLocalDate()
+        peso: ''
       });
     }
   }, [pesaje, form]);
-
-  // Función para formatear fecha a YYYY-MM-DD para la BD
-  const formatDateToLocalISO = (date) => {
-    if (!date || !isValid(date)) return '';
-    
-    const localDate = new Date(date);
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  };
-
-  const handleDateSelect = (date, onChange) => {
-    if (date && isValid(date)) {
-      // Convertir a fecha local sin hora
-      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      onChange(localDate);
-    }
-  };
-
-  const isDateDisabled = (date) => {
-    const today = getLocalDate();
-    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    return compareDate > today;
-  };
-
-  // Función segura para formatear fechas en la UI
-  const formatDateForDisplay = (date) => {
-    try {
-      if (!date || !isValid(date)) {
-        return 'Seleccionar fecha';
-      }
-      return format(date, "PPP", { locale: es });
-    } catch (error) {
-      return 'Seleccionar fecha';
-    }
-  };
 
   const onSubmit = async (data) => {
     setFormError('');
     setFieldErrors({});
     
     try {
-      console.log('Datos del formulario:', data);
-
-      // Validar que todos los campos estén completos
-      if (!data.animal_id || !data.unidad_id || !data.peso || !data.fecha) {
+      if (!data.animal_id || !data.unidad_id || !data.peso) {
         setFormError('Todos los campos son obligatorios');
-        return;
-      }
-
-      // Validar que la fecha sea válida
-      if (!isValid(data.fecha)) {
-        setFormError('La fecha seleccionada no es válida');
         return;
       }
 
@@ -172,10 +88,8 @@ const PesajeForm = ({
         animal_id: parseInt(data.animal_id),
         unidad_id: parseInt(data.unidad_id),
         peso: parseFloat(data.peso),
-        fecha: formatDateToLocalISO(data.fecha)
+        fecha: getCurrentDate() 
       };
-
-      console.log('Enviando datos al servidor:', pesajeData);
 
       let result;
       if (isEditing) {
@@ -190,15 +104,13 @@ const PesajeForm = ({
         form.reset({
           animal_id: '',
           unidad_id: '',
-          peso: '',
-          fecha: getLocalDate()
+          peso: ''
         });
         onSuccess?.();
       } else {
         const errorMsg = result?.error || 'Error al procesar la solicitud';
         setFormError(errorMsg);
 
-        // Mapear errores específicos por campo
         if (result.error?.includes('animal')) {
           setFieldErrors(prev => ({ ...prev, animal_id: 'Animal no válido' }));
         }
@@ -207,9 +119,6 @@ const PesajeForm = ({
         }
         if (result.error?.includes('peso')) {
           setFieldErrors(prev => ({ ...prev, peso: 'Peso no válido' }));
-        }
-        if (result.error?.includes('fecha')) {
-          setFieldErrors(prev => ({ ...prev, fecha: 'Fecha no válida' }));
         }
       }
     } catch (error) {
@@ -336,56 +245,6 @@ const PesajeForm = ({
                   )}
                 />
               </div>
-
-              <FormField
-                control={form.control}
-                name="fecha"
-                rules={{ 
-                  required: "La fecha del pesaje es requerida",
-                  validate: {
-                    notFuture: (value) => {
-                      if (!value || !isValid(value)) return "Fecha inválida";
-                      return !isDateDisabled(value) || "La fecha no puede ser futura"
-                    }
-                  }
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Fecha del Pesaje</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={loading}
-                            type="button"
-                          >
-                            {formatDateForDisplay(field.value)}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => handleDateSelect(date, field.onChange)}
-                          disabled={isDateDisabled}
-                          initialFocus
-                          locale={es}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage>
-                      {fieldErrors.fecha || form.formState.errors.fecha?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
