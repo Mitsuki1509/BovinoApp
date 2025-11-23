@@ -193,6 +193,7 @@ model detalle_compras_animales {
 
 model evento_sanitario {
   evento_sanitario_id Int             @id @default(autoincrement())
+  numero_evento       String?         @db.VarChar(20)
   animal_id           Int?
   tipo_evento_id      Int?
   estado              String?         @db.VarChar(100)
@@ -200,7 +201,6 @@ model evento_sanitario {
   tratamiento         String?
   fecha               DateTime        @db.Date
   deleted_at          DateTime?       @db.Timestamp(6)
-  numero_evento       String?         @db.VarChar(20)
   evento_insumo       evento_insumo[]
   animal              animales?       @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   tipo_evento         tipo_evento?    @relation(fields: [tipo_evento_id], references: [tipo_evento_id], onDelete: NoAction, onUpdate: NoAction)
@@ -219,12 +219,12 @@ model evento_insumo {
 
 model alimentacion {
   alimentacion_id     Int       @id @default(autoincrement())
+  numero_alimentacion String?   @db.VarChar(20)
   insumo_id           Int?
   animal_id           Int?
   cantidad            Int
   fecha               DateTime  @db.Date
   deleted_at          DateTime? @db.Timestamp(6)
-  numero_alimentacion String?   @db.VarChar(20)
   animal              animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   insumo              insumos?  @relation(fields: [insumo_id], references: [insumo_id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -267,12 +267,12 @@ model produccion_carne {
 model produccion_lechera {
   produccion_id     Int       @id @default(autoincrement())
   animal_id         Int?
+  numero_produccion String    @db.VarChar(20)
   cantidad          Int
   unidad_id         Int?
   fecha             DateTime  @db.Date
   descripcion       String?
   deleted_at        DateTime? @db.Timestamp(6)
-  numero_produccion String?   @db.VarChar(20)
   animal            animales? @relation(fields: [animal_id], references: [animal_id], onDelete: NoAction, onUpdate: NoAction)
   unidad            unidades? @relation(fields: [unidad_id], references: [unidad_id], onDelete: NoAction, onUpdate: NoAction)
 }

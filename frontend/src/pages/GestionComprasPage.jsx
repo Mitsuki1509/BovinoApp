@@ -133,8 +133,14 @@ const GestionComprasPage = () => {
   };
 
   const handleFormSuccess = (type) => {
-    type === 'insumo' ? setShowInsumoForm(false) : setShowAnimalForm(false);
-    type === 'insumo' ? fetchComprasInsumos() : fetchComprasAnimales();
+    if (type === 'insumos') {
+      setShowInsumoForm(false);
+      fetchComprasInsumos();
+    } else if (type === 'animales') {
+      setShowAnimalForm(false);
+      fetchComprasAnimales();
+    }
+    
     toast({
       title: "Creado correctamente",
       description: `La compra de ${type} se creó exitosamente.`,

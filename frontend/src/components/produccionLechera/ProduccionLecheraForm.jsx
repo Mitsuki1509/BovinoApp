@@ -4,7 +4,7 @@ import { useProduccionLecheraStore } from '@/store/produccionLecheraStore';
 import { useAnimalStore } from '@/store/animalStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, CalendarIcon, Milk } from 'lucide-react';
+import { Loader2, Milk } from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
@@ -14,17 +14,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { format, parseISO, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 const ProduccionLecheraForm = ({ 
   produccion = null, 
@@ -38,25 +29,12 @@ const ProduccionLecheraForm = ({
   const [formError, setFormError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const getLocalDate = (date = null) => {
-    if (date) {
-      const localDate = new Date(date);
-      return new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate());
-    }
+  const getCurrentDate = () => {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  };
-
-  const parseFechaFromDB = (fechaString) => {
-    if (!fechaString) return getLocalDate();
-    
-    try {
-      const [year, month, day] = fechaString.split('-').map(Number);
-      return new Date(year, month - 1, day);
-    } catch (error) {
-      console.error('Error parsing date from DB:', error);
-      return getLocalDate();
-    }
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const form = useForm({
@@ -64,8 +42,7 @@ const ProduccionLecheraForm = ({
       animal_id: '',
       unidad_id: '',
       cantidad: '',
-      fecha: getLocalDate(), 
-      descripcion: ''
+      fecha: getCurrentDate(), 
     }
   });
 
@@ -86,7 +63,7 @@ const ProduccionLecheraForm = ({
     if (produccion) {
       setIsEditing(true);
       
-      const fechaProduccion = parseFechaFromDB(produccion.fecha);
+      const fechaProduccion = produccion.fecha || getCurrentDate();
       
       form.reset({
         animal_id: produccion.animal_id ? produccion.animal_id.toString() : '',
@@ -101,59 +78,19 @@ const ProduccionLecheraForm = ({
         animal_id: '',
         unidad_id: '',
         cantidad: '',
-        fecha: getLocalDate(), 
+        fecha: getCurrentDate(),
         descripcion: ''
       });
     }
   }, [produccion, form]);
-
-  const formatDateToLocalISO = (date) => {
-    if (!date || !isValid(date)) return '';
-    
-    const localDate = new Date(date);
-    const year = localDate.getFullYear();
-    const month = String(localDate.getMonth() + 1).padStart(2, '0');
-    const day = String(localDate.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  };
-
-  const handleDateSelect = (date, onChange) => {
-    if (date && isValid(date)) {
-      const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      onChange(localDate);
-    }
-  };
-
-  const isDateDisabled = (date) => {
-    const today = getLocalDate();
-    const compareDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    return compareDate > today;
-  };
-
-  const formatDateForDisplay = (date) => {
-    try {
-      if (!date || !isValid(date)) {
-        return 'Seleccionar fecha';
-      }
-      return format(date, "PPP", { locale: es });
-    } catch (error) {
-      return 'Seleccionar fecha';
-    }
-  };
 
   const onSubmit = async (data) => {
     setFormError('');
     setFieldErrors({});
     
     try {
-      if (!data.animal_id || !data.cantidad || !data.fecha || !data.unidad_id) {
+      if (!data.animal_id || !data.cantidad || !data.unidad_id) {
         setFormError('Todos los campos marcados con * son obligatorios');
-        return;
-      }
-
-      if (!isValid(data.fecha)) {
-        setFormError('La fecha seleccionada no es válida');
         return;
       }
 
@@ -161,7 +98,7 @@ const ProduccionLecheraForm = ({
         animal_id: parseInt(data.animal_id),
         unidad_id: parseInt(data.unidad_id),
         cantidad: parseInt(data.cantidad),
-        fecha: formatDateToLocalISO(data.fecha),
+        fecha: data.fecha, 
         descripcion: data.descripcion || null
       };
 
@@ -179,7 +116,7 @@ const ProduccionLecheraForm = ({
           animal_id: '',
           unidad_id: '',
           cantidad: '',
-          fecha: getLocalDate(),
+          fecha: getCurrentDate(),
           descripcion: ''
         });
         onSuccess?.();
@@ -213,7 +150,7 @@ const ProduccionLecheraForm = ({
     .filter(animal => !animal.deleted_at && animal.sexo === 'H')
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete} - ${animal.nombre || 'Sin nombre'}`
+      label: `${animal.arete} `
     }));
 
   const unidadesOptions = unidades
@@ -243,7 +180,7 @@ const ProduccionLecheraForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Animal (Hembra) *</FormLabel>
+                    <FormLabel>Animal (Hembra) </FormLabel>
                     <FormControl>
                       <Combobox
                         options={animalesOptions}
@@ -278,7 +215,7 @@ const ProduccionLecheraForm = ({
                   }}
                   render={({ field }) => (
                     <FormItem className="flex flex-col h-full">
-                      <FormLabel>Cantidad *</FormLabel>
+                      <FormLabel>Cantidad </FormLabel>
                       <FormControl>
                         <div className="relative flex-1">
                           <Input
@@ -307,7 +244,7 @@ const ProduccionLecheraForm = ({
                   }}
                   render={({ field }) => (
                     <FormItem className="flex flex-col h-full">
-                      <FormLabel>Unidad de Medida *</FormLabel>
+                      <FormLabel>Unidad de Medida </FormLabel>
                       <FormControl>
                         <div className="flex-1">
                           <Combobox
@@ -331,49 +268,14 @@ const ProduccionLecheraForm = ({
               <FormField
                 control={form.control}
                 name="fecha"
-                rules={{ 
-                  required: "La fecha de producción es requerida",
-                  validate: {
-                    notFuture: (value) => {
-                      if (!value || !isValid(value)) return "Fecha inválida";
-                      return !isDateDisabled(value) || "La fecha no puede ser futura"
-                    }
-                  }
-                }}
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Fecha de Producción *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                            disabled={loading}
-                            type="button"
-                          >
-                            {formatDateForDisplay(field.value)}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={(date) => handleDateSelect(date, field.onChange)}
-                          disabled={isDateDisabled}
-                          initialFocus
-                          locale={es}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage>
-                      {fieldErrors.fecha || form.formState.errors.fecha?.message}
-                    </FormMessage>
+                  <FormItem className="hidden">
+                    <FormControl>
+                      <Input
+                        type="hidden"
+                        {...field}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -408,8 +310,6 @@ const ProduccionLecheraForm = ({
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Producción' : 'Registrar Producción'}
               </Button>
-              
-              
             </div>
           </form>
         </Form>
