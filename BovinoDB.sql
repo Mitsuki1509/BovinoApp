@@ -245,16 +245,14 @@ CREATE TABLE notificaciones (
   );
 
 -- Usuario con contraseña para login normal
-INSERT INTO public.usuarios(
-    finca_id, 
+INSERT INTO public.usuarios( 
     rol_id, 
     nombre, 
     correo, 
     contraseña, 
     verificado, 
     google_oauth
-) VALUES (
-    1, 
+) VALUES ( 
     1, 
     'usuario', 
     'tucorreo@gmail.com', 
