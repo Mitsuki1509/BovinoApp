@@ -9,6 +9,7 @@ git clone https://github.com/Mitsuki1509/BovinoApp.git
 
 ```bash
 npm install
+Npm install socket.io
 ```
 Instala las dependencias al backend y frontend
 
