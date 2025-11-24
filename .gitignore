@@ -1,0 +1,24 @@
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+
+# Builds
+dist/
+build/
+*/dist/
+*/build/
+
+# Sistema
+.DS_Store
+.railway
+.vercel
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
