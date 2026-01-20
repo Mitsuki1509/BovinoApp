@@ -25,7 +25,12 @@ export default class UserController {
 
     try {
       const usuario = await prisma.usuarios.findUnique({
-        where: { correo: email }
+        where: { correo: email },
+        include: {
+          rol: true,
+          finca: true
+        }
+      
       });
 
       if (!usuario) {
@@ -278,7 +283,7 @@ export default class UserController {
           nombre: 'asc'
         }
       });
-
+      console.log(usuarios)
       return res.json({
         ok: true,
         data: usuarios.map(usuario => ({
@@ -293,7 +298,6 @@ export default class UserController {
           finca: usuario.finca
         }))
       });
-
     } catch (error) {
       return res.status(500).json({
         ok: false,
