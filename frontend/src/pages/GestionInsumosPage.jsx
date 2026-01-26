@@ -141,7 +141,7 @@ const GestionInsumosPage = () => {
         } else {
           toast({
             title: "Error al eliminar",
-            description: `Error: ${errorMessage}`,
+            description: `${errorMessage}`,
             variant: "destructive",
             duration: 5000,
           });
@@ -168,7 +168,8 @@ const GestionInsumosPage = () => {
     
     const itemType = activeTab === 'insumos' ? 'insumo' : 'tipo de insumo';
     toast({
-      title: editingItem ? "Actualizado correctamente" : "Creado correctamente",
+      title: editingItem ?
+       "Actualizado correctamente" : "Creado correctamente",
       description: editingItem 
         ? `El ${itemType} se actualizó exitosamente.` 
         : `El ${itemType} se creó exitosamente.`,
@@ -513,19 +514,23 @@ const GestionInsumosPage = () => {
         </Dialog>
 
         <Dialog open={vistaDetalle} onOpenChange={cerrarDetalles}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Detalles del Insumo</DialogTitle>
-              <DialogDescription>
-                Información completa del insumo seleccionado
-              </DialogDescription>
-            </DialogHeader>
-            <InsumoDetails
-              insumo={insumoSeleccionado}
-              onEditar={canManage ? () => handleEdit(insumoSeleccionado) : undefined}
-              onEliminar={canManage ? () => handleDelete(insumoSeleccionado, 'insumo') : undefined}
-              canManage={canManage}
-            />
+          <DialogContent className="max-w-lg p-0 overflow-hidden">
+            <div className="max-h-[85vh] overflow-y-auto"> 
+              <div className="p-6"> 
+                <DialogHeader className="text-left mb-4">
+                  <DialogTitle className="text-xl">Detalles del Insumo</DialogTitle>
+                  <DialogDescription>
+                    Información completa del insumo seleccionado
+                  </DialogDescription>
+                </DialogHeader>
+                <InsumoDetails
+                  insumo={insumoSeleccionado}
+                  onEditar={canManage ? () => handleEdit(insumoSeleccionado) : undefined}
+                  onEliminar={canManage ? () => handleDelete(insumoSeleccionado, 'insumo') : undefined}
+                  canManage={canManage}
+                />
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
 

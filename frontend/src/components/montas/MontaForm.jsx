@@ -29,6 +29,10 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
+const ReadOnlyBox = ({ children, className = '' }) => (
+  <div className={cn('p-2 border rounded-md bg-gray-50', className)}>{children}</div>
+);
+
 const MontaForm = ({ 
   monta = null, 
   onSuccess,
@@ -211,18 +215,11 @@ const MontaForm = ({
                             <FormControl>
                               <Button
                                 variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
+                                className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
                                 disabled={loading}
                               >
-                                {field.value ? (
-                                  format(field.value, "PPP", { locale: es })
-                                ) : (
-                                  <span>Seleccionar fecha programada</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                <CalendarIcon className="mr-2 h-3 w-3" />
+                                {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Seleccionar fecha'}
                               </Button>
                             </FormControl>
                           </PopoverTrigger>
@@ -246,9 +243,6 @@ const MontaForm = ({
                         <FormMessage>
                           {form.formState.errors.fecha?.message}
                         </FormMessage>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Seleccione la fecha programada para la monta (desde mañana en adelante)
-                        </div>
                       </FormItem>
                     )}
                   />
@@ -318,7 +312,8 @@ const MontaForm = ({
                             onValueChange={field.onChange}
                             placeholder="Seleccionar tipo de evento"
                             disabled={loading}
-                            className="w-full"
+                            className="w-full text-sm sm:text-base"
+                            truncate={true}
                           />
                         </FormControl>
                         <FormMessage>
@@ -353,27 +348,126 @@ const MontaForm = ({
               )}
 
               {isEditing && monta && (
-                <div className="flex flex-row items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="estado-monta">Estado de la Monta</Label>
-                      {monta && (
-                        <Badge variant="secondary" className="font-mono">
-                          {formatearNumeroMonta(monta.numero_monta)}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {estadoMonta === 1 ? 'Completada' : 'Pendiente'}
-                    </div>
-                  </div>
-                  <Switch
-                    id="estado-monta"
-                    checked={estadoMonta === 1}
-                    onCheckedChange={toggleEstado}
-                    disabled={loading}
+                <>
+                  <FormField
+                    control={form.control}
+                    name="animal_hembra_id"
+                    render={({ field }) => {
+                      const hembra = animales.find(a => a.animal_id.toString() === field.value);
+                      return (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Hembra</FormLabel>
+                          <ReadOnlyBox>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">
+                                {hembra?.arete || 'N/A'}
+                              </Badge>
+                              <span className="text-sm text-gray-600">
+                                {hembra && calcularEdadEnMeses(hembra.fecha_nacimiento)} meses
+                              </span>
+                            </div>
+                          </ReadOnlyBox>
+                        </FormItem>
+                      );
+                    }}
                   />
-                </div>
+
+                  <FormField
+                    control={form.control}
+                    name="animal_macho_id"
+                    render={({ field }) => {
+                      const macho = animales.find(a => a.animal_id.toString() === field.value);
+                      return (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Macho</FormLabel>
+                          {macho ? (
+                            <ReadOnlyBox>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">
+                                  {macho.arete}
+                                </Badge>
+                                <span className="text-sm text-gray-600">
+                                  {calcularEdadEnMeses(macho.fecha_nacimiento)} meses
+                                </span>
+                              </div>
+                            </ReadOnlyBox>
+                          ) : (
+                            <ReadOnlyBox>
+                              <span className="text-sm text-gray-600">No asignado</span>
+                            </ReadOnlyBox>
+                          )}
+                        </FormItem>
+                      );
+                    }}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tipo_evento_id"
+                    render={({ field }) => {
+                      const tipo = eventTypes.find(t => t.tipo_evento_id.toString() === field.value);
+                      return (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Tipo de Evento</FormLabel>
+                          <ReadOnlyBox>
+                            <span className="text-sm">{tipo?.nombre || 'N/A'}</span>
+                          </ReadOnlyBox>
+                        </FormItem>
+                      );
+                    }}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="fecha"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Fecha Programada</FormLabel>
+                        <ReadOnlyBox className="flex items-center gap-2">
+                          <CalendarIcon className="h-4 w-4 text-gray-500" />
+                          <span className="text-sm">
+                            {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Fecha no especificada'}
+                          </span>
+                        </ReadOnlyBox>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="descripcion"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descripción</FormLabel>
+                        <ReadOnlyBox className="min-h-[60px]">
+                          <p className="text-sm whitespace-pre-line">{field.value || 'No hay descripción'}</p>
+                        </ReadOnlyBox>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="estado-monta">Estado de la Monta</Label>
+                        {monta && (
+                          <Badge variant="secondary" className="font-mono">
+                            {formatearNumeroMonta(monta.numero_monta)}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {estadoMonta === 1 ? 'Completada' : 'Pendiente'}
+                      </div>
+                    </div>
+                    <Switch
+                      id="estado-monta"
+                      checked={estadoMonta === 1}
+                      onCheckedChange={toggleEstado}
+                      disabled={loading}
+                    />
+                  </div>
+                </>
               )}
             </div>
 

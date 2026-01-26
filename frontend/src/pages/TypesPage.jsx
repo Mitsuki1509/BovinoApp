@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
+import { Plus, Edit, Trash2, MoreHorizontal, Search,  CheckCircle,
   XCircle} from 'lucide-react';
 import TypeForm from '@/components/types/TypeForm';
 import Modal from '@/components/ui/modal';
@@ -277,11 +277,15 @@ const TypesPage = () => {
                         
                         return (
                           <tr key={typeItem.tipo_evento_id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 font-medium">{typeItem.nombre}</td>
+                              <td className="py-3 font-medium max-w-[150px] truncate" >
+                                {typeItem.nombre}
+                            </td>
                             <td className="py-3">
-                              <Badge variant={parentName === 'Categoría Principal' ? 'finca' : 'secondary'}>
-                                {parentName}
-                              </Badge>
+                              <div className="max-w-[150px] truncate">
+                                <Badge variant={parentName === 'Categoría Principal' ? 'finca' : 'secondary'}>
+                                  {parentName}
+                                </Badge>
+                              </div>
                             </td>
                             
                             <td className="py-3">
@@ -327,14 +331,21 @@ const TypesPage = () => {
                     return (
                       <Card key={typeItem.tipo_evento_id} className="p-4">
                         <div className="space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg">{typeItem.nombre}</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={parentName === 'Categoría Principal' ? 'finca' : 'secondary'}>
-                                  {parentName}
-                                </Badge>
-                              </div>
+                        <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0"> 
+                          <h3 className="font-medium max-w-[150px] truncate">
+                            {typeItem.nombre}
+                          </h3>
+                          
+                          <div className="mt-1">
+                            <Badge 
+                              variant={parentName === 'Categoría Principal' ? 'finca' : 'secondary'}
+                              title={parentName}
+                              className="truncate max-w-[150px]"  
+                            >
+                              {parentName}
+                            </Badge>
+                          </div>
                               
                             </div>
                             <DropdownMenu>

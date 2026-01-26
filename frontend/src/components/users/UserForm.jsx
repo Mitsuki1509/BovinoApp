@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useUserAdminStore } from '@/store/userAdminStore'
+import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent} from '@/components/ui/card'
@@ -20,6 +21,7 @@ const UserForm = ({
   onSuccess, 
 }) => {
   const { createUser, updateUser, roles, fetchRoles, loading } = useUserAdminStore()
+  const { formData, setFormData } = useAuthStore()
   const [isEditing, setIsEditing] = useState(false)
   const [formError, setFormError] = useState('')
   const [fieldErrors, setFieldErrors] = useState({})
@@ -53,12 +55,17 @@ const UserForm = ({
       form.reset({
         nombre: '',
         correo: '',
-        password: '',
+        password: formData.password || '',
         rol_id: '',
         finca_id: '1'
       })
     }
   }, [user, form])
+
+  useEffect(() => {
+    // Mantener sincronizado el valor de password con el store de auth
+    form.setValue('password', formData.password || '')
+  }, [form, formData.password])
 
   const onSubmit = async (data) => {
     setFormError('');
@@ -182,41 +189,40 @@ const UserForm = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="password"
-                rules={!isEditing ? { 
-                  required: "La contraseña es requerida",
-                  minLength: {
-                    value: 6,
-                    message: "La contraseña debe tener al menos 6 caracteres"
-                  }
-                } : {
-                  minLength: {
-                    value: 6,
-                    message: "La contraseña debe tener al menos 6 caracteres"
-                  }
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm sm:text-base">
-                      {isEditing ? 'Nueva Contraseña (opcional)' : 'Contraseña'}
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password"
-                        placeholder={isEditing ? "Dejar vacío para mantener actual" : "Mínimo 6 caracteres"} 
-                        {...field}
-                        disabled={loading}
-                        className="w-full text-sm sm:text-base"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs sm:text-sm">
-                      {fieldErrors.password || form.formState.errors.password?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
+              {!isEditing && (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  rules={{ 
+                    required: "La contraseña es requerida",
+                    minLength: {
+                      value: 6,
+                      message: "La contraseña debe tener al menos 6 caracteres"
+                    }
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm sm:text-base">Contraseña</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password"
+                          placeholder="Mínimo 6 caracteres" 
+                          {...field}
+                          disabled={loading}
+                          className="w-full text-sm sm:text-base"
+                          onChange={(e) => {
+                            field.onChange(e)
+                            setFormData('password', e.target.value)
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-xs sm:text-sm">
+                        {fieldErrors.password || form.formState.errors.password?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

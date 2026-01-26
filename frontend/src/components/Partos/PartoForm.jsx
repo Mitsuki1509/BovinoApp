@@ -16,8 +16,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
-import { format } from 'date-fns'
-
 
 const PartoForm = ({ 
   parto = null, 
@@ -101,7 +99,6 @@ const PartoForm = ({
         result = await createParto(partoData)
       }
 
-      console.log('Respuesta del servidor:', result)
 
       if (result?.success) {
         form.reset()
@@ -133,7 +130,7 @@ const PartoForm = ({
 
   const diagnosticosOptions = diagnosticosDisponibles.map(diagnostico => ({
     value: diagnostico.prenez_id.toString(),
-    label: `${diagnostico.monta?.numero_monta} - Hembra: ${diagnostico.monta?.hembra?.arete || 'N/A'} - Fecha Diag: ${diagnostico.fecha ? format(new Date(diagnostico.fecha), 'dd/MM/yyyy') : 'N/A'}`
+    label: `${diagnostico.monta?.numero_monta} - Hembra: ${diagnostico.monta?.hembra?.arete || 'N/A'}`
   }))
 
   const tipoEventoOptions = eventTypes
@@ -204,7 +201,8 @@ const PartoForm = ({
                         onValueChange={field.onChange}
                         placeholder="Seleccionar tipo de evento"
                         disabled={loading}
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
+                        truncate={true}
                       />
                     </FormControl>
                     <FormMessage>

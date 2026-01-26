@@ -91,9 +91,9 @@ const Modal = ({
         <Button 
           ref={triggerRef}
           variant="ghost" 
-          className="w-full justify-start"
+          className="w-full text-right"
         >
-          <Lock className="h-4 w-4 mr-2" />
+          <Lock className="h-4 w-4"/>
           Cambiar Contraseña
         </Button>
       </DialogTrigger>
@@ -103,21 +103,12 @@ const Modal = ({
           <DialogTitle>Cambiar Contraseña</DialogTitle>
           <DialogDescription>
             Formulario para cambiar la contraseña del usuario {usuario?.nombre}. 
-            Ingrese y confirme la nueva contraseña.
           </DialogDescription>
         </DialogHeader>
         
-        <CardContent className="p-0 pt-4">
+        <CardContent className="p-0">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <div 
-                  className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md"
-                  role="alert"
-                >
-                  {error}
-                </div>
-              )}
 
               <div className="space-y-4">
                 <FormField
@@ -133,7 +124,6 @@ const Modal = ({
                           {...field} 
                           disabled={loading}
                           className="w-full"
-                          aria-describedby="password-help"
                         />
                       </FormControl>
                       <div id="password-help" className="text-xs text-muted-foreground">

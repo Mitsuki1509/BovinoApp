@@ -27,8 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar
+import { Plus, Edit, Trash2, MoreHorizontal, Search, CheckCircle,
+  XCircle
  } from 'lucide-react';
 import MontaForm from '@/components/montas/MontaForm';
 import Modal from '@/components/ui/modal';
@@ -317,6 +317,7 @@ const MontasPage = () => {
                         <th className="text-left py-3 font-medium">Macho</th>
                         <th className="text-left py-3 font-medium">Tipo Evento</th>
                         <th className="text-left py-3 font-medium">Estado</th>
+                        <th className="text-left py-3 font-medium">Descripción</th>
                         <th className="text-left py-3 font-medium">Fecha</th>
                         <th className="text-left py-3 font-medium">Acciones</th>
                       </tr>
@@ -345,12 +346,20 @@ const MontasPage = () => {
                               </Badge>
                             </div>
                           </td>
-                          <td className="py-3">
+                          <td className="py-3 font-medium">
                             {montaItem.tipo_evento?.nombre || 'N/A'}
                           </td>
 
                           <td className="py-3">
                             {getEstadoBadge(montaItem.estado)}
+                          </td>
+                          <td className="py-3 font-medium truncate max-w-[150px]">
+                               {montaItem.descripcion ? (
+                                montaItem.descripcion
+                              
+                            ) : (
+                              <div className="text-gray-400 italic">Sin descripción</div>
+                            )}
                           </td>
                           <td className="py-3">
                             {formatDateSafe(montaItem.fecha)}
@@ -411,6 +420,9 @@ const MontasPage = () => {
                               </div>
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-gray-600">{montaItem.tipo_evento?.nombre || 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="text-gray-600">{montaItem.descripcion || 'N/A'}</span>
                               </div>
                             </div>
                           </div>

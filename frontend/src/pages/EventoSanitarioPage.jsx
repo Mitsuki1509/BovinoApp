@@ -252,6 +252,22 @@ const EventosSanitariosPage = () => {
   const canManage = user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario';
   const canDelete = user?.rol === 'admin' || user?.rol === 'veterinario'|| user?.rol === 'operario';
 
+  const formatDateWithoutTZ = (dateString) => {
+    try {
+        if (!dateString) return 'Fecha inválida';
+        
+        const fechaLocal = convertirAFechaLocal(dateString);
+        if (!fechaLocal) return 'Fecha inválida';
+        
+        const [year, month, day] = fechaLocal.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        
+        return format(date, "dd/MM/yyyy", { locale: es });
+    } catch (error) {
+        return 'Fecha inválida';
+    }
+  };
+
   if (!canManage) {
     return (
       <MainLayout>
@@ -272,21 +288,6 @@ const EventosSanitariosPage = () => {
     );
   }
 
-  const formatDateWithoutTZ = (dateString) => {
-    try {
-        if (!dateString) return 'Fecha inválida';
-        
-        const fechaLocal = convertirAFechaLocal(dateString);
-        if (!fechaLocal) return 'Fecha inválida';
-        
-        const [year, month, day] = fechaLocal.split('-');
-        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
-        return format(date, "dd/MM/yyyy", { locale: es });
-    } catch (error) {
-        return 'Fecha inválida';
-    }
-};
   return (
     <MainLayout>
       <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -345,8 +346,6 @@ const EventosSanitariosPage = () => {
                 />
               </PopoverContent>
             </Popover>
-
-          
           </div>
         </div>
 
@@ -361,142 +360,69 @@ const EventosSanitariosPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {(
-              <div className="overflow-x-auto">
-                <div className="hidden sm:block">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 font-medium">Número</th>
-                        <th className="text-left py-3 font-medium">Animal</th>
-                        <th className="text-left py-3 font-medium">Tipo Evento</th>
-                        <th className="text-left py-3 font-medium">Estado</th>
-                        <th className="text-left py-3 font-medium">Fecha</th>
-                        <th className="text-left py-3 font-medium">Diagnóstico</th>
-                        <th className="text-left py-3 font-medium">Tratamiento</th>
-                        <th className="text-left py-3 font-medium">Insumos</th>
-                        <th className="text-left py-3 font-medium">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEventos.map((eventoItem) => (                        
-                        <tr key={eventoItem.evento_sanitario_id} className="border-b hover:bg-gray-50">
-                           <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {eventoItem.numero_evento || `EVT-${eventoItem.evento_sanitario_id.toString().padStart(4, '0')}`}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary"  className="font-mono">
-                                {eventoItem.animal?.arete}
-                              </Badge>
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            {eventoItem.tipo_evento?.nombre || 'N/A'}
-                          </td>
-                          <td className="py-3">
-                            {getEstadoBadge(eventoItem.estado)}
-                          </td>
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                                <span>
-                                     {formatDateWithoutTZ(eventoItem.fecha)}
-                                </span>
-                            </div>
-                        </td>
-                          <td className="py-3">
-                            {eventoItem.diagnostico || '-'}
-                          </td>
-                          <td className="py-3">
-                            {eventoItem.tratamiento || '-'}
-                          </td>
-                          <td className="py-3">
-                            <div className="text-sm text-gray-600">
-                              {eventoItem.evento_insumo?.length > 0 
-                                ? `${eventoItem.evento_insumo.length} insumo(s)` 
-                                : 'Sin insumos'
-                              }
-                            </div>
-                          </td>
-                          <td className="py-3">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  className="h-8 w-8 p-0"
-                                  type="button"
-                                >
-                                  <span className="sr-only">Abrir menú</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(eventoItem)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar evento
-                              </DropdownMenuItem>
-                                {canDelete && (
-
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(eventoItem)}
-                                    className="text-red-600 focus:text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Eliminar evento
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="sm:hidden space-y-4">
-                  {filteredEventos.map((eventoItem) => (
-                    <Card key={eventoItem.evento_sanitario_id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="secondary" className="font-mono">
-                                {eventoItem.animal?.arete}
-                              </Badge>
-                              {getEstadoBadge(eventoItem.estado)}
-                            </div>
-                            <div className="mt-3 space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="font-medium">{eventoItem.tipo_evento?.nombre || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-gray-600">
-                                      {formatDateWithoutTZ(eventoItem.fecha)}
-                                </span>
-                              </div>
-                              {eventoItem.diagnostico && (
-                                <div className="text-sm text-gray-600">
-                                  <strong>Diagnóstico:</strong> {eventoItem.diagnostico}
-                                </div>
-                              )}
-                              {eventoItem.tratamiento && (
-                                <div className="text-sm text-gray-600">
-                                  <strong>Tratamiento:</strong> {eventoItem.tratamiento}
-                                </div>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                                {eventoItem.evento_insumo?.length > 0 
-                                  ? `${eventoItem.evento_insumo.length} insumo(s) utilizados` 
-                                  : 'Sin insumos'
-                                }
-                              </div>
+            <div className="overflow-x-auto">
+              <div className="hidden sm:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 font-medium">Número</th>
+                      <th className="text-left py-3 font-medium">Animal</th>
+                      <th className="text-left py-3 font-medium">Tipo Evento</th>
+                      <th className="text-left py-3 font-medium">Estado</th>
+                      <th className="text-left py-3 font-medium">Fecha</th>
+                      <th className="text-left py-3 font-medium">Diagnóstico</th>
+                      <th className="text-left py-3 font-medium">Tratamiento</th>
+                      <th className="text-left py-3 font-medium">Insumos</th>
+                      <th className="text-left py-3 font-medium">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEventos.map((eventoItem) => (                        
+                      <tr key={eventoItem.evento_sanitario_id} className="border-b hover:bg-gray-50">
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {eventoItem.numero_evento || `EVT-${eventoItem.evento_sanitario_id.toString().padStart(4, '0')}`}
+                            </Badge>
                           </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary"  className="font-mono">
+                              {eventoItem.animal?.arete}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          {eventoItem.tipo_evento?.nombre || 'N/A'}
+                        </td>
+                        <td className="py-3">
+                          {getEstadoBadge(eventoItem.estado)}
+                        </td>
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <span>
+                              {formatDateWithoutTZ(eventoItem.fecha)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 max-w-[150px] truncate ">
+                            {eventoItem.diagnostico}
+                          
+                        </td>
+                        <td className="py-3 max-w-[150px] truncate">
+                         {eventoItem.tratamiento}
+                        
+                        </td>
+                        <td className="py-3">
+                          <div className="text-sm text-gray-600">
+                            {eventoItem.evento_insumo?.length > 0 
+                              ? `${eventoItem.evento_insumo.length} insumo(s)` 
+                              : 'Sin insumos'
+                            }
+                          </div>
+                        </td>
+                        <td className="py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button 
@@ -524,13 +450,91 @@ const EventosSanitariosPage = () => {
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
+
+              <div className="sm:hidden space-y-4">
+                {filteredEventos.map((eventoItem) => (
+                  <Card key={eventoItem.evento_sanitario_id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="secondary" className="font-mono">
+                              {eventoItem.animal?.arete}
+                            </Badge>
+                            {getEstadoBadge(eventoItem.estado)}
+                          </div>
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="font-medium">{eventoItem.tipo_evento?.nombre || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-gray-600">
+                                {formatDateWithoutTZ(eventoItem.fecha)}
+                              </span>
+                            </div>
+                            {eventoItem.diagnostico && (
+                              <div className="text-sm text-gray-600">
+                                <strong>Diagnóstico:</strong> 
+                                <div className="truncate" title={eventoItem.diagnostico}>
+                                  {eventoItem.diagnostico}
+                                </div>
+                              </div>
+                            )}
+                            {eventoItem.tratamiento && (
+                              <div className="text-sm text-gray-600">
+                                <strong>Tratamiento:</strong>
+                                <div className="truncate" title={eventoItem.tratamiento}>
+                                  {eventoItem.tratamiento}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {eventoItem.evento_insumo?.length > 0 
+                              ? `${eventoItem.evento_insumo.length} insumo(s) utilizados` 
+                              : 'Sin insumos'
+                            }
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0"
+                              type="button"
+                            >
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(eventoItem)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar evento
+                            </DropdownMenuItem>
+                            {canDelete && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteClick(eventoItem)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Eliminar evento
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
 
             {filteredEventos.length === 0 && !loading && (
               <div className="text-center py-8 text-gray-500">

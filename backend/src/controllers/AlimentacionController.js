@@ -2,6 +2,7 @@ import prisma from "../database.js";
 import NotificacionController from "./NotificacionController.js";
 
 export default class AlimentacionController {
+    static STOCK_MINIMO = 10;
 
     static async generarNumeroAlimentacion() {
         try {
@@ -40,7 +41,7 @@ export default class AlimentacionController {
                     }
                 },
                 orderBy: {
-                    fecha: 'asc'
+                    fecha: 'desc'
                 }
             });
 
@@ -116,7 +117,7 @@ export default class AlimentacionController {
         }
     }
 
-    static async create(req, res) {
+    static async create(req, res) {        
         try {
             const rolesPermitidos = ['admin', 'veterinario', 'operario'];
             if (!rolesPermitidos.includes(req.usuario.rol)) {
@@ -129,16 +130,8 @@ export default class AlimentacionController {
             const {
                 animal_id,
                 insumo_id,
-                cantidad,
-                fecha
+                cantidad
             } = req.body;
-
-            if (!animal_id || !insumo_id || !cantidad || !fecha) {
-                return res.status(400).json({
-                    ok: false,
-                    msg: "Los campos animal_id, insumo_id, cantidad y fecha son obligatorios"
-                });
-            }
 
             const animalId = parseInt(animal_id);
             const insumoId = parseInt(insumo_id);
@@ -185,7 +178,7 @@ export default class AlimentacionController {
                     msg: "El insumo especificado no existe"
                 });
             }
-
+            // Validación 1: Verificar que el insumo tenga stock suficiente
             if (insumo.cantidad < cantidadInt) {
                 return res.status(400).json({
                     ok: false,
@@ -193,7 +186,23 @@ export default class AlimentacionController {
                 });
             }
 
-            // Generar número de alimentación
+            // Validación 2: Verificar que el insumo tenga más del stock mínimo para poder usarlo
+            if (insumo.cantidad <= AlimentacionController.STOCK_MINIMO) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: `No se puede utilizar el insumo "${insumo.nombre}" porque tiene ${insumo.cantidad} unidades (stock mínimo requerido: ${AlimentacionController.STOCK_MINIMO})`
+                });
+            }
+
+            // Validación 3: Verificar que después de la operación no quede por debajo del stock mínimo
+            const stockDespuesOperacion = insumo.cantidad - cantidadInt;
+            if (stockDespuesOperacion < AlimentacionController.STOCK_MINIMO) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: `No se puede utilizar esta cantidad. Stock después sería: ${stockDespuesOperacion} unidades (mínimo ${AlimentacionController.STOCK_MINIMO} requerido)`
+                });
+            }
+
             const numeroAlimentacion = await AlimentacionController.generarNumeroAlimentacion();
 
             const result = await prisma.$transaction(async (prisma) => {
@@ -203,7 +212,7 @@ export default class AlimentacionController {
                         animal_id: animalId,
                         insumo_id: insumoId,
                         cantidad: cantidadInt,
-                        fecha: new Date(fecha)
+                        fecha: new Date() 
                     },
                     include: {
                         animal: {
@@ -236,7 +245,9 @@ export default class AlimentacionController {
                     }
                 });
 
-                if (insumoActualizado.cantidad < 10) {
+
+                // Notificación si queda por debajo del stock mínimo + margen
+                if (insumoActualizado.cantidad < (AlimentacionController.STOCK_MINIMO + 5)) {
                     await AlimentacionController.crearNotificacionStockBajo(insumoActualizado);
                 }
 
@@ -250,6 +261,7 @@ export default class AlimentacionController {
             });
 
         } catch (error) {
+            
             if (error.code === 'P2002') {
                 return res.status(400).json({
                     ok: false,
@@ -274,7 +286,16 @@ export default class AlimentacionController {
 
     static async crearNotificacionStockBajo(insumo) {
         try {
-            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. Cantidad actual: ${insumo.cantidad}`;
+            const fechaActual = new Date();
+            const dia = String(fechaActual.getDate()).padStart(2, '0');
+            const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
+            const año = String(fechaActual.getFullYear()).slice(-2);
+            const fechaFormateada = `${dia}/${mes}/${año}`;
+
+            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. 
+            Cantidad actual: ${insumo.cantidad} ${insumo.unidad?.nombre || 'unidades'}. 
+            Stock mínimo: ${AlimentacionController.STOCK_MINIMO} ${insumo.unidad?.nombre || 'unidades'}.
+            Fecha: ${fechaFormateada}`;
 
             await NotificacionController.crearNotificacionParaRol(
                 `Stock Bajo - ${insumo.nombre}`,
@@ -283,6 +304,7 @@ export default class AlimentacionController {
                 'inventario',
                 ['admin', 'contable']
             );
+
 
         } catch (error) {
             console.error("Error creando notificación de stock bajo:", error);

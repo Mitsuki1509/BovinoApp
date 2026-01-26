@@ -20,13 +20,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
+import { Plus, Edit, Trash2, MoreHorizontal, Search, CheckCircle,
   XCircle
- } from 'lucide-react';
+} from 'lucide-react';
 import UserForm from '@/components/users/UserForm';
 import Modal from '@/components/ui/modal';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
+
 
 const UsersPage = () => {
   const navigate = useNavigate();
@@ -177,11 +178,7 @@ const UsersPage = () => {
       return userItem.rol.nombre;
     }
     
-    if (userItem.rol_id && roles && roles.length > 0) {
-      const rolEncontrado = roles.find(rol => rol.rol_id === userItem.rol_id);
-      return rolEncontrado?.nombre || 'Sin rol';
-    }
-    
+
     return 'Sin rol';
   }, [roles]);
 
@@ -202,26 +199,6 @@ const UsersPage = () => {
     if (!itemToDelete) return '';
     return itemToDelete.nombre || itemToDelete.correo || 'Usuario';
   };
-
-  if (user.rol !== 'admin') {
-    return (
-      <MainLayout>
-        <div className="container mx-auto p-4 sm:p-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Shield className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold">Acceso Restringido</h3>
-                <p className="text-gray-500 mt-2">
-                  No tienes permisos para acceder a la gestión de usuarios.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
 
   return (
     <MainLayout>
@@ -279,7 +256,9 @@ const UsersPage = () => {
                         
                         return (
                           <tr key={userItem.usuario_id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 font-medium">{userItem.nombre}</td>
+                            <td className="py-3 font-medium max-w-[150px] truncate">
+                                {userItem.nombre}
+                            </td>
                             <td className="py-3">{userItem.correo}</td>
                             <td className="py-3">
                               <Badge variant={rolNombre === 'admin' ? 'finca' : 'secondary'}>
@@ -303,15 +282,17 @@ const UsersPage = () => {
                                     <Edit className="h-4 w-4 mr-2" />
                                     Editar usuario
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteClick(userItem)}
-                                    disabled={isCurrentUser}
-                                    className="text-red-600 focus:text-red-600"
-                                  >
+                                
+                                  {!isCurrentUser && (
+                                  <DropdownMenuItem onClick={() => handleDeleteClick(userItem)}
+                                  disabled={isCurrentUser}
+                                  className="text-red-600 focus:text-red-600">
                                     <Trash2 className="h-4 w-4 mr-2" />
-                                    {isCurrentUser ? 'No puedes eliminarte' : 'Eliminar usuario'}
+                                    Eliminar usuario
                                   </DropdownMenuItem>
+                                )}
                                 </DropdownMenuContent>
+                                
                               </DropdownMenu>
                             </td>
                           </tr>
@@ -330,8 +311,12 @@ const UsersPage = () => {
                       <Card key={userItem.usuario_id} className="p-4">
                         <div className="space-y-3">
                           <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg">{userItem.nombre}</h3>
+                              <div className="flex-1 min-w-0">
+                                <h3 
+                                  className="font-medium max-w-[150px] truncate" 
+                                >
+                                  {userItem.nombre}
+                                </h3>
                               <p className="text-gray-600 text-sm">{userItem.correo}</p>
                               <Badge 
                                 variant={rolNombre === 'admin' ? 'finca' : 'secondary'}

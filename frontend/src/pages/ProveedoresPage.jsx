@@ -19,8 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, AlertCircle, Phone, Building, Contact
+import { Plus, Edit, Trash2, MoreHorizontal, Search, CheckCircle,
+  XCircle
  } from 'lucide-react';
 import ProveedorForm from '@/components/proveedores/ProveedorForm';
 import Modal from '@/components/ui/modal';

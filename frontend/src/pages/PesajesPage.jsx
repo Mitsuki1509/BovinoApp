@@ -84,11 +84,6 @@ const PesajesPage = () => {
     setShowForm(true);
   }, []);
 
-  const handleEdit = useCallback((pesajeData) => {
-    setEditingPesaje(pesajeData);
-    setShowForm(true);
-  }, []);
-
   const handleDeleteClick = useCallback((pesajeItem) => {
     setItemToDelete(pesajeItem);
     setShowConfirm(true);

@@ -407,10 +407,10 @@ export default class PesajeController {
 
   static async delete(req, res) {
     try {
-      if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'veterinario' || req.usuario.rol !== 'operario' ) {
+      if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario' && req.usuario.rol !== 'operario' ) {
         return res.status(403).json({
           ok: false,
-          msg: "Solo los administradores pueden eliminar pesajes"
+          msg: "No tienes permisos para eliminar pesajes."
         });
       }
 

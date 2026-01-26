@@ -17,6 +17,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
+const truncateText = (text, maxLength = 25) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
 const CompraInsumoForm = ({ 
   onSuccess,
 }) => {
@@ -99,14 +105,6 @@ const CompraInsumoForm = ({
     }
   };
 
-  const isDateFuture = (date) => {
-    const today = new Date();
-    const selectedDate = new Date(date);
-    today.setHours(0, 0, 0, 0);
-    selectedDate.setHours(0, 0, 0, 0);
-    return selectedDate > today;
-  };
-
   const agregarDetalle = () => {
     setDetalles([...detalles, { insumo_id: '', cantidad: 1, precio: 0 }]);
   };
@@ -135,16 +133,22 @@ const CompraInsumoForm = ({
     .filter(proveedor => !proveedor.deleted_at)
     .map(proveedor => ({
       value: proveedor.proveedor_id.toString(),
-      label: `${proveedor.nombre_compañia} - ${proveedor.nombre_contacto || 'Sin contacto'}`
+      label: `${truncateText(proveedor.nombre_compañia, 20)} - ${proveedor.nombre_contacto ? truncateText(proveedor.nombre_contacto, 15) : 'Sin contacto'}`
     }));
 
   const insumosOptions = insumos && insumos.length > 0 
     ? insumos
         .filter(insumo => !insumo.deleted_at)
-        .map(insumo => ({
-          value: insumo.insumo_id.toString(),
-          label: `${insumo.nombre} (${insumo.unidad?.nombre || 'unidad'})`
-        }))
+        .map(insumo => {
+          const nombreTruncado = truncateText(insumo.nombre, 25);
+          const unidadNombre = insumo.unidad?.nombre || 'unidad';
+          
+          return {
+            value: insumo.insumo_id.toString(),
+            label: `${nombreTruncado} (${unidadNombre})`,
+            fullLabel: `${insumo.nombre} (${unidadNombre})`
+          };
+        })
     : [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
 
   return (
@@ -213,6 +217,14 @@ const CompraInsumoForm = ({
                           onValueChange={(value) => actualizarDetalle(index, 'insumo_id', value)}
                           placeholder="Seleccionar insumo"
                           disabled={loading || loadingInsumos}
+                          renderOption={(option) => (
+                            <div 
+                              className="truncate" 
+                              title={option.fullLabel || option.label}
+                            >
+                              {option.label}
+                            </div>
+                          )}
                         />
                       
                       </div>
@@ -259,7 +271,7 @@ const CompraInsumoForm = ({
               </div>
             </div>
 
-            <div className=" sm:pt-4 flex">
+            <div className="sm:pt-4 flex">
               <Button 
                 type="submit" 
                 disabled={loading}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Upload, X, AlertCircle } from 'lucide-react';
 import {
@@ -53,7 +53,6 @@ const InsumoForm = ({
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        
         await fetchTiposInsumo();
         
         const unidadesResult = await fetchUnidades();
@@ -61,7 +60,6 @@ const InsumoForm = ({
         if (unidadesResult.success) {
           setUnidades(unidadesResult.data || []);
         } else {
-
           setFormError('Error al cargar las unidades de medida');
         }
 
@@ -98,7 +96,6 @@ const InsumoForm = ({
     loadInitialData();
   }, [insumo, form, fetchTiposInsumo, fetchUnidades]);
 
-
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -125,13 +122,11 @@ const InsumoForm = ({
   ];
 
   const unidadOptions = [
-  
     ...(unidades || []).map(unidad => ({
       value: unidad.unidad_id.toString(),
       label: unidad.nombre
     }))
   ];
-
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -232,20 +227,21 @@ const InsumoForm = ({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-xl mx-auto">
-        {formError && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <div>
-              <p className="font-semibold">Error de validación</p>
-              <p>{formError}</p>
-            </div>
-          </div>
-        )}
+    <Card className="w-full border-0 shadow-none">
+      <CardContent className="p-0">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {formError && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">Error de validación</p>
+                  <p>{formError}</p>
+                </div>
+              </div>
+            )}
 
-        <div className="space-y-4">     
-            <CardContent className="space-y-3 px-4">
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="nombre"
@@ -262,16 +258,16 @@ const InsumoForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Nombre del Insumo</FormLabel>
+                    <FormLabel>Nombre del Insumo</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Ej: Concentrado para ganado, Vacuna, etc."
                         {...field}
                         disabled={loading}
-                        className="text-sm h-9"
+                        className="w-full"
                       />
                     </FormControl>
-                    <FormMessage className="text-xs">
+                    <FormMessage>
                       {fieldErrors.nombre || form.formState.errors.nombre?.message}
                     </FormMessage>
                   </FormItem>
@@ -283,21 +279,22 @@ const InsumoForm = ({
                 name="descripcion"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Descripción</FormLabel>
+                    <FormLabel>Descripción (Opcional)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Descripción detallada del insumo..."
                         {...field}
                         disabled={loading}
-                        className="text-sm min-h-[80px] resize-none"
+                        className="w-full min-h-[80px] resize-none"
                       />
                     </FormControl>
-                    <FormMessage className="text-xs">
+                    <FormMessage>
                       {form.formState.errors.descripcion?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="tipo_insumo_id"
@@ -306,7 +303,7 @@ const InsumoForm = ({
                 }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Tipo de Insumo </FormLabel>
+                    <FormLabel>Tipo de Insumo</FormLabel>
                     <FormControl>
                       <Combobox
                         options={tipoInsumoOptions}
@@ -314,16 +311,17 @@ const InsumoForm = ({
                         onValueChange={field.onChange}
                         placeholder={tiposInsumo.length === 0 ? "Cargando tipos..." : "Seleccionar tipo..."}
                         disabled={loading || tiposInsumo.length === 0}
-                        className="h-9"
+                        className="w-full"
                       />
                     </FormControl>
-                    <FormMessage className="text-xs">
+                    <FormMessage>
                       {fieldErrors.tipo_insumo_id || form.formState.errors.tipo_insumo_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="cantidad"
@@ -342,7 +340,7 @@ const InsumoForm = ({
                   }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">Cantidad en Stock </FormLabel>
+                      <FormLabel>Cantidad en Stock</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
@@ -350,10 +348,10 @@ const InsumoForm = ({
                           placeholder="0"
                           {...field}
                           disabled={loading}
-                          className="text-sm h-9"
+                          className="w-full"
                         />
                       </FormControl>
-                      <FormMessage className="text-xs">
+                      <FormMessage>
                         {fieldErrors.cantidad || form.formState.errors.cantidad?.message}
                       </FormMessage>
                     </FormItem>
@@ -368,7 +366,7 @@ const InsumoForm = ({
                   }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">Unidad de Medida </FormLabel>
+                      <FormLabel>Unidad de Medida</FormLabel>
                       <FormControl>
                         <Combobox
                           options={unidadOptions}
@@ -376,70 +374,83 @@ const InsumoForm = ({
                           onValueChange={field.onChange}
                           placeholder={unidades.length === 0 ? "Cargando unidades..." : "Seleccionar unidad..."}
                           disabled={loading || unidades.length === 0}
-                          className="h-9"
+                          className="w-full"
                         />
                       </FormControl>
-                      <FormMessage className="text-xs">
+                      <FormMessage>
                         {fieldErrors.unidad_id || form.formState.errors.unidad_id?.message}
                       </FormMessage>
                     </FormItem>
                   )}
                 />
               </div>
-            </CardContent>
 
-          
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3 px-4">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Upload className="h-4 w-4 text-indigo-600" />
-                Fotografía (opcional)
-              </CardTitle>
-            
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="cursor-pointer h-9"
-              />
-
-              {imagenPreview && (
-                <div className="relative inline-block">
-                  <img
-                    src={imagenPreview}
-                    alt="Preview"
-                    className="h-24 w-24 object-cover rounded-lg border border-gray-200"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0"
-                    onClick={removeImage}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-2">
+                  <Upload className="h-5 w-5 text-indigo-600" />
+                  <h3 className="text-base font-semibold text-gray-800">
+                    Fotografía (opcional)
+                  </h3>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Seleccionar imagen
+                    </label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer w-full h-9"
+                    />
+                  </div>
 
-        <div className="pt-2">
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 font-semibold"
-            variant="inventario"
-          >
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {isEditing ? 'Actualizar Insumo' : 'Crear Insumo'}
-          </Button>
-        </div>
-      </form>
-    </Form>
+                  {imagenPreview && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Vista previa
+                      </label>
+                      <div className="relative inline-block">
+                        <img
+                          src={imagenPreview}
+                          alt="Preview"
+                          className="h-28 w-28 object-cover rounded-lg border-2 border-gray-300"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                          onClick={removeImage}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full"
+                variant="inventario"
+              >
+                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isEditing ? 'Actualizar Insumo' : 'Crear Insumo'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
 

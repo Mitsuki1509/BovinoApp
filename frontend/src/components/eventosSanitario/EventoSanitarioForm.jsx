@@ -6,7 +6,7 @@ import { useTypeStore } from '@/store/typeStore';
 import { useInsumoStore } from '@/store/insumoStore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Plus, Trash2, CalendarIcon } from 'lucide-react';
+import { Loader2, Plus, Trash2, CalendarIcon} from 'lucide-react';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Form,
@@ -26,9 +26,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+
+const ReadOnlyBox = ({ children, className = '' }) => (
+  <div className={cn('p-2 border rounded-md bg-gray-50', className)}>{children}</div>
+);
 
 const EventoSanitarioForm = ({ 
   eventoSanitario = null, 
@@ -41,7 +46,9 @@ const EventoSanitarioForm = ({
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState('');
   const [insumosSeleccionados, setInsumosSeleccionados] = useState([]);
-  const [estadoEvento, setEstadoEvento] = useState(0); 
+  const [estadoEvento, setEstadoEvento] = useState(0);
+  const [noInsumosDisponibles, setNoInsumosDisponibles] = useState(false);
+  const STOCK_MINIMO = 10;
 
   const form = useForm({
     defaultValues: {
@@ -52,6 +59,12 @@ const EventoSanitarioForm = ({
       fecha: new Date()
     }
   });
+
+  const truncarTexto = (texto, maxCaracteres = 30) => {
+    if (!texto || typeof texto !== 'string') return '';
+    if (texto.length <= maxCaracteres) return texto;
+    return texto.substring(0, maxCaracteres) + '...';
+  };
 
   useEffect(() => {
     fetchAnimales();
@@ -78,13 +91,14 @@ const EventoSanitarioForm = ({
             insumo_id: ei.insumo.insumo_id.toString(),
             cantidad: ei.cantidad,
             nombre: ei.insumo.nombre,
-            stock: ei.insumo.cantidad
+            stock: ei.insumo.cantidad,
+            unidad: ei.insumo.unidad?.nombre || ''
           }))
         );
       }
     } else {
       setIsEditing(false);
-      setEstadoEvento(0); 
+      setEstadoEvento(0);
       form.reset({
         animal_id: '',
         tipo_evento_id: '',
@@ -96,13 +110,19 @@ const EventoSanitarioForm = ({
     }
   }, [eventoSanitario, form]);
 
+  useEffect(() => {
+    if (insumos.length > 0 && !isEditing) {
+      const insumosDisponibles = insumos.filter(insumo => 
+        !insumo.deleted_at && insumo.cantidad > STOCK_MINIMO
+      );
+      setNoInsumosDisponibles(insumosDisponibles.length === 0);
+    }
+  }, [insumos, isEditing]);
+
   const onSubmit = async (data) => {
     setFormError('');
     
     try {
-      const fechaSeleccionada = new Date(data.fecha);
-      const fechaFormateada = fechaSeleccionada.toISOString().split('T')[0];
-      
       if (isEditing) {
         const result = await updateEventoSanitario(eventoSanitario.evento_sanitario_id, {
           estado: estadoEvento === 1 ? 'Completado' : 'Pendiente'
@@ -114,17 +134,22 @@ const EventoSanitarioForm = ({
           setFormError(result?.error || 'Error al procesar la solicitud');
         }
       } else {
+        const fechaSeleccionada = new Date(data.fecha);
+        const fechaFormateada = fechaSeleccionada.toISOString().split('T')[0];
+        
         const eventoSanitarioData = {
           animal_id: parseInt(data.animal_id),
           tipo_evento_id: parseInt(data.tipo_evento_id),
-          estado: 'Pendiente', 
+          estado: 'Pendiente',
           diagnostico: data.diagnostico || null,
           tratamiento: data.tratamiento || null,
           fecha: fechaFormateada,
-          insumos: insumosSeleccionados.map(insumo => ({
-            insumo_id: parseInt(insumo.insumo_id),
-            cantidad: parseInt(insumo.cantidad)
-          }))
+          insumos: insumosSeleccionados
+            .filter(insumo => insumo.insumo_id && insumo.cantidad)
+            .map(insumo => ({
+              insumo_id: parseInt(insumo.insumo_id),
+              cantidad: parseInt(insumo.cantidad)
+            }))
         };
 
         const result = await createEventoSanitario(eventoSanitarioData);
@@ -141,12 +166,17 @@ const EventoSanitarioForm = ({
               errorMsg.includes('ya existe') ||
               errorMsg.includes('mismo tipo')) {
             setFormError('Ya existe un evento sanitario del mismo tipo para este animal en la fecha seleccionada.');
+          } else if (errorMsg.includes('Stock insuficiente') || 
+                     errorMsg.includes('No se puede utilizar') ||
+                     errorMsg.includes('stock mínimo')) {
+            setFormError(errorMsg);
           } else {
             setFormError(errorMsg || 'Error al procesar la solicitud');
           }
         }
       }
     } catch (error) {
+      console.error('Error en onSubmit:', error);
       setFormError('Error de conexión. Por favor, intente nuevamente.');
     }
   };
@@ -156,21 +186,38 @@ const EventoSanitarioForm = ({
   };
 
   const agregarInsumo = () => {
-    setInsumosSeleccionados([...insumosSeleccionados, { insumo_id: '', cantidad: 1 }]);
+    setInsumosSeleccionados([...insumosSeleccionados, { 
+      insumo_id: '', 
+      cantidad: '',
+      nombre: '',
+      stock: 0,
+      unidad: ''
+    }]);
   };
 
   const actualizarInsumo = (index, field, value) => {
     const nuevosInsumos = [...insumosSeleccionados];
-    nuevosInsumos[index][field] = value;
     
-    if (field === 'insumo_id' && value) {
-      const insumoSeleccionado = insumos.find(i => i.insumo_id.toString() === value);
-      if (insumoSeleccionado) {
-        nuevosInsumos[index].stock = insumoSeleccionado.cantidad;
-        nuevosInsumos[index].nombre = insumoSeleccionado.nombre;
+    if (field === 'insumo_id') {
+      if (value) {
+        const insumoSeleccionado = insumos.find(i => i.insumo_id.toString() === value);
+        if (insumoSeleccionado) {
+          nuevosInsumos[index].stock = insumoSeleccionado.cantidad;
+          nuevosInsumos[index].nombre = insumoSeleccionado.nombre;
+          nuevosInsumos[index].unidad = insumoSeleccionado.unidad?.nombre || '';
+          if (!nuevosInsumos[index].cantidad) {
+            nuevosInsumos[index].cantidad = 1;
+          }
+        }
+      } else {
+        nuevosInsumos[index].stock = 0;
+        nuevosInsumos[index].nombre = '';
+        nuevosInsumos[index].unidad = '';
+        nuevosInsumos[index].cantidad = '';
       }
     }
     
+    nuevosInsumos[index][field] = value;
     setInsumosSeleccionados(nuevosInsumos);
   };
 
@@ -183,7 +230,7 @@ const EventoSanitarioForm = ({
     .filter(animal => !animal.deleted_at)
     .map(animal => ({
       value: animal.animal_id.toString(),
-      label: `${animal.arete}`
+      label: `${animal.arete}${animal.nombre ? ` - ${animal.nombre}` : ''}`
     }));
 
   const tipoEventoOptions = eventTypes
@@ -193,26 +240,68 @@ const EventoSanitarioForm = ({
       label: tipo.nombre
     }));
 
-  const insumosOptions = insumos && insumos.length > 0 
-    ? insumos
-        .filter(insumo => !insumo.deleted_at && insumo.cantidad > 0)
-        .map(insumo => ({
+  const obtenerTodosInsumos = () => {
+    if (!insumos || insumos.length === 0) {
+      return [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
+    }
+    
+    return insumos
+      .filter(insumo => {
+        if (insumo.deleted_at) return false;
+        if (!isEditing && insumo.cantidad <= STOCK_MINIMO) return false;
+        return true;
+      })
+      .map(insumo => {
+        const textoCompleto = `${insumo.nombre}`;
+        return {
           value: insumo.insumo_id.toString(),
-          label: `${insumo.nombre} (Stock: ${insumo.cantidad})` 
-        }))
-    : [{ value: 'no-data', label: 'No hay insumos disponibles', disabled: true }];
+          label: truncarTexto(textoCompleto, 40),
+          fullLabel: textoCompleto,
+          disabled: !isEditing && insumo.cantidad <= STOCK_MINIMO
+        };
+      });
+  };
+
+  const getOpcionesFiltradas = (insumoIndex) => {
+    const todosLosInsumos = obtenerTodosInsumos();
+    const insumoActual = insumosSeleccionados[insumoIndex];
+    
+    if (isEditing) {
+      return todosLosInsumos;
+    }
+    
+    return todosLosInsumos.filter(option => {
+      if (option.value === insumoActual?.insumo_id) {
+        return true;
+      }
+      
+      const estaSeleccionadoEnOtroCampo = insumosSeleccionados.some((insumo, idx) => 
+        idx !== insumoIndex && insumo.insumo_id === option.value
+      );
+      
+      return !estaSeleccionadoEnOtroCampo;
+    });
+  };
+
+  const validarCantidad = (cantidad, stock) => {
+    const cantidadStr = cantidad === null || cantidad === undefined ? '' : String(cantidad);
+    
+    if (!cantidadStr || cantidadStr.trim() === '') return "Cantidad requerida";
+    
+    const cantidadNum = parseInt(cantidadStr);
+    if (isNaN(cantidadNum) || cantidadNum <= 0) return "La cantidad debe ser mayor a 0";
+    if (cantidadNum > stock) return `No puede exceder el stock (${stock})`;
+    if (stock - cantidadNum < STOCK_MINIMO) {
+      return `Stock mínimo requerido: ${STOCK_MINIMO}. Quedarían ${stock - cantidadNum}`;
+    }
+    return true;
+  };
 
   return (
     <Card className="w-full border-0 shadow-none">
       <CardContent className="p-0">
         <Form {...form}>
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit(onSubmit)(e);
-            }} 
-            className="space-y-6"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {formError && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {formError}
@@ -227,16 +316,27 @@ const EventoSanitarioForm = ({
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Animal</FormLabel>
-                    <FormControl>
+                      {isEditing ? (
+                      <ReadOnlyBox>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">
+                            {animales.find(a => a.animal_id.toString() === field.value)?.arete || 'N/A'}
+                          </Badge>
+                          <span className="text-sm text-gray-600">
+                            {animales.find(a => a.animal_id.toString() === field.value)?.nombre || ''}
+                          </span>
+                        </div>
+                      </ReadOnlyBox>
+                    ) : (
                       <Combobox
                         options={animalesOptions}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar animal"
-                        disabled={loading || isEditing}
+                        disabled={loading}
                         className="w-full"
                       />
-                    </FormControl>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -246,61 +346,70 @@ const EventoSanitarioForm = ({
                 control={form.control}
                 name="tipo_evento_id"
                 rules={{ required: !isEditing ? "El tipo de evento es obligatorio" : false }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Tipo de Evento Sanitario</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        options={tipoEventoOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar tipo de evento"
-                        disabled={loading || isEditing}
-                        className="w-full"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const selectedLabel = eventTypes.find(t => t.tipo_evento_id.toString() === field.value)?.nombre;
+                  
+                  return (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Tipo de Evento Sanitario</FormLabel>
+                      {isEditing ? (
+                        <ReadOnlyBox>
+                          <span className="text-sm">{selectedLabel || 'N/A'}</span>
+                        </ReadOnlyBox>
+                      ) : (
+                        <Combobox
+                          options={tipoEventoOptions}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar tipo de evento"
+                          disabled={loading}
+                          className="w-full text-sm sm:text-base"
+                          truncate={true}
+                        />
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
-              {!isEditing && (
-                <FormField
-                  control={form.control}
-                  name="fecha"
-                  rules={{ 
-                    required: !isEditing ? "La fecha es requerida" : false,
-                    validate: {
-                      futureDate: (value) => {
-                        if (isEditing) return true;
-                        const selectedDate = new Date(value);
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        tomorrow.setHours(0, 0, 0, 0);
-                        return selectedDate >= tomorrow || "La fecha debe ser futura (a partir de mañana)";
-                      }
+              <FormField
+                control={form.control}
+                name="fecha"
+                rules={{ 
+                  required: !isEditing ? "La fecha es requerida" : false,
+                  validate: {
+                    futureDate: (value) => {
+                      if (isEditing) return true;
+                      const selectedDate = new Date(value);
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      tomorrow.setHours(0, 0, 0, 0);
+                      return selectedDate >= tomorrow || "La fecha debe ser futura (a partir de mañana)";
                     }
-                  }}
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Fecha del Evento</FormLabel>
+                  }
+                }}
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="text-sm">Fecha del Evento</FormLabel>
+                    {isEditing ? (
+                      <ReadOnlyBox className="flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">
+                          {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Fecha no especificada'}
+                        </span>
+                      </ReadOnlyBox>
+                    ) : (
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                              disabled={loading || isEditing}
+                              className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                              disabled={loading}
                             >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: es })
-                              ) : (
-                                <span>Seleccionar fecha</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              <CalendarIcon className="mr-2 h-3 w-3" />
+                              {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Seleccionar fecha'}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -315,11 +424,11 @@ const EventoSanitarioForm = ({
                           />
                         </PopoverContent>
                       </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+                    )}
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -327,15 +436,19 @@ const EventoSanitarioForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Diagnóstico</FormLabel>
-                    <FormControl>
+                    {isEditing ? (
+                      <ReadOnlyBox className="min-h-[80px]">
+                        <p className="text-sm whitespace-pre-line">{field.value || 'No se especificó diagnóstico'}</p>
+                      </ReadOnlyBox>
+                    ) : (
                       <Textarea
                         {...field}
                         placeholder="Descripción del diagnóstico..."
-                        disabled={loading || isEditing}
+                        disabled={loading}
                         className="w-full resize-none"
                         rows={3}
                       />
-                    </FormControl>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -347,15 +460,19 @@ const EventoSanitarioForm = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tratamiento</FormLabel>
-                    <FormControl>
+                    {isEditing ? (
+                      <ReadOnlyBox className="min-h-[80px]">
+                        <p className="text-sm whitespace-pre-line">{field.value || 'No se especificó tratamiento'}</p>
+                      </ReadOnlyBox>
+                    ) : (
                       <Textarea
                         {...field}
                         placeholder="Descripción del tratamiento aplicado..."
-                        disabled={loading || isEditing}
+                        disabled={loading}
                         className="w-full resize-none"
                         rows={3}
                       />
-                    </FormControl>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -378,98 +495,131 @@ const EventoSanitarioForm = ({
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Insumos Utilizados (Opcional)
-                  </label>
+                  <label className="text-sm font-medium">Insumos Utilizados {isEditing ? '' : '(Opcional)'}</label>
                   {!isEditing && (
-                    <div className="flex gap-2">
-                      {loadingInsumos && (
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                      )}
-                      <Button
-                        type="button"
-                        onClick={agregarInsumo}
-                        variant="outline"
-                        size="sm"
-                        disabled={loading || loadingInsumos || isEditing}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Agregar Insumo
-                      </Button>
-                    </div>
+                    <Button
+                      type="button"
+                      onClick={agregarInsumo}
+                      variant="outline"
+                      size="sm"
+                      disabled={loading || loadingInsumos || noInsumosDisponibles}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Agregar Insumo
+                    </Button>
                   )}
                 </div>
 
-                {insumosOptions.length === 1 && insumosOptions[0].value === 'no-data' && (
+                {noInsumosDisponibles && !isEditing && (
                   <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
-                    No hay insumos disponibles en el sistema. 
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto text-amber-700 ml-1"
-                      onClick={() => fetchInsumos()}
-                    >
-                      Reintentar
-                    </Button>
+                    No hay insumos disponibles con stock suficiente (mínimo {STOCK_MINIMO} unidades)
                   </div>
                 )}
 
-                {insumosSeleccionados.map((insumo, index) => (
-                  <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium">Insumo</label>
-                        <Combobox
-                          options={insumosOptions}
-                          value={insumo.insumo_id}
-                          onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
-                          placeholder="Seleccionar insumo"
-                          disabled={loading || loadingInsumos || isEditing}
-                        />
-                        {insumo.nombre && (
-                          <p className="text-xs text-muted-foreground">
-                            Stock disponible: {insumo.stock || 0}
-                          </p>
-                        )}
+                {insumosSeleccionados.map((insumo, index) => {
+                  const cantidadValida = insumo.cantidad && insumo.stock ? 
+                    validarCantidad(insumo.cantidad, insumo.stock) === true : true;
+                  
+                  return (
+                    <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Insumo</label>
+                          {isEditing ? (
+                            <ReadOnlyBox className="rounded">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">{insumo.nombre || 'Sin nombre'}</span>
+                              </div>
+                            </ReadOnlyBox>
+                          ) : (
+                            <Combobox
+                              options={getOpcionesFiltradas(index)}
+                              value={insumo.insumo_id}
+                              onValueChange={(value) => actualizarInsumo(index, 'insumo_id', value)}
+                              placeholder="Seleccionar insumo"
+                              disabled={loading || loadingInsumos}
+                              className="w-full text-sm sm:text-base"
+                              truncate={true}
+                            />
+                          )}
+                          {insumo.nombre && (
+                            <div className="text-xs space-y-1">
+                              <p className="text-muted-foreground">Stock: {insumo.stock} {insumo.unidad}</p>
+                              {!isEditing && (
+                                <p className="text-gray-600">
+                                  Máximo: {Math.max(0, insumo.stock - STOCK_MINIMO)} {insumo.unidad}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium">Cantidad</label>
+                          {isEditing ? (
+                            <ReadOnlyBox className="flex justify-between items-center">
+                              <span className="text-sm font-medium">{insumo.cantidad} {insumo.unidad}</span>
+                            </ReadOnlyBox>
+                          ) : (
+                            <div className="space-y-1">
+                              <Input
+                                type="number"
+                                min="1"
+                                max={insumo.stock ? Math.max(1, Math.min(insumo.stock - STOCK_MINIMO, insumo.stock)) : undefined}
+                                value={insumo.cantidad}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || /^\d*$/.test(value)) {
+                                    actualizarInsumo(index, 'cantidad', value);
+                                  }
+                                }}
+                                placeholder="Cantidad"
+                                disabled={loading || !insumo.insumo_id}
+                              />
+                              {insumo.cantidad && insumo.stock && (
+                                <div>
+                                  {(() => {
+                                    const validacion = validarCantidad(insumo.cantidad, insumo.stock);
+                                    if (validacion !== true) {
+                                      return <p className="text-xs text-red-500">{validacion}</p>;
+                                    }
+                                    const stockDespues = insumo.stock - parseInt(insumo.cantidad);
+                                    return (
+                                      <p className={`text-xs ${stockDespues < STOCK_MINIMO ? 'text-gray-600' : 'text-gray-600'}`}>
+                                        Stock después: {stockDespues} {insumo.unidad}
+                                        {stockDespues < STOCK_MINIMO && ' (Stock bajo)'}
+                                      </p>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-medium">Cantidad</label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max={insumo.stock || 1}
-                          value={insumo.cantidad}
-                          onChange={(e) => actualizarInsumo(index, 'cantidad', e.target.value)}
-                          placeholder="Cantidad"
-                          disabled={loading || isEditing}
-                        />
-                        {insumo.stock && insumo.cantidad > insumo.stock && (
-                          <p className="text-xs text-red-500">
-                            Cantidad excede el stock disponible
-                          </p>
-                        )}
-                      </div>
+                      
+                      {!isEditing && (
+                        <Button
+                          type="button"
+                          onClick={() => eliminarInsumo(index)}
+                          variant="ghost"
+                          size="icon"
+                          disabled={loading}
+                          className="mt-6"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
                     </div>
-                    {!isEditing && (
-                      <Button
-                        type="button"
-                        onClick={() => eliminarInsumo(index)}
-                        variant="ghost"
-                        size="icon"
-                        disabled={loading || isEditing}
-                        className="mt-6"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             <div className="pt-2 sm:pt-4 flex gap-3">
               <Button 
                 type="submit" 
-                disabled={loading}
+                disabled={loading || (!isEditing && noInsumosDisponibles)}
                 className="flex-1"
                 variant="sanidad"
               >

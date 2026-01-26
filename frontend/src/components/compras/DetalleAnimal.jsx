@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const DetalleAnimal = ({ compra }) => {
   if (!compra) return null;
@@ -87,58 +88,66 @@ const DetalleAnimal = ({ compra }) => {
                 </Label>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {compra.detalles?.map((detalle, index) => (
                   <div
                     key={index}
-                    className="flex gap-2 items-start p-3 border rounded-lg bg-gray-50/50"
+                    className="space-y-3 p-3 border rounded-lg bg-gray-50/50"
                   >
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Arete</Label>
-                        <Input
-                          value={detalle.animal?.arete || 'Sin arete'}
-                          disabled
-                          className="bg-white text-sm"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Raza</Label>
-                        <Input
-                          value={detalle.animal?.raza?.nombre || 'Sin raza'}
-                          disabled
-                          className="bg-white text-sm capitalize"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Sexo</Label>
-                        <Input
-                          value={detalle.animal?.sexo === 'M' ? 'Macho' : 'Hembra'}
-                          disabled
-                          className="bg-white text-sm capitalize"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Precio</Label>
-                        <Input
-                          value={`C$${formatPrice(detalle.precio)}`}
-                          disabled
-                          className="bg-white text-sm"
-                        />
+                    <div className="flex gap-2 items-start">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium">Arete</Label>
+                          <Input
+                            value={detalle.animal?.arete || 'Sin arete'}
+                            disabled
+                            className="bg-white text-sm"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium">Raza</Label>
+                          <Input
+                            value={detalle.animal?.raza?.nombre || 'Sin raza'}
+                            disabled
+                            className="bg-white text-sm capitalize"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium">Sexo</Label>
+                          <Input
+                            value={detalle.animal?.sexo === 'M' ? 'Macho' : 'Hembra'}
+                            disabled
+                            className="bg-white text-sm capitalize"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs font-medium">Precio</Label>
+                          <Input
+                            value={`C$${formatPrice(detalle.precio)}`}
+                            disabled
+                            className="bg-white text-sm"
+                          />
+                        </div>
                       </div>
                     </div>
                     
                     {detalle.observaciones && (
-                      <div className="space-y-2 ">
+                      <div className="space-y-2 pt-2 border-t">
                         <Label className="text-xs font-medium">Observaciones</Label>
-                        <Input
-                          value={detalle.observaciones}
-                          disabled
-                          className="bg-white text-sm"
-                        />
+                        <div className="relative">
+                          <Textarea
+                            value={detalle.observaciones}
+                            disabled
+                            className="bg-white text-sm min-h-[80px] resize-none w-full pr-8"
+                            readOnly
+                          />
+                          <div className="absolute right-2 top-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {detalle.observaciones.length} caracteres
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

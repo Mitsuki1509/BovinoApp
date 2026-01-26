@@ -206,9 +206,6 @@ const ProveedorForm = ({
                     <FormMessage className="text-xs sm:text-sm">
                       {fieldErrors.telefono_local || form.formState.errors.telefono_local?.message}
                     </FormMessage>
-                    <div className="text-xs text-gray-500">
-                      Teléfono completo: 505{field.value || 'XXXXXXX'}
-                    </div>
                   </FormItem>
                 )}
               />

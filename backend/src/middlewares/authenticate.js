@@ -15,10 +15,10 @@ export default function authenticate(req, res, next) {
     const decoded = JWT.verify(token, process.env.JWT_SECRET_KEY);
     
 
-    // Establecer el usuario en la request (usar nombres consistentes)
+    // Establecer el usuario en la request 
     req.usuario = {
-      usuario_id: decoded.usuarioId,  // ← Esto viene del JWT como usuarioId
-      rol: decoded.rol,               // ← Esto viene del JWT como rol
+      usuario_id: decoded.usuarioId,  // Esto viene del JWT como usuarioId
+      rol: decoded.rol,               // Esto viene del JWT como rol
       nombre: decoded.nombre
     };
 

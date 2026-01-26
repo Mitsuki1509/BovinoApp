@@ -87,7 +87,6 @@ const DiagnosticoForm = ({
     setFieldErrors({})
     
     try {
-        console.log('Datos del formulario:', data);
         
         let fechaPartoFormateada = null;
         
@@ -108,17 +107,12 @@ const DiagnosticoForm = ({
             }
             
             const fecha = new Date(data.fecha_probable_parto);
-            console.log('Fecha original:', data.fecha_probable_parto);
-            console.log('Fecha como Date:', fecha);
-            console.log('Fecha timestamp:', fecha.getTime());
-            
             if (isNaN(fecha.getTime())) {
                 setFormError('La fecha probable de parto no es válida')
                 return
             }
             
             fechaPartoFormateada = fecha.toISOString().split('T')[0];
-            console.log('Fecha formateada ISO:', fechaPartoFormateada);
         }
 
         const diagnosticoData = {
@@ -127,8 +121,6 @@ const DiagnosticoForm = ({
             resultado: data.resultado,
             fecha_probable_parto: fechaPartoFormateada
         }
-
-        console.log('Datos finales a enviar:', diagnosticoData);
 
         let result
         if (isEditing) {
@@ -145,7 +137,6 @@ const DiagnosticoForm = ({
             setFormError(errorMsg)
         }
     } catch (error) {
-        console.error('Error en onSubmit:', error)
         setFormError('Error de conexión. Por favor, intente nuevamente.')
     }
 }
@@ -292,19 +283,15 @@ const DiagnosticoForm = ({
                           <FormControl>
                             <Button
                               variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
+                              className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
                               disabled={loading}
-                              type="button"
                             >
+                              <CalendarIcon className="mr-2 h-3 w-3"/>
                               {field.value ? (
                                 format(field.value, "PPP", { locale: es })
                               ) : (
                                 <span>Seleccionar fecha</span>
                               )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -313,7 +300,6 @@ const DiagnosticoForm = ({
                             mode="single"
                             selected={field.value}
                             onSelect={(date) => {
-                              console.log('Fecha seleccionada:', date)
                               field.onChange(date)
                             }}
                             disabled={(date) => {

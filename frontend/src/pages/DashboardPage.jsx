@@ -15,7 +15,8 @@ import {
   Syringe,
   PieChart,
   ArrowUpIcon,
-  ArrowDownIcon
+  ArrowDownIcon,
+  FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
@@ -46,9 +47,22 @@ import {
 } from "@/components/ui/select";
 
 const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   if (!data || data.length === 0) {
     return (
-      <div className="h-80 flex items-center justify-center text-gray-500">
+      <div className="h-60 sm:h-72 md:h-80 flex items-center justify-center text-gray-500 text-sm sm:text-base">
         No hay datos de producción disponibles
       </div>
     );
@@ -59,15 +73,18 @@ const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
       if (!dateString) return 'Fecha inválida';
       
       if (typeof dateString === 'string' && dateString.includes('/')) {
-        return dateString;
+        return isMobile ? dateString.split('/')[0] : dateString;
       }
       
       const [year, month, day] = dateString.split('-').map(Number);
       const date = new Date(Date.UTC(year, month - 1, day));
       
       if (isNaN(date.getTime())) {
-        console.warn('Fecha inválida:', dateString);
         return 'Fecha inválida';
+      }
+      
+      if (isMobile) {
+        return `${day}/${month}`;
       }
       
       return date.toLocaleDateString('es-ES', { 
@@ -76,7 +93,6 @@ const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
         timeZone: 'UTC' 
       });
     } catch (error) {
-      console.error('Error formateando fecha:', error);
       return 'Fecha inválida';
     }
   };
@@ -89,18 +105,27 @@ const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
   }));
 
   return (
-    <div className="h-80 w-full" style={{ minWidth: '300px' }}>
+    <div className="h-60 sm:h-72 md:h-80 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart 
           data={safeData} 
-          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+          margin={{ 
+            top: 10, 
+            right: isMobile ? 10 : 30, 
+            left: isMobile ? 0 : 20, 
+            bottom: isMobile ? 10 : 20 
+          }}
         >
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
           <XAxis 
             dataKey="fechaFormatted"
-            tick={{ fontSize: 12 }}
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            interval={isMobile ? Math.ceil(data.length / 5) : 0}
           />
-          <YAxis tick={{ fontSize: 12 }} />
+          <YAxis 
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            width={isMobile ? 30 : 40}
+          />
           <Tooltip 
             labelFormatter={(value, payload) => {
               if (payload && payload[0] && payload[0].payload) {
@@ -113,7 +138,8 @@ const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
             contentStyle={{ 
               backgroundColor: 'white',
               border: '1px solid #e5e7eb',
-              borderRadius: '8px'
+              borderRadius: '8px',
+              fontSize: isMobile ? '12px' : '14px'
             }}
           />
           <Area 
@@ -143,6 +169,19 @@ const ProductionAreaChart = ({ data, color = "#3b82f6" }) => {
 };
 
 const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const colorClasses = {
     blue: { 
       bg: 'bg-blue-50', 
@@ -175,25 +214,29 @@ const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle })
   const ChangeIcon = change > 0 ? ArrowUpIcon : change < 0 ? ArrowDownIcon : null;
 
   return (
-    <Card className={`border-l-4 ${colorClasses.border} hover:shadow-lg transition-all duration-200`}>
-      <CardContent className="p-6">
+    <Card className={`border-l-4 ${colorClasses.border} hover:shadow-lg transition-all duration-200 h-full`}>
+      <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            {subtitle && <p className="text-xs text-gray-500 mb-2">{subtitle}</p>}
-            <p className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1 truncate">{title}</p>
+            {subtitle && (
+              <p className="text-xs text-gray-500 mb-2 truncate">{subtitle}</p>
+            )}
+            <p className={`text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 truncate`}>
               {value !== null && value !== undefined ? value : "0"}
             </p>
             {change !== undefined && (
-              <div className={`flex items-center text-sm font-medium ${changeColor}`}>
-                {ChangeIcon && <ChangeIcon className="h-4 w-4 mr-1" />}
+              <div className={`flex items-center text-xs sm:text-sm font-medium ${changeColor} flex-wrap gap-1`}>
+                {ChangeIcon && <ChangeIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />}
                 {change !== 0 ? `${Math.abs(change)}%` : 'Sin cambios'} 
-                <span className="text-gray-500 ml-1">vs último mes</span>
+                <span className="text-gray-500 ml-0 sm:ml-1 whitespace-nowrap">
+                  {isMobile ? 'vs mes' : 'vs último mes'}
+                </span>
               </div>
             )}
           </div>
-          <div className={`p-3 rounded-xl ${colorClasses.bg} ${colorClasses.text}`}>
-            <Icon className="h-6 w-6" />
+          <div className={`p-2 sm:p-3 rounded-lg sm:rounded-xl ${colorClasses.bg} ${colorClasses.text} flex-shrink-0 ml-2`}>
+            <Icon className="h-4 w-4 sm:h-6 sm:w-6" />
           </div>
         </div>
       </CardContent>
@@ -201,10 +244,135 @@ const KPICard = ({ title, value, change, icon: Icon, color = "blue", subtitle })
   );
 };
 
+const ResponsiveBarChart = ({ data, dataKey, color = "#3b82f6", name, isMobile }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-60 sm:h-72 md:h-80 flex items-center justify-center text-gray-500 text-sm sm:text-base">
+        No hay datos disponibles
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-60 sm:h-72 md:h-80 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart 
+          data={data} 
+          margin={{ 
+            top: 10, 
+            right: isMobile ? 10 : 30, 
+            left: isMobile ? 0 : 20, 
+            bottom: isMobile ? 40 : 60 
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+          <XAxis 
+            dataKey="name"
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            angle={isMobile ? -90 : -45}
+            textAnchor={isMobile ? "end" : "end"}
+            height={isMobile ? 80 : 60}
+            interval={0}
+          />
+          <YAxis 
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            width={isMobile ? 30 : 40}
+          />
+          <Tooltip 
+            formatter={(value, tooltipName) => {
+              if (tooltipName === 'value') return [`${value} L`, 'Producción Total'];
+              return [value, 'Número de Vacas'];
+            }}
+            contentStyle={{ 
+              fontSize: isMobile ? '12px' : '14px'
+            }}
+          />
+          <Bar 
+            dataKey={dataKey} 
+            fill={color}
+            radius={[4, 4, 0, 0]}
+            name={name}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const ResponsivePieChart = ({ data, isMobile }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-60 sm:h-72 md:h-80 flex items-center justify-center text-gray-500 text-sm sm:text-base">
+        No hay datos disponibles
+      </div>
+    );
+  }
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+  return (
+    <div className="h-60 sm:h-72 md:h-80 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsPieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={!isMobile}
+            label={isMobile ? false : ({ name, percent }) => 
+              `${name} (${(percent * 100).toFixed(0)}%)`
+            }
+            outerRadius={isMobile ? 60 : 80}
+            fill="#8884d8"
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={COLORS[index % COLORS.length]} 
+              />
+            ))}
+          </Pie>
+          <Tooltip 
+            formatter={(value) => [value, 'Animales']}
+            contentStyle={{ fontSize: isMobile ? '12px' : '14px' }}
+          />
+          {!isMobile && <Legend />}
+        </RechartsPieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+const MetricCard = ({ title, value, subtitle, color, icon: Icon }) => {
+  const colorClasses = {
+    purple: 'from-purple-50 to-purple-100 border-purple-200 text-purple-900',
+    green: 'from-green-50 to-green-100 border-green-200 text-green-900',
+    blue: 'from-blue-50 to-blue-100 border-blue-200 text-blue-900',
+    orange: 'from-orange-50 to-orange-100 border-orange-200 text-orange-900'
+  }[color];
+
+  return (
+    <div className={`bg-gradient-to-br ${colorClasses} p-3 sm:p-4 rounded-lg border`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-lg sm:text-xl md:text-2xl font-bold">
+          {value || "0"}
+        </div>
+        {Icon && <Icon className="h-4 w-4 sm:h-5 sm:w-5 opacity-70" />}
+      </div>
+      <div className="text-xs sm:text-sm font-medium opacity-90">{title}</div>
+      {subtitle && (
+        <div className="text-xs opacity-75 mt-1">{subtitle}</div>
+      )}
+    </div>
+  );
+};
+
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { checkAuth, user } = useAuthStore();
   const [authStatus, setAuthStatus] = useState('checking');
+  const [isMobile, setIsMobile] = useState(false);
   const { 
     kpis, 
     tendenciaProduccion, 
@@ -220,6 +388,17 @@ const DashboardPage = () => {
   const [showReportModal, setShowReportModal] = useState(false);
 
   const canGenerateReports = user?.rol === 'admin' || user?.rol === 'contable';
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -290,63 +469,62 @@ const DashboardPage = () => {
     value: Number(item.total_produccion) || 0,
     vacas: Number(item.total_vacas) || 0
   })) || [];
-  
+
   return (
     <MainLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6">
+        {/* Header simplificado sin menú hamburguesa */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard Ganadero</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
+              Dashboard Ganadero
+            </h1>
+            <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
               Datos en tiempo real de producción, reproducción y salud del hato
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-lg">
+          
+          {/* Controles en una sola línea responsive */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Fecha actual */}
+            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-lg text-sm">
               <Calendar className="h-4 w-4 text-gray-600" />
               <Badge variant="secondary" className="text-sm bg-transparent">
                 {new Date().toLocaleDateString('es-ES')}
               </Badge>
             </div>
             
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[140px] text-sm">
-                <SelectValue placeholder="Seleccionar rango" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Últimos 7 días</SelectItem>
-                <SelectItem value="30d">Últimos 30 días</SelectItem>
-                <SelectItem value="90d">Últimos 90 días</SelectItem>
-                <SelectItem value="1y">Último año</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Dropdown de días */}
+            <div className="relative">
+              <Select value={timeRange} onValueChange={setTimeRange}>
+                <SelectTrigger className="w-[140px] text-sm h-9">
+                  <SelectValue placeholder="Seleccionar rango" />
+                </SelectTrigger>
+                <SelectContent className="z-50">
+                  <SelectItem value="7d">Últimos 7 días</SelectItem>
+                  <SelectItem value="30d">Últimos 30 días</SelectItem>
+                  <SelectItem value="90d">Últimos 90 días</SelectItem>
+                  <SelectItem value="1y">Último año</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
-            {canGenerateReports && (
-              <Button 
-                onClick={handleOpenReportModal}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                Generar Reporte
-              </Button>
-            )}
-            
+            {/* Botón de actualizar */}
             <Button 
               onClick={() => fetchDashboardCompleto()} 
               disabled={loading}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 h-9"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
+              <span className="hidden sm:inline">Actualizar</span>
             </Button>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm sm:text-base">
             <div className="flex items-center gap-2 text-red-800">
               <span className="font-medium">Error al cargar datos:</span>
               <span>{error}</span>
@@ -362,7 +540,8 @@ const DashboardPage = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Grid de KPIs Responsive */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <KPICard
             title="Total Hato"
             value={kpis?.totalAnimales?.toLocaleString()}
@@ -385,56 +564,59 @@ const DashboardPage = () => {
             change={-3.1}
             icon={Syringe}
             color="red"
-            subtitle="Requieren atención"
+            subtitle={isMobile ? "Requieren atención" : "Animales en tratamiento"}
           />
           <KPICard
-            title="Montas Este Mes"
+            title={isMobile ? "Montas Mes" : "Montas Este Mes"}
             value={kpis?.montasEsteMes?.toLocaleString()}
             change={8.7}
             icon={Heart}
             color="purple"
-            subtitle="Actividad reproductiva"
+            subtitle={isMobile ? "Reproducción" : "Actividad reproductiva"}
           />
         </div>
 
-        <Tabs defaultValue="production" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-flex bg-gray-100 p-1 rounded-lg">
-            <TabsTrigger 
-              value="production" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-            >
-              <Milk className="h-4 w-4" />
-              Producción
-            </TabsTrigger>
-            <TabsTrigger 
-              value="reproduction" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-            >
-              <FaCow className="h-4 w-4" />
-              Reproducción
-            </TabsTrigger>
-            <TabsTrigger 
-              value="health" 
-              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
-            >
-              <Activity className="h-4 w-4" />
-              Salud & Distribución
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="production" className="space-y-4 sm:space-y-8">
+          <div className="overflow-x-auto">
+  <TabsList className={`inline-flex w-auto min-w-full md:w-full h-10 bg-gray-100 p-1 rounded-lg`}>
+    <TabsTrigger 
+      value="production" 
+      className={`flex items-center gap-1 justify-center whitespace-nowrap text-xs px-3 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 min-w-0`}
+    >
+      <Milk className="h-3 w-3 flex-shrink-0" />
+      <span className="truncate">Producción</span>
+    </TabsTrigger>
+    <TabsTrigger 
+      value="reproduction" 
+      className={`flex items-center gap-1 justify-center whitespace-nowrap text-xs px-3 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 min-w-0`}
+    >
+      <FaCow className="h-3 w-3 flex-shrink-0" />
+      <span className="truncate">Reproducción</span>
+    </TabsTrigger>
+    <TabsTrigger 
+      value="health" 
+      className={`flex items-center gap-1 justify-center whitespace-nowrap text-xs px-3 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 min-w-0`}
+    >
+      <Activity className="h-3 w-3 flex-shrink-0" />
+      <span className="truncate">Salud</span>
+    </TabsTrigger>
+  </TabsList>
+</div>
 
-          <TabsContent value="production" className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
+          {/* Contenido de tabs */}
+          <TabsContent value="production" className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     Tendencia Producción Lechera
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Producción diaria real del hato en litros
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                   <ProductionAreaChart 
                     data={produccionData}
                     color="#10b981"
@@ -442,77 +624,66 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChart className="h-5 w-5 text-blue-600" />
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <PieChart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     Producción por Raza
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Eficiencia productiva por tipo de raza
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
-                        data={produccionPorRaza} 
-                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                        <XAxis 
-                          dataKey="name"
-                          tick={{ fontSize: 12 }}
-                          angle={-45}
-                          textAnchor="end"
-                          height={80}
-                        />
-                        <YAxis tick={{ fontSize: 12 }} />
-                        <Tooltip 
-                          formatter={(value, name) => {
-                            if (name === 'value') return [`${value} L`, 'Producción Total'];
-                            return [value, 'Número de Vacas'];
-                          }}
-                        />
-                        <Bar 
-                          dataKey="value" 
-                          fill="#3b82f6"
-                          radius={[4, 4, 0, 0]}
-                          name="Producción Total (L)"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <ResponsiveBarChart 
+                    data={produccionPorRaza}
+                    dataKey="value"
+                    color="#3b82f6"
+                    name="Producción Total (L)"
+                    isMobile={isMobile}
+                  />
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="reproduction" className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Actividad Reproductiva</CardTitle>
-                  <CardDescription>
+          <TabsContent value="reproduction" className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Actividad Reproductiva</CardTitle>
+                  <CardDescription className="text-sm">
                     Montas realizadas por día
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="h-60 sm:h-72 md:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart 
                         data={reproduccionData} 
-                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                        margin={{ 
+                          top: 10, 
+                          right: isMobile ? 10 : 30, 
+                          left: isMobile ? 0 : 20, 
+                          bottom: isMobile ? 10 : 20 
+                        }}
                       >
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis 
                           dataKey="fecha"
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          interval={isMobile ? Math.ceil(reproduccionData.length / 5) : 0}
                         />
-                        <YAxis tick={{ fontSize: 12 }} />
+                        <YAxis 
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          width={isMobile ? 30 : 40}
+                        />
                         <Tooltip 
                           labelFormatter={(value) => `Fecha: ${value}`}
                           formatter={(value) => [value, 'Montas']}
+                          contentStyle={{ 
+                            fontSize: isMobile ? '12px' : '14px'
+                          }}
                         />
                         <Bar 
                           dataKey="cantidad" 
@@ -525,116 +696,97 @@ const DashboardPage = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Métricas de Reproducción</CardTitle>
-                  <CardDescription>
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Métricas de Reproducción</CardTitle>
+                  <CardDescription className="text-sm">
                     Indicadores de eficiencia reproductiva
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-                        <div className="text-2xl font-bold text-purple-900">
-                          {metricasReproduccion?.tasaPreñez || "0"}%
-                        </div>
-                        <div className="text-sm text-purple-700 font-medium">Tasa de Preñez</div>
-                        <div className="text-xs text-purple-600 mt-1">
-                          {metricasReproduccion?.diagnosticosPositivos || "0"} positivos
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
-                        <div className="text-2xl font-bold text-green-900">
-                          {metricasReproduccion?.montasUltimos30Dias || "0"}
-                        </div>
-                        <div className="text-sm text-green-700 font-medium">Total Montas</div>
-                        <div className="text-xs text-green-600 mt-1">Últimos 30 días</div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                        <div className="text-2xl font-bold text-blue-900">
-                          {metricasReproduccion?.partosUltimos30Dias || "0"}
-                        </div>
-                        <div className="text-sm text-blue-700 font-medium">Partos Recientes</div>
-                        <div className="text-xs text-blue-600 mt-1">Últimos 30 días</div>
-                      </div>
-                      <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
-                        <div className="text-2xl font-bold text-orange-900">
-                          {metricasReproduccion?.vacasPreñadasActuales || "0"}
-                        </div>
-                        <div className="text-sm text-orange-700 font-medium">Vacas Preñadas</div>
-                        <div className="text-xs text-orange-600 mt-1">Actualmente</div>
-                      </div>
-                    </div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <MetricCard
+                      title="Tasa de Preñez"
+                      value={`${metricasReproduccion?.tasaPreñez || "0"}%`}
+                      subtitle={`${metricasReproduccion?.diagnosticosPositivos || "0"} positivos`}
+                      color="purple"
+                    />
+                    <MetricCard
+                      title="Total Montas"
+                      value={metricasReproduccion?.montasUltimos30Dias || "0"}
+                      subtitle="Últimos 30 días"
+                      color="green"
+                    />
+                    <MetricCard
+                      title="Partos Recientes"
+                      value={metricasReproduccion?.partosUltimos30Dias || "0"}
+                      subtitle="Últimos 30 días"
+                      color="blue"
+                    />
+                    <MetricCard
+                      title="Vacas Preñadas"
+                      value={metricasReproduccion?.vacasPreñadasActuales || "0"}
+                      subtitle="Actualmente"
+                      color="orange"
+                    />
                   </div>
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
 
-          <TabsContent value="health" className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Distribución del Hato</CardTitle>
-                  <CardDescription>
+          <TabsContent value="health" className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Distribución del Hato</CardTitle>
+                  <CardDescription className="text-sm">
                     Composición por categorías de edad y sexo
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={distribucionCategorias}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {distribucionCategorias.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} 
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => [value, 'Animales']} />
-                        <Legend />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </div>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <ResponsivePieChart 
+                    data={distribucionCategorias}
+                    isMobile={isMobile}
+                  />
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Eventos Sanitarios</CardTitle>
-                  <CardDescription>
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Eventos Sanitarios</CardTitle>
+                  <CardDescription className="text-sm">
                     Tratamientos y consultas veterinarias
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-80 w-full" style={{ minWidth: '300px' }}>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  <div className="h-60 sm:h-72 md:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart 
                         data={saludData} 
-                        margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                        margin={{ 
+                          top: 10, 
+                          right: isMobile ? 10 : 30, 
+                          left: isMobile ? 0 : 20, 
+                          bottom: isMobile ? 10 : 20 
+                        }}
                       >
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis 
                           dataKey="fecha"
-                          tick={{ fontSize: 12 }}
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          interval={isMobile ? Math.ceil(saludData.length / 5) : 0}
                         />
-                        <YAxis tick={{ fontSize: 12 }} />
+                        <YAxis 
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          width={isMobile ? 30 : 40}
+                        />
                         <Tooltip 
                           labelFormatter={(value) => `Fecha: ${value}`}
                           formatter={(value) => [value, 'Eventos']}
+                          contentStyle={{ 
+                            fontSize: isMobile ? '12px' : '14px'
+                          }}
                         />
                         <Bar 
                           dataKey="cantidad" 
@@ -649,6 +801,19 @@ const DashboardPage = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {canGenerateReports && (
+          <div className="fixed bottom-6 right-6 z-50">
+            <Button
+              onClick={handleOpenReportModal}
+              size="lg"
+              className="rounded-full h-12 w-12 shadow-lg bg-black hover:bg-gray-800 text-white"
+            >
+              <span className="sr-only">Generar Reporte</span>
+              <TrendingUp className="h-6 w-6" />
+            </Button>
+          </div>
+        )}
 
         {canGenerateReports && (
           <ReporteModal 

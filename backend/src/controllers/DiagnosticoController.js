@@ -1,7 +1,47 @@
 import prisma from "../database.js";
 import NotificacionController from "./NotificacionController.js";
 
+const MAX_TIMEOUT = 2 ** 31 - 1;
+
+function safeSetTimeout(fn, ms) {
+    if (ms <= 0) return setTimeout(fn, 0);
+    if (ms <= MAX_TIMEOUT) return setTimeout(fn, ms);
+    return setTimeout(() => safeSetTimeout(fn, ms - MAX_TIMEOUT), MAX_TIMEOUT);
+}
+
 export default class DiagnosticoPrenezController {
+
+    static formatearFecha(fecha) {
+        try {
+            const date = new Date(fecha);
+            const dia = String(date.getDate()).padStart(2, '0');
+            const mes = String(date.getMonth() + 1).padStart(2, '0');
+            const año = String(date.getFullYear()).slice(-2);
+            return `${dia}/${mes}/${año}`;
+        } catch (error) {
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const año = String(now.getFullYear()).slice(-2);
+            return `${dia}/${mes}/${año}`;
+        }
+    }
+
+    static formatearFechaCompleta(fecha) {
+        try {
+            const date = new Date(fecha);
+            const dia = String(date.getUTCDate()).padStart(2, '0');
+            const mes = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const año = date.getUTCFullYear();
+            return `${dia}/${mes}/${año}`;
+        } catch (error) {
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const año = now.getFullYear();
+            return `${dia}/${mes}/${año}`;
+        }
+    }
 
     static async getAll(req, res) {
         try {
@@ -56,7 +96,6 @@ export default class DiagnosticoPrenezController {
         try {
             const { id } = req.params;
             const diagnosticoId = parseInt(id);
-
 
             const diagnostico = await prisma.diagnostico_prenez.findFirst({
                 where: { 
@@ -469,10 +508,10 @@ export default class DiagnosticoPrenezController {
 
     static async delete(req, res) {
         try {
-            if (req.usuario.rol !== 'admin' || req.usuario.rol !== 'veterinario' ) {
+            if (req.usuario.rol !== 'admin' && req.usuario.rol !== 'veterinario'&& req.usuario.rol !== 'operario') {
                 return res.status(403).json({
                     ok: false,
-                    msg: "Solo los administradores pueden eliminar diagnósticos"
+                    msg: "No tienes permisos para eliminar diagnósticos"
                 });
             }
 
@@ -543,23 +582,33 @@ export default class DiagnosticoPrenezController {
             await DiagnosticoPrenezController.crearNotificacionInicialParto(diagnostico, hembra, diffDias);
             await DiagnosticoPrenezController.programarNotificacionPartoProximo(diagnostico, hembra);
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionDiagnosticoPositivo:", error);
+        }
     }
 
     static async crearNotificacionInicialParto(diagnostico, hembra, diffDias) {
         try {
-            const fechaParto = new Date(diagnostico.fecha_probable_parto);
-            const mensaje = `Buenas noticias! ${hembra?.arete || 'Hembra'} está preñada. Parto probable en ${diffDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
+            const fechaFormateada = DiagnosticoPrenezController.formatearFecha(new Date());
+            const fechaPartoFormateada = DiagnosticoPrenezController.formatearFechaCompleta(diagnostico.fecha_probable_parto);
+
+            const mensaje = `DIAGNÓSTICO POSITIVO
+Hembra: ${hembra?.arete || 'N/A'}
+Estado: Preñada
+Método: ${diagnostico.metodo || 'N/A'}
+Parto probable: ${fechaPartoFormateada} (en ${diffDias} días)`;
 
             await NotificacionController.crearNotificacionParaRol(
                 `Diagnóstico Positivo - ${hembra?.arete || 'Hembra'}`,
                 mensaje,
                 'success',
                 'parto',
-                ['admin', 'veterinario','operario']
+                ['admin', 'veterinario', 'operario']
             );
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionInicialParto:", error);
+        }
     }
 
     static async programarNotificacionPartoProximo(diagnostico, hembra) {
@@ -573,7 +622,7 @@ export default class DiagnosticoPrenezController {
             const diferenciaMs = fechaNotificacion.getTime() - ahora.getTime();
             
             if (diferenciaMs > 0) {
-                setTimeout(async () => {
+                safeSetTimeout(async () => {
                     const diagnosticoActualizado = await prisma.diagnostico_prenez.findFirst({
                         where: { 
                             prenez_id: diagnostico.prenez_id,
@@ -611,53 +660,87 @@ export default class DiagnosticoPrenezController {
                     await DiagnosticoPrenezController.crearNotificacionRecordatorioParto(diagnosticoActualizado, hembra);
                 }
             }
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en programarNotificacionPartoProximo:", error);
+        }
     }
 
     static async crearNotificacionRecordatorioParto(diagnostico, hembra) {
         try {
-            const fechaParto = new Date(diagnostico.fecha_probable_parto);
+            const fechaFormateada = DiagnosticoPrenezController.formatearFecha(new Date());
+            const fechaPartoFormateada = DiagnosticoPrenezController.formatearFechaCompleta(diagnostico.fecha_probable_parto);
+
             const ahora = new Date();
-            const diferenciaMs = fechaParto.getTime() - ahora.getTime();
+            const diferenciaMs = new Date(diagnostico.fecha_probable_parto).getTime() - ahora.getTime();
             const diferenciaDias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
-            
+
             let mensaje = '';
             let tipo = 'warning';
+            let titulo = '';
 
             if (diferenciaDias <= 0) {
-                mensaje = `PARTO INMINENTE: ${hembra?.arete || 'Hembra'} tiene parto estimado para HOY (${fechaParto.toLocaleDateString('es-ES')})`;
+                titulo = `PARTO INMINENTE - ${hembra?.arete || 'Hembra'}`;
+                mensaje = `PARTO INMINENTE
+Hembra: ${hembra?.arete || 'N/A'}
+Parto estimado: HOY (${fechaPartoFormateada})
+Acción: Preparar área de parto inmediatamente
+Fecha de notificación: ${fechaFormateada}`;
                 tipo = 'error';
             } else if (diferenciaDias <= 3) {
-                mensaje = `Parto Muy Próximo: ${hembra?.arete || 'Hembra'} tiene parto estimado en ${diferenciaDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
+                titulo = `Parto Muy Próximo - ${hembra?.arete || 'Hembra'}`;
+                mensaje = `PARTO MUY PRÓXIMO
+Hembra: ${hembra?.arete || 'N/A'}
+Parto estimado: en ${diferenciaDias} días (${fechaPartoFormateada})
+Acción: Preparar área de parto
+Fecha de notificación: ${fechaFormateada}`;
                 tipo = 'error';
+            } else if (diferenciaDias <= 7) {
+                titulo = `Recordatorio Parto - ${hembra?.arete || 'Hembra'}`;
+                mensaje = `RECORDATORIO PARTO
+Hembra: ${hembra?.arete || 'N/A'}
+Parto estimado: en ${diferenciaDias} días (${fechaPartoFormateada})
+Fecha de notificación: ${fechaFormateada}`;
+                tipo = 'warning';
             } else {
-                mensaje = `Recordatorio Parto: ${hembra?.arete || 'Hembra'} tiene parto estimado en ${diferenciaDias} días (${fechaParto.toLocaleDateString('es-ES')})`;
+                titulo = `Recordatorio Parto - ${hembra?.arete || 'Hembra'}`;
+                mensaje = `RECORDATORIO PARTO
+Hembra: ${hembra?.arete || 'N/A'}
+Parto estimado: en ${diferenciaDias} días (${fechaPartoFormateada})
+Fecha de notificación: ${fechaFormateada}`;
             }
 
             await NotificacionController.crearNotificacionParaRol(
-                `Recordatorio Parto - ${hembra?.arete || 'Hembra'}`,
+                titulo,
                 mensaje,
                 tipo,
                 'parto',
-                ['admin', 'veterinario','operario']
+                ['admin', 'veterinario', 'operario']
             );
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionRecordatorioParto:", error);
+        }
     }
 
     static async crearNotificacionDiagnosticoNegativo(diagnostico, hembra) {
         try {
-            const mensaje = `El diagnóstico para ${hembra?.arete || 'Hembra'} resultó negativo. No hay preñez.`;
+            const mensaje = `DIAGNÓSTICO NEGATIVO
+Hembra: ${hembra?.arete || 'N/A'}
+Resultado: Negativo (No preñada)
+Método: ${diagnostico.metodo || 'N/A'}
+Observación: La hembra no está preñada`;
 
             await NotificacionController.crearNotificacionParaRol(
                 `Diagnóstico Negativo - ${hembra?.arete || 'Hembra'}`,
                 mensaje,
                 'info',
                 'parto',
-                ['admin', 'veterinario','operario']
+                ['admin', 'veterinario', 'operario']
             );
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionDiagnosticoNegativo:", error);
+        }
     }
 
     static async verificarPartosProximos() {
@@ -699,6 +782,8 @@ export default class DiagnosticoPrenezController {
                 }
             }
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en verificarPartosProximos:", error);
+        }
     }
 }

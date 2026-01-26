@@ -1,7 +1,47 @@
 import prisma from "../database.js";
 import NotificacionController from "./NotificacionController.js";
 
+const MAX_TIMEOUT = 2 ** 31 - 1;
+
+function safeSetTimeout(fn, ms) {
+    if (ms <= 0) return setTimeout(fn, 0);
+    if (ms <= MAX_TIMEOUT) return setTimeout(fn, ms);
+    return setTimeout(() => safeSetTimeout(fn, ms - MAX_TIMEOUT), MAX_TIMEOUT);
+}
+
 export default class MontaController {
+
+    static formatearFecha(fecha) {
+        try {
+            const date = new Date(fecha);
+            const dia = String(date.getDate()).padStart(2, '0');
+            const mes = String(date.getMonth() + 1).padStart(2, '0');
+            const año = String(date.getFullYear()).slice(-2);
+            return `${dia}/${mes}/${año}`;
+        } catch (error) {
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const año = String(now.getFullYear()).slice(-2);
+            return `${dia}/${mes}/${año}`;
+        }
+    }
+
+    static formatearFechaCompleta(fecha) {
+        try {
+            const date = new Date(fecha);
+            const dia = String(date.getUTCDate()).padStart(2, '0');
+            const mes = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const año = date.getUTCFullYear();
+            return `${dia}/${mes}/${año}`;
+        } catch (error) {
+            const now = new Date();
+            const dia = String(now.getDate()).padStart(2, '0');
+            const mes = String(now.getMonth() + 1).padStart(2, '0');
+            const año = now.getFullYear();
+            return `${dia}/${mes}/${año}`;
+        }
+    }
 
     static async generarNumeroMonta(animalHembraId) {
         try {
@@ -605,26 +645,6 @@ export default class MontaController {
             if (estado !== undefined) updateData.estado = Boolean(estado);
             if (fecha !== undefined) updateData.fecha = fechaMonta;
 
-            if (estado === true && !montaExistente.estado) {
-                const montaActualizada = await prisma.evento_monta.findFirst({
-                    where: { 
-                        monta_id: montaId,
-                        deleted_at: null 
-                    },
-                    include: {
-                        hembra: {
-                            select: {
-                                arete: true
-                            }
-                        }
-                    }
-                });
-                
-                if (montaActualizada) {
-                    await MontaController.crearNotificacionMontaCompletada(montaActualizada);
-                }
-            }
-
             const montaActualizada = await prisma.evento_monta.update({
                 where: { monta_id: montaId },
                 data: updateData,
@@ -651,6 +671,10 @@ export default class MontaController {
                     }
                 }
             });
+
+            if (estado === true && !montaExistente.estado) {
+                await MontaController.crearNotificacionMontaCompletada(montaActualizada);
+            }
 
             return res.json({
                 ok: true,
@@ -739,22 +763,44 @@ export default class MontaController {
                 await MontaController.crearNotificacionInicialMonta(monta);
                 await MontaController.programarNotificacionUnDiaAntesMonta(monta);
             }
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionMontaPendiente:", error);
+        }
     }
 
     static async crearNotificacionInicialMonta(monta) {
         try {
-            const mensaje = `Se programó monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} con estado: Pendiente`;
+            const fechaFormateada = MontaController.formatearFecha(new Date());
+            const fechaMontaFormateada = MontaController.formatearFechaCompleta(monta.fecha);
+
+            const fechaMonta = new Date(monta.fecha);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            fechaMonta.setHours(0, 0, 0, 0);
+            
+            const diasFaltantes = Math.ceil((fechaMonta.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+
+            const machoInfo = monta.macho ? ` con macho: ${monta.macho.arete}` : '';
+
+            const mensaje = `NUEVA MONTA PROGRAMADA
+Monta: ${monta.numero_monta}
+Hembra: ${monta.hembra?.arete || 'N/A'}${machoInfo}
+Fecha de monta programada: ${fechaMontaFormateada}
+Días faltantes: ${diasFaltantes} días
+Estado: Pendiente
+Fecha de notificación: ${fechaFormateada}`;
 
             await NotificacionController.crearNotificacionParaRol(
-                `Nueva Monta Programada - ${monta.hembra?.arete || 'Hembra'}`,
+                `Monta Programada - ${monta.hembra?.arete || 'Hembra'}`,
                 mensaje,
                 'info',
                 'monta',
-                ['admin', 'veterinario','operario']
+                ['admin', 'veterinario', 'operario']
             );
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionInicialMonta:", error);
+        }
     }
 
     static async programarNotificacionUnDiaAntesMonta(monta) {
@@ -768,7 +814,7 @@ export default class MontaController {
             const diferenciaMs = fechaNotificacion.getTime() - ahora.getTime();
             
             if (diferenciaMs > 0) {
-                setTimeout(async () => {
+                safeSetTimeout(async () => {
                     const montaActualizada = await prisma.evento_monta.findFirst({
                         where: { 
                             monta_id: monta.monta_id,
@@ -788,37 +834,56 @@ export default class MontaController {
                     }
                 }, diferenciaMs);
             }
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en programarNotificacionUnDiaAntesMonta:", error);
+        }
     }
 
     static async crearNotificacionRecordatorioMonta(monta) {
         try {
-            const fechaMonta = new Date(monta.fecha);
-            const mensaje = `Recordatorio: La monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} es para mañana (${fechaMonta.toLocaleDateString('es-ES')})`;
+            const fechaFormateada = MontaController.formatearFecha(new Date());
+            const fechaMontaFormateada = MontaController.formatearFechaCompleta(monta.fecha);
+
+            const mensaje = `RECORDATORIO: MONTA PROGRAMADA PARA MAÑANA
+Monta: ${monta.numero_monta}
+Hembra: ${monta.hembra?.arete || 'N/A'}
+Fecha de monta programada: ${fechaMontaFormateada} (mañana)
+Estado: Pendiente
+Fecha de notificación: ${fechaFormateada}`;
 
             await NotificacionController.crearNotificacionParaRol(
                 `Recordatorio Monta - ${monta.hembra?.arete || 'Hembra'}`,
                 mensaje,
                 'warning',
                 'monta',
-                ['admin', 'veterinario','operario']
+                ['admin', 'veterinario', 'operario']
             );
 
-        } catch (error) {}
+        } catch (error) {
+            console.error("Error en crearNotificacionRecordatorioMonta:", error);
+        }
     }
 
     static async crearNotificacionMontaCompletada(monta) {
         try {
-            const mensaje = `La monta ${monta.numero_monta} para ${monta.hembra?.arete || 'hembra'} ha sido completada`;
+            const fechaFormateada = MontaController.formatearFecha(new Date());
+
+            const mensaje = `MONTA COMPLETADA EXITOSAMENTE
+Monta: ${monta.numero_monta}
+Hembra: ${monta.hembra?.arete || 'N/A'}
+Estado: Completada
+Fecha de notificación: ${fechaFormateada}`;
 
             await NotificacionController.crearNotificacionParaRol(
                 `Monta Completada - ${monta.hembra?.arete || 'Hembra'}`,
                 mensaje,
                 'success',
                 'monta',
-                ['admin', 'veterinario','operario']
+                ['admin', 'veterinario', 'operario']
             );
-            
-        } catch (error) {}
+
+        } catch (error) {
+            console.error("Error en crearNotificacionMontaCompletada:", error);
+        }
     }
 }

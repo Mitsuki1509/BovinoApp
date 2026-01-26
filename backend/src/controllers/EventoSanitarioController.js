@@ -2,13 +2,13 @@ import prisma from "../database.js";
 import NotificacionController from "./NotificacionController.js";
 
 export default class EventoSanitarioController {
+    static STOCK_MINIMO = 10;
 
     static async generarNumeroEvento() {
         try {
             const totalEventos = await prisma.evento_sanitario.count();
             return `EVT-${(totalEventos + 1).toString().padStart(4, '0')}`;
         } catch (error) {
-            console.error("Error generando número de evento:", error);
             const timestamp = Date.now();
             return `EVT-${timestamp.toString().slice(-4)}`;
         }
@@ -132,6 +132,7 @@ export default class EventoSanitarioController {
     }
 
     static async create(req, res) {
+        
         try {
             const {
                 animal_id,
@@ -204,6 +205,7 @@ export default class EventoSanitarioController {
             }
 
             if (insumos && Array.isArray(insumos)) {
+                
                 for (const insumo of insumos) {
                     if (!insumo.insumo_id || !insumo.cantidad) {
                         return res.status(400).json({
@@ -236,10 +238,26 @@ export default class EventoSanitarioController {
                         });
                     }
 
+
                     if (insumoExistente.cantidad < cantidad) {
                         return res.status(400).json({
                             ok: false,
                             msg: `Stock insuficiente para el insumo ${insumoExistente.nombre}. Stock disponible: ${insumoExistente.cantidad}`
+                        });
+                    }
+
+                    if (insumoExistente.cantidad <= EventoSanitarioController.STOCK_MINIMO) {
+                        return res.status(400).json({
+                            ok: false,
+                            msg: `No se puede utilizar el insumo "${insumoExistente.nombre}" porque tiene ${insumoExistente.cantidad} unidades (stock mínimo requerido: ${EventoSanitarioController.STOCK_MINIMO})`
+                        });
+                    }
+
+                    const stockDespuesOperacion = insumoExistente.cantidad - cantidad;
+                    if (stockDespuesOperacion < EventoSanitarioController.STOCK_MINIMO) {
+                        return res.status(400).json({
+                            ok: false,
+                            msg: `No se puede utilizar esta cantidad del insumo "${insumoExistente.nombre}". Stock después sería: ${stockDespuesOperacion} unidades (mínimo ${EventoSanitarioController.STOCK_MINIMO} requerido)`
                         });
                     }
                 }
@@ -295,8 +313,8 @@ export default class EventoSanitarioController {
                                 }
                             }
                         });
-
-                        if (insumoActualizado.cantidad < 10) {
+                        // Notificación si queda por debajo del stock mínimo + margen
+                        if (insumoActualizado.cantidad < (EventoSanitarioController.STOCK_MINIMO + 5)) {
                             await EventoSanitarioController.crearNotificacionStockBajo(insumoActualizado);
                         }
                     }
@@ -329,7 +347,7 @@ export default class EventoSanitarioController {
 
                 return nuevoEvento;
             });
-
+            
             return res.status(201).json({
                 ok: true,
                 msg: "Evento sanitario registrado exitosamente",
@@ -458,7 +476,6 @@ export default class EventoSanitarioController {
             const { id } = req.params;
 
             const eventoSanitarioId = parseInt(id);
-
 
             const eventoSanitario = await prisma.evento_sanitario.findFirst({
                 where: { 
@@ -688,7 +705,16 @@ export default class EventoSanitarioController {
 
     static async crearNotificacionStockBajo(insumo) {
         try {
-            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. Cantidad actual: ${insumo.cantidad}`;
+            const fechaActual = new Date();
+            const dia = String(fechaActual.getDate()).padStart(2, '0');
+            const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
+            const año = String(fechaActual.getFullYear()).slice(-2);
+            const fechaFormateada = `${dia}/${mes}/${año}`;
+
+            const mensaje = `El insumo "${insumo.nombre}" tiene stock bajo. 
+                Cantidad actual: ${insumo.cantidad} ${insumo.unidad?.nombre || 'unidades'}. 
+                Stock mínimo: ${EventoSanitarioController.STOCK_MINIMO} ${insumo.unidad?.nombre || 'unidades'}.
+                Fecha: ${fechaFormateada}`;
 
             await NotificacionController.crearNotificacionParaRol(
                 `Stock Bajo - ${insumo.nombre}`,
@@ -698,8 +724,10 @@ export default class EventoSanitarioController {
                 ['admin', 'contable']
             );
 
+
         } catch (error) {
             console.error("Error creando notificación de stock bajo:", error);
         }
     }
+
 }

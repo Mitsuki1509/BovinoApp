@@ -103,13 +103,10 @@ const TypeForm = ({
 
   const parentTypeOptions = parentEventTypes.map(type => ({
     value: type.tipo_evento_id.toString(),
-    label: type.nombre
+    label: type.nombre 
   }))
 
-  const allParentOptions = [
-    
-    ...parentTypeOptions
-  ]
+  const allParentOptions = [...parentTypeOptions]
 
   return (
     <Card className="w-full border-0 shadow-none">
@@ -169,6 +166,7 @@ const TypeForm = ({
                         placeholder="Seleccionar evento asociado"
                         disabled={loading}
                         className="w-full text-sm sm:text-base"
+                        truncate={true} 
                       />
                     </FormControl>
                     <FormMessage className="text-xs sm:text-sm">

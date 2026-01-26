@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Edit, Trash2, MoreHorizontal, Search, Package, MapPin,
+import { Plus, Edit, Trash2, MoreHorizontal, Search, Package, MapPin,
   CheckCircle, XCircle
  } from 'lucide-react';
 import LoteForm from '@/components/lotes/LoteForm';
@@ -333,11 +333,9 @@ const GestionAreasPage = () => {
                                   </Badge>
                                 </div>
                               </td>
-                              <td className="py-3">
-                                <span className="font-medium max-w-md truncate">
-                                  {lote.descripcion}
-                                </span>
-                              </td>
+                              <td className="py-3 font-medium truncate max-w-[400px]" >
+                                {lote.descripcion}
+                            </td>
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
                                   <Badge variant="outline">
@@ -392,7 +390,10 @@ const GestionAreasPage = () => {
                                     <Badge variant="secondary" className="font-mono mb-1">
                                       {lote.codigo}
                                     </Badge>
-                                    <h3 className="font-semibold text-lg">{lote.descripcion}</h3>
+
+                                    <h3 className="font-medium text-lg" >
+                                      {lote.descripcion}
+                                    </h3>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
@@ -400,7 +401,6 @@ const GestionAreasPage = () => {
                                     {lote.potrero?.ubicacion}
                                   </Badge>
                                 </div>
-                               
                               </div>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

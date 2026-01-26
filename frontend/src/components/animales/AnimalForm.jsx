@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -125,11 +125,6 @@ const AnimalForm = ({
           
           const fechaNacimientoParsed = parseDateFromDB(animal.fecha_nacimiento);
           const fechaDesteteParsed = parseDateFromDB(animal.fecha_destete);
-          
-          console.log('Fecha nacimiento original:', animal.fecha_nacimiento);
-          console.log('Fecha nacimiento parsed:', fechaNacimientoParsed);
-          console.log('Fecha destete original:', animal.fecha_destete);
-          console.log('Fecha destete parsed:', fechaDesteteParsed);
 
           const tienePadres = animal.animal_madre_id || animal.animal_padre_id;
 
@@ -208,9 +203,11 @@ const AnimalForm = ({
       }))
   ];
 
+
   const loteOptions = lotes.map(lote => ({
     value: lote.lote_id.toString(),
-    label: `${lote.codigo} - ${lote.descripcion}`
+    label: `${lote.codigo} - ${lote.descripcion}`,
+    fullLabel: `${lote.codigo} - ${lote.descripcion}` 
   }));
 
   const razaOptions = razas.map(raza => ({
@@ -306,8 +303,6 @@ const AnimalForm = ({
         imagen: data.imagen
       };
 
-      console.log('Datos a enviar:', formData);
-
       let result;
       
       if (isEditing) {
@@ -330,241 +325,68 @@ const AnimalForm = ({
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-w-xl mx-auto">
-        {formError && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <div>
-              <p className="font-semibold">Error de validación</p>
-              <p>{formError}</p>
-            </div>
-          </div>
-        )}
-        
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="arete"
-              rules={{ 
-                required: "El número de arete es obligatorio",
-                minLength: { value: 1, message: "El número de arete es requerido" },
-                maxLength: { value: 255, message: "El número de arete no puede tener más de 255 caracteres" }
-              }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">Número de Arete</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ej: A001"
-                      {...field}
-                      disabled={loading}
-                      className="text-sm h-9"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs">
-                    {fieldErrors.arete || form.formState.errors.arete?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
+    <Card className="w-full border-0 shadow-none">
+      <CardContent className="p-0">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {formError && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold">Error de validación</p>
+                  <p>{formError}</p>
+                </div>
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="sexo"
-                rules={{ required: "El sexo es obligatorio" }}
+                name="arete"
+                rules={{ 
+                  required: "El número de arete es obligatorio",
+                  minLength: { value: 1, message: "El número de arete es requerido" },
+                  maxLength: { value: 255, message: "El número de arete no puede tener más de 255 caracteres" }
+                }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Sexo</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Seleccione sexo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="M">Macho</SelectItem>
-                        <SelectItem value="H">Hembra</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs">
-                      {fieldErrors.sexo || form.formState.errors.sexo?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="raza_id"
-                rules={{ required: "La raza es requerida" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Raza</FormLabel>
+                    <FormLabel>Número de Arete</FormLabel>
                     <FormControl>
-                      <Combobox
-                        options={razaOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar raza..."
+                      <Input
+                        placeholder="Ej: A001"
+                        {...field}
                         disabled={loading}
-                        className="h-9"
+                        className="w-full"
                       />
                     </FormControl>
-                    <FormMessage className="text-xs">
-                      {fieldErrors.raza_id || form.formState.errors.raza_id?.message}
+                    <FormMessage>
+                      {fieldErrors.arete || form.formState.errors.arete?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="fecha_nacimiento"
-              rules={{ required: "La fecha de nacimiento es obligatoria" }}
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-sm">Fecha de Nacimiento</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
-                        >
-                          <CalendarIcon className="mr-2 h-3 w-3" />
-                          {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Seleccione fecha'}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        locale={es}
-                        disabled={(date) => date > new Date()}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage className="text-xs">
-                    {fieldErrors.fecha_nacimiento || form.formState.errors.fecha_nacimiento?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="fecha_destete"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-sm">Fecha de Destete</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
-                        >
-                          <CalendarIcon className="mr-2 h-3 w-3" />
-                          {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Destete (opcional)'}
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        locale={es}
-                        disabled={(date) => {
-                          if (date > new Date()) return true;
-                          
-                          if (fechaNacimiento && date < fechaNacimiento) return true;
-                          
-                          return false;
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage className="text-xs">
-                    {fieldErrors.fecha_destete || form.formState.errors.fecha_destete?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="lote_id"
-              rules={{ required: "El lote es requerido" }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">Lote</FormLabel>
-                  <FormControl>
-                    <Combobox
-                      options={loteOptions}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar lote..."
-                      disabled={loading}
-                      className="h-9"
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs">
-                    {fieldErrors.lote_id || form.formState.errors.lote_id?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="mostrar_padres"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Registrar Padres</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      {field.value ? 'Mostrando campos de padres' : 'Ocultando campos de padres'}
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {mostrarPadres && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="animal_madre_id"
+                  name="sexo"
+                  rules={{ required: "El sexo es obligatorio" }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">Madre</FormLabel>
-                      <FormControl>
-                        <Combobox
-                          options={madreOptions}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Buscar madre..."
-                          disabled={loading}
-                          className="h-9"
-                        />
-                      </FormControl>
-                      <FormMessage className="text-xs">
-                        {fieldErrors.animal_madre_id || form.formState.errors.animal_madre_id?.message}
+                      <FormLabel>Sexo</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Seleccione sexo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="M">Macho</SelectItem>
+                          <SelectItem value="H">Hembra</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage>
+                        {fieldErrors.sexo || form.formState.errors.sexo?.message}
                       </FormMessage>
                     </FormItem>
                   )}
@@ -572,78 +394,282 @@ const AnimalForm = ({
 
                 <FormField
                   control={form.control}
-                  name="animal_padre_id"
+                  name="raza_id"
+                  rules={{ required: "La raza es requerida" }}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm">Padre</FormLabel>
+                      <FormLabel>Raza</FormLabel>
                       <FormControl>
                         <Combobox
-                          options={padreOptions}
+                          options={razaOptions}
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Buscar padre..."
+                          placeholder="Seleccionar raza..."
                           disabled={loading}
-                          className="h-9"
+                          className="w-full"
+                          truncate={true}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs">
-                        {fieldErrors.animal_padre_id || form.formState.errors.animal_padre_id?.message}
+                      <FormMessage>
+                        {fieldErrors.raza_id || form.formState.errors.raza_id?.message}
                       </FormMessage>
                     </FormItem>
                   )}
                 />
               </div>
-            )}
-          </CardContent>
-        
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Upload className="h-4 w-4 text-indigo-600" />
-              Fotografía (opcional)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="cursor-pointer h-9"
-            />
-
-            {imagenPreview && (
-              <div className="relative inline-block">
-                <img
-                  src={imagenPreview}
-                  alt="Preview"
-                  className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="fecha_nacimiento"
+                  rules={{ required: "La fecha de nacimiento es obligatoria" }}
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha de Nacimiento</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                              disabled={loading}
+                            >
+                              <CalendarIcon className="mr-2 h-3 w-3" />
+                              {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Seleccione fecha'}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date > new Date()}
+                            initialFocus
+                            locale={es}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage>
+                        {fieldErrors.fecha_nacimiento || form.formState.errors.fecha_nacimiento?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
                 />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0"
-                  onClick={removeImage}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Button
-          type="submit"
-          disabled={loading}
-          className="w-full py-4 font-semibold"
-          variant="ganado"
-        >
-          {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {isEditing ? 'Actualizar Animal' : 'Crear Animal'}
-        </Button>
-      </form>
-    </Form>
+                <FormField
+                  control={form.control}
+                  name="fecha_destete"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Fecha de Destete (Opcional)</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn("w-full justify-start text-left font-normal h-9", !field.value && "text-muted-foreground")}
+                              disabled={loading}
+                            >
+                              <CalendarIcon className="mr-2 h-3 w-3" />
+                              {field.value ? format(field.value, 'dd/MM/yyyy', { locale: es }) : 'Destete (opcional)'}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => {
+                              if (date > new Date()) return true;
+                              
+                              if (fechaNacimiento && date < fechaNacimiento) return true;
+                              
+                              return false;
+                            }}
+                            initialFocus
+                            locale={es}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage>
+                        {fieldErrors.fecha_destete || form.formState.errors.fecha_destete?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="lote_id"
+                rules={{ required: "El lote es requerido" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lote</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        options={loteOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar lote..."
+                        disabled={loading}
+                        className="w-full"
+                        truncate={true} 
+                      />
+                    </FormControl>
+                    <FormMessage>
+                      {fieldErrors.lote_id || form.formState.errors.lote_id?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="mostrar_padres"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Registrar Padres</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        {field.value ? 'Mostrando campos de padres' : 'Ocultando campos de padres'}
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={loading}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {mostrarPadres && (
+                <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                  <h4 className="text-base font-semibold text-gray-700 mb-3">Información de los Padres</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="animal_madre_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Madre</FormLabel>
+                          <FormControl>
+                            <Combobox
+                              options={madreOptions}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Buscar madre..."
+                              disabled={loading}
+                              className="w-full"
+                            />
+                          </FormControl>
+                          <FormMessage>
+                            {fieldErrors.animal_madre_id || form.formState.errors.animal_madre_id?.message}
+                          </FormMessage>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="animal_padre_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Padre</FormLabel>
+                          <FormControl>
+                            <Combobox
+                              options={padreOptions}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Buscar padre..."
+                              disabled={loading}
+                              className="w-full"
+                            />
+                          </FormControl>
+                          <FormMessage>
+                            {fieldErrors.animal_padre_id || form.formState.errors.animal_padre_id?.message}
+                          </FormMessage>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    * Solo se muestran animales aptos para monta (hembras: 15+ meses, machos: 18+ meses)
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-2">
+                  <Upload className="h-5 w-5 text-indigo-600" />
+                  <h3 className="text-base font-semibold text-gray-800">
+                    Fotografía (opcional)
+                  </h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                      Seleccionar imagen
+                    </label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="cursor-pointer w-full h-9"
+                    />
+                  </div>
+
+                  {imagenPreview && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Vista previa
+                      </label>
+                      <div className="relative inline-block">
+                        <img
+                          src={imagenPreview}
+                          alt="Preview"
+                          className="h-28 w-28 object-cover rounded-lg border-2 border-gray-300"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                          onClick={removeImage}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Formatos aceptados: JPG, PNG, GIF. Tamaño máximo: 5MB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full"
+                variant="ganado"
+              >
+                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {isEditing ? 'Actualizar Animal' : 'Crear Animal'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
 

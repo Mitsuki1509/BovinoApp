@@ -3,6 +3,7 @@ import prisma from "../database.js";
 import JWT from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { AuthorizationCode } from "simple-oauth2";
+import transporter from "../config/emailConfig.js";
 
 const client = new AuthorizationCode({
   client: {
@@ -64,13 +65,6 @@ export default class UserController {
         secure: process.env.NODE_ENV === 'production'
       });
 
-      return res.json({
-        ok: true,
-        msg: "Usuario autenticado correctamente",
-        data: {
-          correo: usuario.correo,
-        }
-      });
 
     } catch (error) {
       return res.status(500).json({
@@ -179,12 +173,6 @@ export default class UserController {
         }
       });
 
-      if (!usuario) {
-        return res.status(404).json({
-          ok: false,
-          msg: "Usuario no encontrado"
-        });
-      }
 
       return res.json({
         ok: true,
@@ -194,7 +182,6 @@ export default class UserController {
           correo: usuario.correo,
           verificado: usuario.verificado,
           rol: usuario.rol?.nombre,
-          finca: usuario.finca
         }
       });
 
@@ -250,7 +237,6 @@ export default class UserController {
           verificado: usuario.verificado,
           google_oauth: usuario.google_oauth,
           rol: usuario.rol,
-          finca: usuario.finca
         }
       });
 
@@ -277,13 +263,12 @@ export default class UserController {
         },
         include: {
           rol: true,
-          finca: true
         },
         orderBy: {
           nombre: 'asc'
         }
       });
-      console.log(usuarios)
+
       return res.json({
         ok: true,
         data: usuarios.map(usuario => ({
@@ -295,7 +280,6 @@ export default class UserController {
           rol_id: usuario.rol_id,
           finca_id: usuario.finca_id,
           rol: usuario.rol,
-          finca: usuario.finca
         }))
       });
     } catch (error) {
@@ -316,6 +300,9 @@ export default class UserController {
       }
 
       const { nombre, correo, password, rol_id, finca_id } = req.body;
+
+      // Contraseña para el email
+      const passwordOriginal = password;
 
       const usuarioExistente = await prisma.usuarios.findFirst({
         where: { 
@@ -346,6 +333,15 @@ export default class UserController {
             finca: true
           }
         });
+
+        // Enviar correo con credenciales al reactivar
+        await UserController.enviarCorreoCredenciales(
+          correo, 
+          nombre, 
+          passwordOriginal,
+          usuarioReactivado.rol.nombre,
+          'reactivado'
+        );
 
         return res.status(200).json({
           ok: true,
@@ -388,6 +384,15 @@ export default class UserController {
           finca: true
         }
       });
+
+      // Enviar correo con credenciales al crear nuevo usuario
+      await UserController.enviarCorreoCredenciales(
+        correo, 
+        nombre, 
+        passwordOriginal,
+        nuevoUsuario.rol.nombre,
+        'creado'
+      );
 
       return res.status(201).json({
         ok: true,
@@ -450,6 +455,7 @@ export default class UserController {
           verificado: usuarioActualizado.verificado
         }
       });
+      
 
     } catch (error) {
       return res.status(500).json({
@@ -583,10 +589,82 @@ export default class UserController {
       });
 
     } catch (error) {
+      console.error("Error al restablecer contraseña:", error);
       return res.status(500).json({
         ok: false,
         msg: "Error al actualizar la contraseña"
       });
+    }
+  }
+   // Enviar correo con credenciales
+  static async enviarCorreoCredenciales(email, nombre, password, rol, tipo = 'creado') {
+    try {
+      const fechaActual = new Date().toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const horaActual = new Date().toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const mailOptions = {
+        from: `Sistema Bovino <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: `¡Bienvenido al Sistema Bovino! - Tus Credenciales de Acceso`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h2 style="color: #2E86AB;">¡Bienvenido al Sistema Bovino!</h2>
+              <p style="color: #666;">${tipo === 'creado' ? 'Tu cuenta ha sido creada exitosamente' : 'Tu cuenta ha sido reactivada exitosamente'}</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #2E86AB; margin-bottom: 15px;">Información de tu Cuenta</h3>
+              
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #555;"><strong>Nombre:</strong></td>
+                  <td style="padding: 8px 0; color: #333;">${nombre}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #555;"><strong>Correo:</strong></td>
+                  <td style="padding: 8px 0; color: #333;">${email}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #555;"><strong>Rol:</strong></td>
+                  <td style="padding: 8px 0; color: #333;">${rol}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #555;"><strong>Contraseña:</strong></td>
+                  <td style="padding: 8px 0; color: #333; font-weight: bold; background-color: #fff3cd; padding: 5px 10px; border-radius: 4px;">${password}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div style="background-color: #d4edda; color: #155724; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <h4 style="margin-top: 0;">Importante</h4>
+              <p style="margin-bottom: 0;">
+                Por seguridad, se recomienda cambiar esta contraseña después de tu primer inicio de sesión.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+              <p style="color: #999; font-size: 11px;">
+                © ${new Date().getFullYear()} Sistema Bovino. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        `
+      };
+
+      await transporter.sendMail(mailOptions);
+
+    } catch (error) {
+      console.error("Error al enviar credenciales: ", error);
     }
   }
 }

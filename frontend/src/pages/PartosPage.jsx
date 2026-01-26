@@ -412,7 +412,7 @@ const PartosPage = () => {
 
                               </div>
                             </td>
-                            <td className="py-3">
+                            <td className="py-3 font-medium">
                                 {partoItem.tipo_evento?.nombre || 'N/A'}
                             </td>
                             <td className="py-3">
@@ -420,11 +420,16 @@ const PartosPage = () => {
                                 {formatDateWithoutTZ(partoItem.fecha)}
                               </div>
                             </td>
-                            <td className="py-3">
-                              <div className="max-w-xs truncate">
-                                {partoItem.descripcion || 'Sin descripción'}
+                           
+                            <td className="py-3 font-medium" title={partoItem.descripcion}>
+                               {partoItem.descripcion ? (
+                              <div className='py-3 max-w-[200px] truncate'>
+                                {partoItem.descripcion}
                               </div>
-                            </td>
+                            ) : (
+                              <div className="text-gray-400 italic">Sin descripción</div>
+                            )}
+                          </td>
                             <td className="py-3">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

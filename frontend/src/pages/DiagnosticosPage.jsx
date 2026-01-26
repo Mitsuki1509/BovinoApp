@@ -21,8 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Shield, MoreHorizontal, Search, Loader2, CheckCircle,
-  XCircle, Calendar, Stethoscope
+import { Plus,  Trash2, MoreHorizontal, Search, Loader2, CheckCircle,
+  XCircle
  } from 'lucide-react';
 import DiagnosticoForm from '@/components/diagnosticos/DiagnosticoForm';
 import Modal from '@/components/ui/modal';
@@ -69,9 +69,8 @@ const DiagnosticosPage = () => {
 
   useEffect(() => {
     if (authStatus === 'authenticated' && 
-        (user?.rol === 'admin' || user?.rol === 'veterinario') && 
+        (user?.rol === 'admin' || user?.rol === 'veterinario' || user?.rol === 'operario') && 
         !hasFetchedData) {
-      console.log('Cargando datos...');
       fetchDiagnosticos();
       fetchMontas(); 
       setHasFetchedData(true);
@@ -80,11 +79,6 @@ const DiagnosticosPage = () => {
 
   const handleCreate = useCallback(() => {
     setEditingDiagnostico(null);
-    setShowForm(true);
-  }, []);
-
-  const handleEdit = useCallback((diagnosticoData) => {
-    setEditingDiagnostico(diagnosticoData);
     setShowForm(true);
   }, []);
 
@@ -360,16 +354,14 @@ const DiagnosticosPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                               
-                                {(user.rol === 'admin' || user.rol === 'veterinario')&& (
-                                  <DropdownMenuItem 
+                                <DropdownMenuItem 
                                     onClick={() => handleDeleteClick(diagnosticoItem)}
                                     className="text-red-600 focus:text-red-600"
                                   >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Eliminar diagnóstico
                                   </DropdownMenuItem>
-                                )}
+                                
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>

@@ -36,7 +36,6 @@ import {
   Calendar,
   Tag,
   MapPin,
-  Weight,
   Bell,
   Milk
 } from "lucide-react";

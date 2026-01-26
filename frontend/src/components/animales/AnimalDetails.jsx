@@ -133,8 +133,14 @@ const AnimalDetails = ({ animal, onEditar, onEliminar, canManage }) => {
 
             <div>
               <label className="text-sm font-medium text-gray-700">Lote</label>
-              <div className="p-2 bg-gray-50 rounded text-sm mt-1">
-                {animal.lote?.descripcion || 'Sin lote asignado'}
+              <div 
+                className="p-2 bg-gray-50 rounded text-sm mt-1 break-words"
+                title={animal.lote?.descripcion || 'Sin lote asignado'}
+              >
+                {animal.lote?.descripcion && animal.lote.descripcion.length > 40
+                  ? `${animal.lote.descripcion.substring(0, 40)}...`
+                  : (animal.lote?.descripcion || 'Sin lote asignado')
+                }
               </div>
             </div>
           </div>

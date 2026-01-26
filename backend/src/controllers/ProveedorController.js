@@ -218,16 +218,17 @@ export default class ProveedorController {
                     ok:false,
                     msg: "No tiene permisos para eliminar proveedor"
                 })
-            
             }
             const {id} = req.params
+            const proveedorId = parseInt(id)
 
-            const proveedor =  await prisma.proveedores.findFirst({
-                    where:{
-                        proveedor_id: parseInt(id),
-                        deleted_at: null
-                    }
+            const proveedor = await prisma.proveedores.findFirst({
+                where:{
+                    proveedor_id: proveedorId,
+                    deleted_at: null
+                }
             })
+            
             if(!proveedor){
                 return res.status(404).json({
                     ok: false,
@@ -235,36 +236,48 @@ export default class ProveedorController {
                 })
             }
 
-            const comprasConProveedor = await prisma.compras.findFirst({
+            const comprasAnimales = await prisma.compras_animales.findFirst({
                 where: {
-                    proveedor_id: parseInt(id),
+                    proveedor_id: proveedorId,
                     deleted_at: null
                 }
             })
-            if(comprasConProveedor){
+
+            const comprasInsumos = await prisma.compras_insumos.findFirst({
+                where: {
+                    proveedor_id: proveedorId,
+                    deleted_at: null
+                }
+            })
+
+            if(comprasAnimales || comprasInsumos){
                 return res.status(400).json({
                     ok: false,
                     msg: "No se puede eliminar proveedor porque tiene compras asociadas"
                 })
             }
+
             await prisma.proveedores.update({
                 where: {
-                    proveedor_id: parseInt(id)    
+                    proveedor_id: proveedorId    
                 },
                 data: {
-                        deleted_at: new Date()
-                    }
+                    deleted_at: new Date()
+                }
             })
+            
             return res.json({
                 ok: true,
-                msg:"Proveedor eliminado exitosamente"
+                msg: "Proveedor eliminado exitosamente"
             })
 
-        }catch{
+        } catch(error) {
+            console.error('Error en deleteProveedor:', error)
             return res.status(500).json({
                 ok: false,
                 msg: "Error al eliminar proveedor"
             })
         }
     }
+
 }

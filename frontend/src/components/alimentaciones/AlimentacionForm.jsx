@@ -33,14 +33,8 @@ const AlimentacionForm = ({
   const [isEditing, setIsEditing] = useState(false);
   const [formError, setFormError] = useState('');
   const [insumoSeleccionado, setInsumoSeleccionado] = useState(null);
-
-  const getCurrentDate = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const [noInsumosDisponibles, setNoInsumosDisponibles] = useState(false);
+  const STOCK_MINIMO = 10;
 
   const form = useForm({
     defaultValues: {
@@ -76,6 +70,15 @@ const AlimentacionForm = ({
     }
   }, [alimentacion, form, insumos]);
 
+  useEffect(() => {
+    if (insumos.length > 0) {
+      const insumosDisponibles = insumos.filter(insumo => 
+        !insumo.deleted_at && insumo.cantidad > STOCK_MINIMO
+      );
+      setNoInsumosDisponibles(insumosDisponibles.length === 0);
+    }
+  }, [insumos]);
+
   const onSubmit = async (data) => {
     setFormError('');
     
@@ -88,8 +91,7 @@ const AlimentacionForm = ({
       const alimentacionData = {
         animal_id: parseInt(data.animal_id),
         insumo_id: parseInt(data.insumo_id),
-        cantidad: parseInt(data.cantidad),
-        fecha: getCurrentDate() 
+        cantidad: parseInt(data.cantidad)
       };
 
       let result;
@@ -116,6 +118,27 @@ const AlimentacionForm = ({
     }
   };
 
+  const validateCantidad = (value) => {
+    const cantidadValue = parseInt(value);
+    
+    if (!cantidadValue || cantidadValue <= 0) {
+      return "La cantidad debe ser mayor a 0";
+    }
+    
+    if (insumoSeleccionado) {
+      if (cantidadValue > insumoSeleccionado.cantidad) {
+        return `La cantidad no puede ser mayor al stock disponible (${insumoSeleccionado.cantidad})`;
+      }
+      
+      const stockDespues = insumoSeleccionado.cantidad - cantidadValue;
+      if (stockDespues < STOCK_MINIMO) {
+        return `No se puede utilizar esta cantidad. Quedarían ${stockDespues} unidades (mínimo requerido: ${STOCK_MINIMO})`;
+      }
+    }
+    
+    return true;
+  };
+
   const animalesOptions = animales
     .filter(animal => !animal.deleted_at)
     .map(animal => ({
@@ -125,7 +148,10 @@ const AlimentacionForm = ({
 
   const insumosOptions = insumos && insumos.length > 0 
     ? insumos
-        .filter(insumo => !insumo.deleted_at && insumo.cantidad > 0)
+        .filter(insumo => 
+          !insumo.deleted_at && 
+          insumo.cantidad > STOCK_MINIMO  
+        )
         .map(insumo => ({
           value: insumo.insumo_id.toString(),
           label: `${insumo.nombre} - Stock: ${insumo.cantidad} ${insumo.unidad?.nombre || ''}`
@@ -147,6 +173,13 @@ const AlimentacionForm = ({
             {formError && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {formError}
+              </div>
+            )}
+
+            {noInsumosDisponibles && !isEditing && (
+              <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
+                No hay insumos disponibles con stock suficiente. 
+                Todos los insumos tienen {STOCK_MINIMO} unidades o menos.
               </div>
             )}
 
@@ -193,23 +226,31 @@ const AlimentacionForm = ({
                         className="w-full"
                       />
                     </FormControl>
+                    <div className="text-sm text-gray-500">
+                      Solo se muestran insumos con más de {STOCK_MINIMO} unidades en stock
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {insumoSeleccionado && (
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <div className="text-sm text-gray-700">
+                    <div className="font-medium mb-1">Información del insumo seleccionado:</div>
+                    <div>Stock disponible: {insumoSeleccionado.cantidad} {insumoSeleccionado.unidad?.nombre || ''}</div>
+                    <div>Máximo para cargar: {insumoSeleccionado.cantidad - STOCK_MINIMO} {insumoSeleccionado.unidad?.nombre || ''}</div>
+                    <div className="text-xs mt-1">Se reservan {STOCK_MINIMO} unidades como stock mínimo</div>
+                  </div>
+                </div>
+              )}
 
               <FormField
                 control={form.control}
                 name="cantidad"
                 rules={{ 
                   required: "La cantidad es obligatoria",
-                  min: { value: 1, message: "La cantidad debe ser mayor a 0" },
-                  validate: (value) => {
-                    if (insumoSeleccionado && parseInt(value) > insumoSeleccionado.cantidad) {
-                      return `La cantidad no puede ser mayor al stock disponible (${insumoSeleccionado.cantidad})`;
-                    }
-                    return true;
-                  }
+                  validate: validateCantidad
                 }}
                 render={({ field }) => (
                   <FormItem>
@@ -218,18 +259,12 @@ const AlimentacionForm = ({
                       <Input
                         type="number"
                         min="1"
-                        max={insumoSeleccionado?.cantidad}
-                        placeholder="Cantidad a utilizar"
+                        max={insumoSeleccionado ? insumoSeleccionado.cantidad - STOCK_MINIMO : undefined}
+                        placeholder="0"
                         {...field}
-                        disabled={loading}
                         className="w-full"
                       />
                     </FormControl>
-                    {insumoSeleccionado && (
-                      <div className="text-sm text-gray-500">
-                        Stock disponible: {insumoSeleccionado.cantidad} {insumoSeleccionado.unidad?.nombre || ''}
-                      </div>
-                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -239,13 +274,14 @@ const AlimentacionForm = ({
             <div className="pt-2 sm:pt-4 flex gap-3">
               <Button 
                 type="submit" 
-                disabled={loading}
                 className="flex-1"
                 variant="ganado"
               >
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {isEditing ? 'Actualizar Alimentación' : 'Registrar Alimentación'}
               </Button>
+              
+             
             </div>
           </form>
         </Form>

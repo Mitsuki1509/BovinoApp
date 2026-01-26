@@ -22,8 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Plus, Edit, Trash2, MoreHorizontal, Search, MapPin, Scale,
-  CheckCircle, XCircle, Calendar, User
+import { Loader2, Plus, Edit, Trash2, MoreHorizontal, Search, Scale,
+  CheckCircle, XCircle
  } from 'lucide-react';
 import MataderoForm from '@/components/mataderos/MataderoForm';
 import ProduccionCarneForm from '@/components/produccionCarne/ProduccionCarneForm';
@@ -303,7 +303,6 @@ const GestionCarnePage = () => {
               Producciones ({producciones.length})
             </TabsTrigger>
             <TabsTrigger value="mataderos" className="flex items-center gap-2 text-xs sm:text-sm">
-              <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
               Mataderos ({mataderos.length})
             </TabsTrigger>
           </TabsList>
@@ -317,7 +316,7 @@ const GestionCarnePage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!loading ? (
+               
                   <div className="overflow-x-auto">
                     <div className="hidden sm:block">
                       <table className="w-full text-sm">
@@ -459,12 +458,7 @@ const GestionCarnePage = () => {
                       ))}
                     </div>
                   </div>
-                ) : (
-                  <div className="flex justify-center items-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                    <span className="ml-2">Cargando producciones...</span>
-                  </div>
-                )}
+                
 
                 {filteredProducciones.length === 0 && !loading && (
                   <div className="text-center py-8 text-gray-500">

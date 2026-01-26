@@ -91,8 +91,18 @@ const AnimalCard = ({ animal, onVerDetalles }) => {
           </div>
           
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="font-medium">Lote:</span>
-            <span>{animal?.lote?.descripcion || "Sin asignar"}</span>
+            <span className="font-medium shrink-0">Lote:</span>
+            <div className="min-w-0 flex-1">
+              <div 
+                className="truncate" 
+                title={animal?.lote?.descripcion || "Sin asignar"}
+              >
+                {animal?.lote?.descripcion && animal.lote.descripcion.length > 25 
+                  ? `${animal.lote.descripcion.substring(0, 25)}...` 
+                  : (animal?.lote?.descripcion || "Sin asignar")
+                }
+              </div>
+            </div>
           </div>
           
           <div className="flex items-center gap-2 text-sm text-gray-600">

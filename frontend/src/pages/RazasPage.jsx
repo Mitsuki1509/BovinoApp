@@ -5,7 +5,6 @@ import { useRazaStore } from '../store/razaStore';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
@@ -255,11 +254,11 @@ useEffect(() => {
                       {filteredRazas.map((razaItem) => (                        
                         <tr key={razaItem.raza_id} className="border-b hover:bg-gray-50">
                           <td className="py-3 font-medium">{razaItem.nombre}</td>
-                          <td className="py-3">
+                          <td className="py-3 font-medium truncate max-w-[400px]" title={razaItem.descripcion}>
                             {razaItem.descripcion ? (
-                              <span className="text-gray-600">{razaItem.descripcion}</span>
+                                razaItem.descripcion
                             ) : (
-                              <span className="text-gray-400 italic">Sin descripción</span>
+                              <div className="text-gray-400 italic">Sin descripción</div>
                             )}
                           </td>
                         
@@ -305,13 +304,15 @@ useEffect(() => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{razaItem.nombre}</h3>
-                            <div className="mt-2">
-                              {razaItem.descripcion ? (
-                                <p className="text-gray-600 text-sm">{razaItem.descripcion}</p>
-                              ) : (
-                                <span className="text-gray-400 text-sm italic">Sin descripción</span>
-                              )}
-                            </div>
+                            <td className="py-3 font-medium" title={razaItem.descripcion}>
+                            {razaItem.descripcion ? (
+                              <div >
+                                {razaItem.descripcion}
+                              </div>
+                            ) : (
+                              <div className="text-gray-400 text-sm italic">Sin descripción</div>
+                            )}
+                          </td>
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

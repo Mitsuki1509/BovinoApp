@@ -40,7 +40,7 @@ const InsumoDetails = ({ insumo, onEditar, onEliminar, canManage }) => {
       </div>
 
       <div className="text-center">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">
+        <h2 className="text-xl font-bold text-gray-800 mb-2 break-words">
           {insumo?.nombre || "Sin nombre"}
         </h2>
         <div className="flex gap-2 justify-center">
@@ -62,24 +62,26 @@ const InsumoDetails = ({ insumo, onEditar, onEliminar, canManage }) => {
         <CardContent className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">Descripción</label>
-            <div className="p-2 bg-gray-50 rounded text-sm mt-1 min-h-[60px]">
-              {insumo.descripcion || (
-                <p className="text-gray-500 italic">Sin descripción</p>
-              )}
+            <div className="p-2 bg-gray-50 rounded text-sm mt-1">
+              <div className="whitespace-pre-wrap break-words min-h-[60px]">
+                {insumo.descripcion || (
+                  <p className="text-gray-500 italic">Sin descripción</p>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">Tipo</label>
-              <div className="p-2 bg-gray-50 rounded text-sm mt-1">
+              <div className="p-2 bg-gray-50 rounded text-sm mt-1 break-words">
                 {insumo.tipo_insumo?.nombre || 'No especificado'}
               </div>
             </div>
 
             <div>
               <label className="text-sm font-medium text-gray-700">Unidad</label>
-              <div className="p-2 bg-gray-50 rounded text-sm mt-1">
+              <div className="p-2 bg-gray-50 rounded text-sm mt-1 break-words">
                 {insumo.unidad?.nombre || 'No especificada'}
               </div>
             </div>
@@ -108,7 +110,7 @@ const InsumoDetails = ({ insumo, onEditar, onEliminar, canManage }) => {
 
           {insumo.cantidad <= 10 && (
             <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
-              <p className="text-sm text-orange-700">
+              <p className="text-sm text-orange-700 break-words">
                 {insumo.cantidad === 0 
                   ? 'Este insumo está agotado. Considera realizar un nuevo pedido.'
                   : 'Stock bajo. Considera reponer este insumo pronto.'
@@ -126,7 +128,7 @@ const InsumoDetails = ({ insumo, onEditar, onEliminar, canManage }) => {
             className="flex-1"
             variant="inventario"
           >
-           <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4" />
             Editar
           </Button>
 
@@ -135,7 +137,7 @@ const InsumoDetails = ({ insumo, onEditar, onEliminar, canManage }) => {
             onClick={handleDeleteClick}
             className="flex-1"
           >
-          <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
             Eliminar
           </Button>
         </div>
