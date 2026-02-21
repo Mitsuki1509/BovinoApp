@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import AnimalController from "../controllers/AnimalController.js";
+import AnimalController from "../controllers/animalController.js";
 import authenticate from "../middlewares/authenticate.js";
 
 const upload = multer({ storage: multer.memoryStorage() });

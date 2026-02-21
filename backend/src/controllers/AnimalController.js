@@ -2,71 +2,79 @@ import prisma from "../database.js";
 import path from "path";
 import fs from "fs/promises";
 import crypto from "crypto";
+import catchAsync from "../utils/catchAsync.js";
 
 export default class AnimalController {
 
   static validarEdadParaMonta(fechaNacimiento, sexo) {
     if (!fechaNacimiento) return false;
-    
+
     const fechaNac = new Date(fechaNacimiento);
     const fechaActual = new Date();
-    
+
     let mesesDeEdad = (fechaActual.getFullYear() - fechaNac.getFullYear()) * 12;
     mesesDeEdad += fechaActual.getMonth() - fechaNac.getMonth();
-    
+
     if (fechaActual.getDate() < fechaNac.getDate()) {
       mesesDeEdad--;
     }
-    
+
     if (sexo === 'H') {
       return mesesDeEdad >= 15;
     } else if (sexo === 'M') {
-      return mesesDeEdad >= 18; 
+      return mesesDeEdad >= 18;
     }
-    
+
     return false;
   }
 
-  static async getAll(req, res) {
-    try {
-      const { sexo, fecha_limite, para_monta } = req.query;
-      
-      let whereClause = { 
-        deleted_at: null 
-      };
+  static getAll = catchAsync(async (req, res, next) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-      if (sexo && ['M', 'H'].includes(sexo)) {
-        whereClause.sexo = sexo;
-      }
+    const { sexo, fecha_limite, para_monta } = req.query;
 
-      if (para_monta === 'true') {
-        const fechaActual = new Date();
-        
-        if (sexo === 'H') {
-          const fechaLimiteHembras = new Date();
-          fechaLimiteHembras.setMonth(fechaActual.getMonth() - 15);
-          whereClause.fecha_nacimiento = {
-            lte: fechaLimiteHembras
-          };
-        } else if (sexo === 'M') {
-          const fechaLimiteMachos = new Date();
-          fechaLimiteMachos.setMonth(fechaActual.getMonth() - 18);
-          whereClause.fecha_nacimiento = {
-            lte: fechaLimiteMachos
-          };
-        }
-      }
-      else if (fecha_limite) {
-        const fechaLimiteDate = new Date(fecha_limite);
-        if (!isNaN(fechaLimiteDate.getTime())) {
-          whereClause.fecha_nacimiento = {
-            lte: fechaLimiteDate
-          };
-        }
-      }
+    let whereClause = {
+      deleted_at: null
+    };
 
-      const animales = await prisma.animales.findMany({
+    if (sexo && ['M', 'H'].includes(sexo)) {
+      whereClause.sexo = sexo;
+    }
+
+    if (para_monta === 'true') {
+      const fechaActual = new Date();
+
+      if (sexo === 'H') {
+        const fechaLimiteHembras = new Date();
+        fechaLimiteHembras.setMonth(fechaActual.getMonth() - 15);
+        whereClause.fecha_nacimiento = {
+          lte: fechaLimiteHembras
+        };
+      } else if (sexo === 'M') {
+        const fechaLimiteMachos = new Date();
+        fechaLimiteMachos.setMonth(fechaActual.getMonth() - 18);
+        whereClause.fecha_nacimiento = {
+          lte: fechaLimiteMachos
+        };
+      }
+    }
+    else if (fecha_limite) {
+      const fechaLimiteDate = new Date(fecha_limite);
+      if (!isNaN(fechaLimiteDate.getTime())) {
+        whereClause.fecha_nacimiento = {
+          lte: fechaLimiteDate
+        };
+      }
+    }
+
+    const [total, animales] = await Promise.all([
+      prisma.animales.count({ where: whereClause }),
+      prisma.animales.findMany({
         where: whereClause,
+        skip: skip,
+        take: limit,
         include: {
           madre: {
             select: {
@@ -97,20 +105,20 @@ export default class AnimalController {
         orderBy: {
           arete: 'asc'
         }
-      });
+      })
+    ]);
 
-      return res.json({
-        ok: true,
-        data: animales
-      });
-
-    } catch (error) {
-      return res.status(500).json({
-        ok: false,
-        msg: "Error al obtener los animales"
-      });
-    }
-  }
+    return res.json({
+      ok: true,
+      data: animales,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  });
 
   static async getById(req, res) {
     try {
@@ -126,9 +134,9 @@ export default class AnimalController {
       }
 
       const animal = await prisma.animales.findFirst({
-        where: { 
+        where: {
           animal_id: animalId,
-          deleted_at: null 
+          deleted_at: null
         },
         include: {
           madre: {
@@ -241,9 +249,9 @@ export default class AnimalController {
       }
 
       const animalExistente = await prisma.animales.findFirst({
-        where: { 
+        where: {
           arete: arete.trim(),
-          deleted_at: null 
+          deleted_at: null
         }
       });
 
@@ -257,9 +265,9 @@ export default class AnimalController {
       if (animal_madre_id && animal_madre_id !== 'null' && animal_madre_id !== '') {
         const madreId = parseInt(animal_madre_id);
         const madre = await prisma.animales.findFirst({
-          where: { 
+          where: {
             animal_id: madreId,
-            deleted_at: null 
+            deleted_at: null
           }
         });
 
@@ -288,9 +296,9 @@ export default class AnimalController {
       if (animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== '') {
         const padreId = parseInt(animal_padre_id);
         const padre = await prisma.animales.findFirst({
-          where: { 
+          where: {
             animal_id: padreId,
-            deleted_at: null 
+            deleted_at: null
           }
         });
 
@@ -318,9 +326,9 @@ export default class AnimalController {
 
       const loteId = parseInt(lote_id);
       const lote = await prisma.lotes.findFirst({
-        where: { 
+        where: {
           lote_id: loteId,
-          deleted_at: null 
+          deleted_at: null
         }
       });
 
@@ -333,9 +341,9 @@ export default class AnimalController {
 
       const razaId = parseInt(raza_id);
       const raza = await prisma.razas.findFirst({
-        where: { 
+        where: {
           raza_id: razaId,
-          deleted_at: null 
+          deleted_at: null
         }
       });
 
@@ -374,14 +382,14 @@ export default class AnimalController {
 
       const nuevoAnimal = await prisma.animales.create({
         data: {
-          animal_madre_id: animal_madre_id && animal_madre_id !== 'null' && animal_madre_id !== '' 
-            ? parseInt(animal_madre_id) 
+          animal_madre_id: animal_madre_id && animal_madre_id !== 'null' && animal_madre_id !== ''
+            ? parseInt(animal_madre_id)
             : null,
-          animal_padre_id: animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== '' 
-            ? parseInt(animal_padre_id) 
+          animal_padre_id: animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== ''
+            ? parseInt(animal_padre_id)
             : null,
           lote_id: loteId,
-          raza_id: razaId, 
+          raza_id: razaId,
           imagen: imagenNombre ? `http://localhost:3000/uploads/animal_images/${imagenNombre}` : null,
           arete: arete.trim(),
           sexo: sexo,
@@ -471,9 +479,9 @@ export default class AnimalController {
       }
 
       const animalExistente = await prisma.animales.findFirst({
-        where: { 
+        where: {
           animal_id: animalId,
-          deleted_at: null 
+          deleted_at: null
         }
       });
 
@@ -486,10 +494,10 @@ export default class AnimalController {
 
       if (arete && arete.trim() !== '') {
         const animalConMismoArete = await prisma.animales.findFirst({
-          where: { 
+          where: {
             arete: arete.trim(),
             animal_id: { not: animalId },
-            deleted_at: null 
+            deleted_at: null
           }
         });
 
@@ -531,9 +539,9 @@ export default class AnimalController {
         } else if (animal_madre_id) {
           const madreId = parseInt(animal_madre_id);
           const madre = await prisma.animales.findFirst({
-            where: { 
+            where: {
               animal_id: madreId,
-              deleted_at: null 
+              deleted_at: null
             }
           });
 
@@ -565,9 +573,9 @@ export default class AnimalController {
         } else if (animal_padre_id) {
           const padreId = parseInt(animal_padre_id);
           const padre = await prisma.animales.findFirst({
-            where: { 
+            where: {
               animal_id: padreId,
-              deleted_at: null 
+              deleted_at: null
             }
           });
 
@@ -597,9 +605,9 @@ export default class AnimalController {
       if (lote_id !== undefined) {
         const loteId = parseInt(lote_id);
         const lote = await prisma.lotes.findFirst({
-          where: { 
+          where: {
             lote_id: loteId,
-            deleted_at: null 
+            deleted_at: null
           }
         });
 
@@ -614,9 +622,9 @@ export default class AnimalController {
       if (raza_id !== undefined) {
         const razaId = parseInt(raza_id);
         const raza = await prisma.razas.findFirst({
-          where: { 
+          where: {
             raza_id: razaId,
-            deleted_at: null 
+            deleted_at: null
           }
         });
 
@@ -644,21 +652,21 @@ export default class AnimalController {
       if (sexo !== undefined) updateData.sexo = sexo;
 
       if (animal_madre_id !== undefined) {
-        updateData.animal_madre_id = animal_madre_id && animal_madre_id !== 'null' && animal_madre_id !== '' 
-          ? parseInt(animal_madre_id) 
+        updateData.animal_madre_id = animal_madre_id && animal_madre_id !== 'null' && animal_madre_id !== ''
+          ? parseInt(animal_madre_id)
           : null;
       }
-      
+
       if (animal_padre_id !== undefined) {
-        updateData.animal_padre_id = animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== '' 
-          ? parseInt(animal_padre_id) 
+        updateData.animal_padre_id = animal_padre_id && animal_padre_id !== 'null' && animal_padre_id !== ''
+          ? parseInt(animal_padre_id)
           : null;
       }
-      
+
       if (lote_id !== undefined) {
-        updateData.lote_id = parseInt(lote_id); 
+        updateData.lote_id = parseInt(lote_id);
       }
-      
+
       if (raza_id !== undefined) {
         updateData.raza_id = parseInt(raza_id);
       }
@@ -767,9 +775,9 @@ export default class AnimalController {
       }
 
       const animal = await prisma.animales.findFirst({
-        where: { 
+        where: {
           animal_id: animalId,
-          deleted_at: null 
+          deleted_at: null
         }
       });
 
@@ -781,7 +789,7 @@ export default class AnimalController {
       }
 
       const fechaLimite = new Date();
-      fechaLimite.setDate(fechaLimite.getDate() - 7); 
+      fechaLimite.setDate(fechaLimite.getDate() - 7);
 
       const eventosRecientes = await prisma.evento_monta.findFirst({
         where: {
@@ -805,8 +813,8 @@ export default class AnimalController {
 
       await prisma.animales.update({
         where: { animal_id: animalId },
-        data: { 
-          deleted_at: new Date() 
+        data: {
+          deleted_at: new Date()
         }
       });
 

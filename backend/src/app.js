@@ -1,4 +1,6 @@
 import express from "express";
+import globalErrorHandler from "./middlewares/errorHandler.js";
+import AppError from "./utils/AppError.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
@@ -112,7 +114,7 @@ app.get("/", (_req, res) => {
       produccionCarne: "/api/produccionCarne",
       notificaciones: "/api/notificaciones",
       dashboard: "/api/dashboard",
-      reportes:"/api/reportes",
+      reportes: "/api/reportes",
       health: "/health",
     },
   });
@@ -142,21 +144,10 @@ app.use("/api/notificaciones", notificacionesRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/reportes", reportRouter)
 
-app.use((req, res) => {
-  res.status(404).json({
-    ok: false,
-    message: "Ruta no encontrada",
-    path: req.originalUrl,
-    method: req.method,
-  });
+app.all("*", (req, res, next) => {
+  next(new AppError(`Ruta no encontrada: ${req.originalUrl} (${req.method})`, 404));
 });
 
-app.use((error, req, res, next) => {
-  console.error("Error global:", error);
-  res.status(500).json({
-    ok: false,
-    message: "Error interno del servidor",
-  });
-});
+app.use(globalErrorHandler);
 
 export default server;
