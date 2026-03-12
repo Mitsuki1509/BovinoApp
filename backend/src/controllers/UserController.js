@@ -22,91 +22,138 @@ const redirectUri = 'http://localhost:3000/api/users/auth/google/callback';
 export default class UserController {
 
   static async login(req, res) {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
-      const usuario = await prisma.usuarios.findUnique({
-        where: { correo: email },
-        include: {
-          rol: true,
-          finca: true
-        }
-      
-      });
-
-      if (!usuario) {
-        return res.status(401).json({
-          ok: false,
-          msg: "Usuario no encontrado"
-        });
-      }
-
-      const isMatch = await bcrypt.compare(password, usuario.contraseña);
-
-      if (!isMatch) {
-        return res.status(401).json({
-          ok: false,
-          msg: "Contraseña incorrecta"
-        });
-      }
-
-      const jwtToken = JWT.sign(
-        {
-          usuarioId: usuario.usuario_id,
-          rol: usuario.rol?.nombre,
-          nombre: usuario.nombre
-        },
-        process.env.JWT_SECRET_KEY,
-        { expiresIn: '1d' }
-      );
-
-      res.cookie('token', jwtToken, { 
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === 'production'
-      });
-
-
-    } catch (error) {
-      return res.status(500).json({
+  try {
+    if (!email || !password) {
+      return res.status(400).json({
         ok: false,
-        msg: "Error al procesar la autenticación"
+        msg: "Email y contraseña son requeridos"
       });
     }
+    const usuario = await prisma.usuarios.findUnique({
+      where: { 
+        correo: email,
+        deleted_at: null
+      },
+      include: {
+        rol: true,
+        finca: true
+      }
+    });
+
+    // Verificar si el usuario existe
+    if (!usuario) {
+      console.log('Usuario no encontrado:', email);
+      return res.status(401).json({
+        ok: false,
+        msg: "Credenciales inválidas"
+      });
+    }
+
+   
+    if (!usuario.contraseña) {
+      return res.status(401).json({
+        ok: false,
+        msg: "Esta cuenta usa Google OAuth. Por favor, inicia sesión con Google"
+      });
+    }
+
+    if (!usuario.verificado) {
+      return res.status(401).json({
+        ok: false,
+        msg: "Cuenta no verificada. Por favor, contacta al administrador"
+      });
+    }
+
+    // Comparar contraseñas
+    const isMatch = await bcrypt.compare(password, usuario.contraseña);
+
+    if (!isMatch) {
+      console.log('Contraseña incorrecta para:', email);
+      return res.status(401).json({
+        ok: false,
+        msg: "Credenciales inválidas"
+      });
+    }
+
+    const jwtToken = JWT.sign(
+      {
+        usuarioId: usuario.usuario_id,
+        email: usuario.correo,
+        nombre: usuario.nombre,
+        rol: usuario.rol?.nombre || 'usuario',
+        fincaId: usuario.finca_id
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: '1d' }
+    );
+
+    res.cookie('token', jwtToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 
+    });
+
+    return res.json({
+      ok: true,
+      msg: "Login exitoso",
+      data: {
+        usuario_id: usuario.usuario_id,
+        nombre: usuario.nombre,
+        correo: usuario.correo,
+        rol: usuario.rol?.nombre,
+        finca_id: usuario.finca_id,
+        verificado: usuario.verificado,
+        google_oauth: usuario.google_oauth
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en login:', error);
+    return res.status(500).json({
+      ok: false,
+      msg: "Error al procesar la autenticación"
+    });
   }
+}
 
   static async oauthGoogle(req, res) {
     const authorizationUri = client.authorizeURL({
       redirect_uri: redirectUri,
       scope: ["openid", "profile", "email"].join(' '),
       state: "random_state_string",
+      access_type: "offline",
+      prompt: "select_account"
     });
 
     res.redirect(authorizationUri);
   }
-
-  static async oauthCallback(req, res) {
+   static async oauthCallback(req, res) {
     const { code } = req.query;
 
-    const options = {
-      code,
-      redirect_uri: redirectUri,
-      scope: ["openid", "profile", "email"].join(' ')
-    };
-
+    // Crear nuevo OAuth2Client para verificar el token
     const oauthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
     try {
-      const { token } = await client.getToken(options);
+      // Intercambiar código por token usando simple-oauth2
+      const { token } = await client.getToken({
+        code,
+        redirect_uri: redirectUri,
+        scope: ["openid", "profile", "email"].join(' ')
+      });
 
+      // Verificar el token con google-auth-library
       const ticket = await oauthClient.verifyIdToken({
         idToken: token.id_token,
         audience: process.env.GOOGLE_CLIENT_ID
       });
 
       const payload = ticket.getPayload();
-      const { email } = payload;
+      const { email, name, sub: googleId } = payload;
 
-      const usuario = await prisma.usuarios.findUnique({
+      let usuario = await prisma.usuarios.findUnique({
         where: { 
           correo: email,
           deleted_at: null 
@@ -116,40 +163,94 @@ export default class UserController {
           finca: true 
         }
       });
-
+/*
+      // Si no existe, crear nuevo usuario
       if (!usuario) {
-        return res.redirect(`http://localhost:5173/login?error=user_not_found&email=${encodeURIComponent(email)}`);
-      }
-
-      if (!usuario.google_oauth || !usuario.verificado) {
-        await prisma.usuarios.update({
-          where: { usuario_id: usuario.usuario_id },
-          data: { 
-            google_oauth: true,
-            verificado: true 
+        console.log('Creando nuevo usuario desde Google');
+        
+        // Buscar rol por defecto (asumiendo que existe rol "usuario" o similar)
+        const rolDefault = await prisma.roles.findFirst({
+          where: { 
+            nombre: { in: ['usuario', 'USER', 'user'] },
+            deleted_at: null 
           }
         });
-      }
 
+        usuario = await prisma.usuarios.create({
+          data: {
+            nombre: name,
+            correo: email,
+            contraseña: null, 
+            verificado: true, 
+            google_oauth: true,
+            rol_id: rolDefault?.rol_id || 2, 
+          },
+          include: { 
+            rol: true, 
+            finca: true 
+          }
+        });
+        
+        console.log('Usuario creado:', usuario.usuario_id);
+      } else {
+        // Si existe, actualizar para permitir Google OAuth
+        if (!usuario.google_oauth) {
+          usuario = await prisma.usuarios.update({
+            where: { usuario_id: usuario.usuario_id },
+            data: {
+              google_oauth: true,
+              verificado: true
+              // No actualizamos contraseña para mantener la local si existe
+            },
+            include: { 
+              rol: true, 
+              finca: true 
+            }
+          });
+          console.log('Usuario actualizado para Google OAuth');
+        }
+      }
+*/
+        if (!usuario.google_oauth) {
+          usuario = await prisma.usuarios.update({
+            where: { usuario_id: usuario.usuario_id },
+            data: {
+              google_oauth: true,
+              verificado: true
+            },
+            include: { 
+              rol: true, 
+              finca: true 
+            }
+          });
+          console.log('Usuario actualizado para Google OAuth');
+        }
+      // Generar token JWT
       const jwtToken = JWT.sign(
         {
           usuarioId: usuario.usuario_id,
-          rol: usuario.rol?.nombre,
-          nombre: usuario.nombre
+          email: usuario.correo,
+          nombre: usuario.nombre,
+          rol: usuario.rol?.nombre || 'usuario',
+          fincaId: usuario.finca_id
         },
         process.env.JWT_SECRET_KEY,
         { expiresIn: '1d' }
       );
 
-      res.cookie('token', jwtToken, { 
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === 'production'      
+      res.cookie('token', jwtToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000
       });
-      
+
       res.redirect("http://localhost:5173/dashboard");
 
     } catch (error) {
-      res.redirect("http://localhost:5173/login?error=auth_failed");
+      console.error('Error en OAuth callback:', error);
+      const errorMessage = encodeURIComponent(error.message || 'auth_failed');
+      res.redirect(`http://localhost:5173/login?error=${errorMessage}`);
     }
   }
 
@@ -301,7 +402,6 @@ export default class UserController {
 
       const { nombre, correo, password, rol_id, finca_id } = req.body;
 
-      // Contraseña para el email
       const passwordOriginal = password;
 
       const usuarioExistente = await prisma.usuarios.findFirst({
@@ -334,7 +434,6 @@ export default class UserController {
           }
         });
 
-        // Enviar correo con credenciales al reactivar
         await UserController.enviarCorreoCredenciales(
           correo, 
           nombre, 
@@ -385,7 +484,6 @@ export default class UserController {
         }
       });
 
-      // Enviar correo con credenciales al crear nuevo usuario
       await UserController.enviarCorreoCredenciales(
         correo, 
         nombre, 
@@ -596,7 +694,6 @@ export default class UserController {
       });
     }
   }
-   // Enviar correo con credenciales
   static async enviarCorreoCredenciales(email, nombre, password, rol, tipo = 'creado') {
     try {
       const fechaActual = new Date().toLocaleDateString('es-ES', {

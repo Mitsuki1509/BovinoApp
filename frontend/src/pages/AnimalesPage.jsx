@@ -19,7 +19,7 @@ import AnimalForm from '@/components/animales/AnimalForm';
 import Modal from '@/components/ui/modal'; 
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
-import { Search, Plus, Loader2 } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { FaCow } from 'react-icons/fa6';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

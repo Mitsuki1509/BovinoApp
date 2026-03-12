@@ -18,7 +18,6 @@ import {
   Bell, 
   Syringe, 
   Package,
-  Baby,
   CheckCircle,
   XCircle,
   RefreshCw,
@@ -37,7 +36,7 @@ import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-
+import { FaCow } from 'react-icons/fa6';
 const ModalNotificaciones = ({ open, onOpenChange }) => {
   const { user } = useAuthStore();
   const { 
@@ -103,13 +102,13 @@ const ModalNotificaciones = ({ open, onOpenChange }) => {
   const getIconoPorModulo = (modulo) => {
     switch (modulo) {
       case 'monta':
-        return <Baby className="h-4 w-4 text-purple-500" />;
+        return <FaCow className="h-4 w-4 text-purple-500" />;
       case 'sanitario':
         return <Syringe className="h-4 w-4 text-blue-500" />;
       case 'inventario':
         return <Package className="h-4 w-4 text-orange-500" />;
       case 'parto':
-        return <Baby className="h-4 w-4 text-pink-500" />;
+        return <FaCow className="h-4 w-4 text-pink-500" />;
       case 'ordeño':
         return <Droplets className="h-4 w-4 text-cyan-500" />;
       case 'general':

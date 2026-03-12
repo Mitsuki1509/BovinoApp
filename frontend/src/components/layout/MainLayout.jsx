@@ -162,29 +162,22 @@ export function MainLayout({ children }) {
     return permisosPorRol[user.rol]?.[permiso] || false;
   };
 
-  const getNavItemsFiltrados = () => {
-    return navItemsBase.filter(item => tienePermiso(item.permiso));
-  };
+  const getNavItemsFiltrados = () => navItemsBase.filter(item => tienePermiso(item.permiso));
 
   const getInventarioFiltrado = () => {
-    if (user?.rol === 'contable') {
-      return inventarioBase;
-    }
-    return user?.rol === 'admin' ? inventarioBase : [];
+    if (user?.rol === 'contable' || user?.rol === 'admin') return inventarioBase;
+    return [];
   };
 
   const getGanadoFiltrado = () => {
     const rol = user?.rol;
-    
     switch(rol) {
       case 'admin':
+      case 'operario':
         return ganadoBase;
       case 'veterinario':
         return ganadoBase.filter(item => item.href !== "/gestion-areas");
-      case 'operario':
-        return ganadoBase;
       case 'contable':
-        return ganadoBase.filter(item => item.href === "/animales");
       case 'ordeño':
         return ganadoBase.filter(item => item.href === "/animales");
       default:
@@ -192,28 +185,19 @@ export function MainLayout({ children }) {
     }
   };
 
-  const getSanidadFiltrado = () => {
-    return ['admin', 'veterinario', 'operario'].includes(user?.rol) ? sanidadBase : [];
-  };
+  const getSanidadFiltrado = () => 
+    ['admin', 'veterinario', 'operario'].includes(user?.rol) ? sanidadBase : [];
 
   const getProduccionFiltrado = () => {
     const rol = user?.rol;
-    
-    switch(rol) {
-      case 'admin':
-        return produccionBase;
-      case 'operario':
-        return produccionBase.filter(item => item.href === "/produccionCarne");
-      case 'ordeño':
-        return produccionBase.filter(item => item.href === "/produccionLechera");
-      default:
-        return [];
-    }
+    if (rol === 'admin') return produccionBase;
+    if (rol === 'operario') return produccionBase.filter(item => item.href === "/produccionCarne");
+    if (rol === 'ordeño') return produccionBase.filter(item => item.href === "/produccionLechera");
+    return [];
   };
 
-  const getReproduccionFiltrado = () => {
-    return ['admin', 'veterinario', 'operario'].includes(user?.rol) ? reproduccionBase : [];
-  };
+  const getReproduccionFiltrado = () => 
+    ['admin', 'veterinario', 'operario'].includes(user?.rol) ? reproduccionBase : [];
 
   const navItems = getNavItemsFiltrados();
   const inventario = getInventarioFiltrado();
@@ -225,25 +209,6 @@ export function MainLayout({ children }) {
   const mostrarSeccion = (seccion) => seccion.length > 0;
 
   useEffect(() => {
-    const sidebarContent = sidebarContentRef.current;
-    if (!sidebarContent) return;
-
-    const handleScroll = () => {
-      if (sidebarContent.scrollTop > 0) {
-        sidebarContent.classList.add('scrolling');
-      } else {
-        sidebarContent.classList.remove('scrolling');
-      }
-    };
-
-    sidebarContent.addEventListener('scroll', handleScroll);
-    
-    return () => {
-      sidebarContent.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  useEffect(() => {
     const savedState = localStorage.getItem('sidebarExpandedState');
     if (savedState) {
       setExpandedSections(JSON.parse(savedState));
@@ -252,10 +217,7 @@ export function MainLayout({ children }) {
 
   const toggleSection = (section) => {
     setExpandedSections(prev => {
-      const newState = {
-        ...prev,
-        [section]: !prev[section]
-      };
+      const newState = { ...prev, [section]: !prev[section] };
       localStorage.setItem('sidebarExpandedState', JSON.stringify(newState));
       return newState;
     });
@@ -265,12 +227,10 @@ export function MainLayout({ children }) {
     const verifyAuth = async () => {
       try {
         const isAuthenticated = await checkAuth();
-        
         if (!isAuthenticated) {
           navigate('/login', { replace: true });
           return;
         }
-        
         setIsCheckingAuth(false);
       } catch (error) {
         navigate('/login', { replace: true });
@@ -289,27 +249,16 @@ export function MainLayout({ children }) {
   };
 
   const getPageTitle = () => {
-    const allItems = [
-      ...navItems,
-      ...inventario,
-      ...ganado,
-      ...sanidad,
-      ...produccion,
-      ...reproduccion
-    ];
+    const allItems = [...navItems, ...inventario, ...ganado, ...sanidad, ...produccion, ...reproduccion];
+    const currentItem = allItems.find(item => item.href === location.pathname);
     
-    const currentItem = allItems.find((item) => item.href === location.pathname);
-    
-    if (currentItem) {
-      return currentItem.title;
-    }
+    if (currentItem) return currentItem.title;
     
     const defaultTitles = {
       '/': 'Inicio',
       '/login': 'Iniciar Sesión'
     };
-    
-    return defaultTitles[location.pathname] || 'cambiar contrión';
+    return defaultTitles[location.pathname] || 'Cambiar Contraseña';
   };
 
   const getUserDisplayName = () => {
@@ -324,22 +273,15 @@ export function MainLayout({ children }) {
 
   const getUserInitials = () => {
     if (user?.nombre) {
-      return user.nombre
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
+      return user.nombre.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
     }
-    if (user?.correo) {
-      return user.correo.substring(0, 2).toUpperCase();
-    }
+    if (user?.correo) return user.correo.substring(0, 2).toUpperCase();
     return "U";
   };
 
-  if (!user) {
-    return null;
-  }
+  const rolesConNotificaciones = ['admin', 'veterinario', 'operario', 'contable'];
+
+  if (!user) return null;
 
   return (
     <SidebarProvider>
@@ -347,10 +289,8 @@ export function MainLayout({ children }) {
         <Sidebar className="bg-slate-50 border-r border-slate-200">
           <SidebarHeader className="relative h-32 border-b border-slate-200">
             <div 
-              className="absolute inset-0 bg-cover bg-center "
-              style={{
-                backgroundImage: 'url("/layout.jpg")',
-              }}
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: 'url("/layout.jpg")' }}
             >
               <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-black/50"></div>
             </div>
@@ -366,10 +306,7 @@ export function MainLayout({ children }) {
             </div>
           </SidebarHeader>
 
-          <SidebarContent 
-            ref={sidebarContentRef}
-            className="flex-1 overflow-auto custom-scrollbar"
-          >
+          <SidebarContent ref={sidebarContentRef} className="flex-1 overflow-auto custom-scrollbar">
             {mostrarSeccion(navItems) && (
               <div className="p-3">
                 <div className="px-2 py-2 text-xs font-medium text-slate-600 uppercase tracking-wide">
@@ -397,17 +334,11 @@ export function MainLayout({ children }) {
 
             {mostrarSeccion(inventario) && (
               <div className="p-3">
-                <Collapsible 
-                  open={expandedSections.inventario} 
-                  onOpenChange={() => toggleSection('inventario')}
-                  className="group/collapsible"
-                >
+                <Collapsible open={expandedSections.inventario} onOpenChange={() => toggleSection('inventario')}>
                   <SidebarGroup>
                     <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Inventario
-                      </span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Inventario</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedSections.inventario ? 'rotate-180' : ''}`} />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarGroupContent>
@@ -437,17 +368,11 @@ export function MainLayout({ children }) {
 
             {mostrarSeccion(ganado) && (
               <div className="p-3">
-                <Collapsible 
-                  open={expandedSections.ganado} 
-                  onOpenChange={() => toggleSection('ganado')}
-                  className="group/collapsible"
-                >
+                <Collapsible open={expandedSections.ganado} onOpenChange={() => toggleSection('ganado')}>
                   <SidebarGroup>
                     <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Ganado
-                      </span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Ganado</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedSections.ganado ? 'rotate-180' : ''}`} />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarGroupContent>
@@ -477,17 +402,11 @@ export function MainLayout({ children }) {
 
             {mostrarSeccion(sanidad) && (
               <div className="p-3">
-                <Collapsible 
-                  open={expandedSections.sanidad} 
-                  onOpenChange={() => toggleSection('sanidad')}
-                  className="group/collapsible"
-                >
+                <Collapsible open={expandedSections.sanidad} onOpenChange={() => toggleSection('sanidad')}>
                   <SidebarGroup>
                     <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Sanidad
-                      </span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Sanidad</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedSections.sanidad ? 'rotate-180' : ''}`} />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarGroupContent>
@@ -517,17 +436,11 @@ export function MainLayout({ children }) {
 
             {mostrarSeccion(produccion) && (
               <div className="p-3">
-                <Collapsible 
-                  open={expandedSections.produccion} 
-                  onOpenChange={() => toggleSection('produccion')}
-                  className="group/collapsible"
-                >
+                <Collapsible open={expandedSections.produccion} onOpenChange={() => toggleSection('produccion')}>
                   <SidebarGroup>
                     <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Producción
-                      </span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Producción</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedSections.produccion ? 'rotate-180' : ''}`} />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarGroupContent>
@@ -557,17 +470,11 @@ export function MainLayout({ children }) {
 
             {mostrarSeccion(reproduccion) && (
               <div className="p-3">
-                <Collapsible 
-                  open={expandedSections.reproduccion} 
-                  onOpenChange={() => toggleSection('reproduccion')}
-                  className="group/collapsible"
-                >
+                <Collapsible open={expandedSections.reproduccion} onOpenChange={() => toggleSection('reproduccion')}>
                   <SidebarGroup>
                     <CollapsibleTrigger className="flex items-center justify-between w-full px-2 py-2 cursor-pointer hover:bg-slate-100 rounded-md transition-colors">
-                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                        Reproducción
-                      </span>
-                      <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                      <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">Reproducción</span>
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${expandedSections.reproduccion ? 'rotate-180' : ''}`} />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <SidebarGroupContent>
@@ -632,11 +539,7 @@ export function MainLayout({ children }) {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <Modal 
-                    usuario={user}
-                    onSuccess={(message) => {
-                    }}
-                  />
+                  <Modal usuario={user} onSuccess={() => {}} />
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">
@@ -656,18 +559,20 @@ export function MainLayout({ children }) {
               <h1 className="text-lg font-semibold text-slate-900">{getPageTitle()}</h1>
             </div>
             
-            {['admin', 'veterinario', 'operario', 'contable'].includes(user?.rol) && (
+            {rolesConNotificaciones.includes(user?.rol) && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setModalNotificacionesAbierto(true)}
-                className="relative"
+                className="relative group"
               >
-                <Bell className="h-5 w-5" />
+                <Bell className={`h-5 w-5 transition-transform duration-300 ${
+                  notificacionesNoLeidas > 0 ? 'animate-bell' : ''
+                }`} />
                 {notificacionesNoLeidas > 0 && (
                   <Badge 
                     variant="destructive" 
-                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-pulse"
                   >
                     {notificacionesNoLeidas > 9 ? '9+' : notificacionesNoLeidas}
                   </Badge>
@@ -679,7 +584,7 @@ export function MainLayout({ children }) {
           <div className="flex-1 p-6 bg-slate-50">{children}</div>
         </main>
 
-        {['admin', 'veterinario', 'operario', 'contable'].includes(user?.rol) && (
+        {rolesConNotificaciones.includes(user?.rol) && (
           <ModalNotificaciones 
             open={modalNotificacionesAbierto} 
             onOpenChange={setModalNotificacionesAbierto} 
@@ -688,6 +593,16 @@ export function MainLayout({ children }) {
       </div>
 
       <style jsx>{`
+        @keyframes bell {
+          0%, 100% { transform: translateY(0); }
+          25% { transform: translateY(-3px); }
+          75% { transform: translateY(2px); }
+        }
+        
+        .animate-bell {
+          animation: bell 0.6s ease-in-out;
+        }
+
         .custom-scrollbar {
           scrollbar-width: none;
           -ms-overflow-style: none;
